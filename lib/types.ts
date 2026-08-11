@@ -10,6 +10,22 @@ export type FeedCategory = Exclude<Category, "Kõik">;
 export type NewsSource = "ERR" | "Postimees" | "Lõuna PM";
 export type FeedName = "ERR Eesti" | "ERR Majandus" | "ERR Sport" | "Postimees" | "Lõuna-Eesti Postimees";
 
+export type FeedFailureCode =
+  | "configuration"
+  | "http"
+  | "invalid_content"
+  | "network"
+  | "no_valid_items"
+  | "parse"
+  | "redirect"
+  | "response_too_large"
+  | "timeout"
+  | "unknown";
+
+export type FeedFailure =
+  | { name: FeedName; code: "http"; status: number }
+  | { name: FeedName; code: Exclude<FeedFailureCode, "http"> };
+
 export type NewsArticle = {
   id: string;
   title: string;
@@ -31,5 +47,6 @@ export type NewsResponse = {
     loaded: number;
     total: number;
     failed: FeedName[];
+    failures: FeedFailure[];
   };
 };

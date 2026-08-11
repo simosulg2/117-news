@@ -1,9 +1,18 @@
 import { createHash } from "node:crypto";
 import Parser from "rss-parser";
 
+import { feedCategoryText } from "@/lib/feed-categories";
+import { allowedFeedRequestUrl, resolveArticleLink, type FeedRoot } from "@/lib/feed-links";
+import {
+  FeedLoadError,
+  normalizeFeedRequestError,
+  publicFeedFailure,
+  withFeedRetry,
+} from "@/lib/feed-retry";
 import { groupNewsItems } from "@/lib/group-stories";
 import type {
   FeedCategory,
+  FeedFailure,
   FeedName,
   NewsArticle,
   NewsResponse,
@@ -23,7 +32,7 @@ type FeedDefinition = {
   category: FeedCategory | null;
   source: NewsSource;
   url: string;
-  allowedRoot: "err.ee" | "postimees.ee";
+  allowedRoot: FeedRoot;
 };
 
 const FEEDS: ReadonlyArray<FeedDefinition> = [
@@ -75,18 +84,6 @@ const parser = new Parser<Record<string, never>, CustomItem>({
   },
 });
 
-function normalizeUrl(value: string | undefined, baseUrl?: string): string | null {
-  if (!value) return null;
-
-  try {
-    const url = baseUrl ? new URL(value.trim(), baseUrl) : new URL(value.trim());
-    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
-    return url.toString();
-  } catch {
-    return null;
-  }
-}
-
 function plainText(value: string | undefined): string {
   if (!value) return "";
 
@@ -114,49 +111,6 @@ function shorten(value: string, limit = 230): string {
   const shortened = value.slice(0, limit + 1);
   const lastSpace = shortened.lastIndexOf(" ");
   return `${shortened.slice(0, lastSpace > limit * 0.7 ? lastSpace : limit).trim()}…`;
-}
-
-function canonicalLink(
-  value: string | undefined,
-  allowedRoot: FeedDefinition["allowedRoot"],
-  baseUrl: string,
-): string | null {
-  const normalized = normalizeUrl(value, baseUrl);
-  if (!normalized) return null;
-
-  const url = new URL(normalized);
-  if (url.hostname !== allowedRoot && !url.hostname.endsWith(`.${allowedRoot}`)) return null;
-  url.hash = "";
-  for (const key of [...url.searchParams.keys()]) {
-    const normalizedKey = key.toLocaleLowerCase("en-US");
-    if (
-      normalizedKey.startsWith("utm_")
-      || normalizedKey === "ref"
-      || normalizedKey === "fbclid"
-      || normalizedKey === "gclid"
-    ) {
-      url.searchParams.delete(key);
-    }
-  }
-  return url.toString();
-}
-
-function allowedFeedRequestUrl(
-  value: string,
-  allowedRoot: FeedDefinition["allowedRoot"],
-  baseUrl?: string,
-): URL | null {
-  try {
-    const url = baseUrl ? new URL(value, baseUrl) : new URL(value);
-    const allowedHost = url.hostname === allowedRoot || url.hostname.endsWith(`.${allowedRoot}`);
-    const standardHttpsPort = url.port === "";
-    const hasNoCredentials = url.username === "" && url.password === "";
-    return url.protocol === "https:" && standardHttpsPort && hasNoCredentials && allowedHost
-      ? url
-      : null;
-  } catch {
-    return null;
-  }
 }
 
 function safeLogUrl(value: string): string {
@@ -213,39 +167,55 @@ async function discardBody(response: Response): Promise<void> {
 async function fetchFeedResponse(feed: FeedDefinition, headers: HeadersInit): Promise<Response> {
   const signal = AbortSignal.timeout(15_000);
   let currentUrl = allowedFeedRequestUrl(feed.url, feed.allowedRoot);
-  if (!currentUrl) throw new Error("Configured feed URL is outside the approved HTTPS host");
+  if (!currentUrl) {
+    throw new FeedLoadError("configuration", "Configured feed URL is outside the approved HTTPS host");
+  }
 
   for (let redirectCount = 0; redirectCount <= MAX_FEED_REDIRECTS; redirectCount += 1) {
-    const response = await fetch(currentUrl, {
-      headers,
-      next: { revalidate },
-      redirect: "manual",
-      signal,
-    });
+    let response: Response;
+    try {
+      response = await fetch(currentUrl, {
+        headers,
+        next: { revalidate },
+        redirect: "manual",
+        signal,
+      });
+    } catch (error) {
+      throw normalizeFeedRequestError(error);
+    }
 
     if (!REDIRECT_STATUSES.has(response.status)) return response;
 
     const location = response.headers.get("location");
     if (!location) {
       await discardBody(response);
-      throw new Error(`Feed redirect had no destination (${responseDetails(response)})`);
+      throw new FeedLoadError(
+        "redirect",
+        `Feed redirect had no destination (${responseDetails(response)})`,
+      );
     }
     if (redirectCount === MAX_FEED_REDIRECTS) {
       await discardBody(response);
-      throw new Error(`Feed exceeded ${MAX_FEED_REDIRECTS} redirects (${responseDetails(response)})`);
+      throw new FeedLoadError(
+        "redirect",
+        `Feed exceeded ${MAX_FEED_REDIRECTS} redirects (${responseDetails(response)})`,
+      );
     }
 
     const nextUrl = allowedFeedRequestUrl(location, feed.allowedRoot, currentUrl.toString());
     if (!nextUrl) {
       await discardBody(response);
-      throw new Error(`Feed redirect left the approved HTTPS host (${responseDetails(response)})`);
+      throw new FeedLoadError(
+        "redirect",
+        `Feed redirect left the approved HTTPS host (${responseDetails(response)})`,
+      );
     }
 
     await discardBody(response);
     currentUrl = nextUrl;
   }
 
-  throw new Error("Feed redirect handling ended unexpectedly");
+  throw new FeedLoadError("redirect", "Feed redirect handling ended unexpectedly");
 }
 
 async function readBodyPrefix(response: Response, maxBytes = 2_048): Promise<string> {
@@ -285,7 +255,8 @@ async function readFeedBody(response: Response): Promise<{ bytes: number; text: 
     const declaredBytes = Number(declaredLength);
     if (Number.isFinite(declaredBytes) && declaredBytes > MAX_FEED_BYTES) {
       await discardBody(response);
-      throw new Error(
+      throw new FeedLoadError(
+        "response_too_large",
         `Feed response was unexpectedly large (${responseDetails(response)}; bytes=${declaredBytes})`,
       );
     }
@@ -306,7 +277,8 @@ async function readFeedBody(response: Response): Promise<{ bytes: number; text: 
       bytes += value.byteLength;
       if (bytes > MAX_FEED_BYTES) {
         await reader.cancel();
-        throw new Error(
+        throw new FeedLoadError(
+          "response_too_large",
           `Feed response was unexpectedly large (${responseDetails(response)}; bytes>${MAX_FEED_BYTES})`,
         );
       }
@@ -331,7 +303,7 @@ function normalizedCategoryText(value: string): string {
 function resolveCategory(feed: FeedDefinition, item: Parser.Item, link: string): FeedCategory {
   if (feed.category) return feed.category;
 
-  const categoryText = normalizedCategoryText((item.categories ?? []).join(" "));
+  const categoryText = normalizedCategoryText(feedCategoryText(item.categories));
   const articleUrl = new URL(link);
   const linkText = normalizedCategoryText(
     `${articleUrl.hostname} ${articleUrl.pathname.replaceAll("-", " ")}`,
@@ -343,7 +315,7 @@ function resolveCategory(feed: FeedDefinition, item: Parser.Item, link: string):
   return "Eesti";
 }
 
-async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsArticle[]> {
+async function loadFeedOnce(feed: (typeof FEEDS)[number]): Promise<NewsArticle[]> {
   const isPostimees = feed.allowedRoot === "postimees.ee";
   const headers: HeadersInit = {
     Accept: isPostimees
@@ -359,14 +331,30 @@ async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsArticle[]> {
   const response = await fetchFeedResponse(feed, headers);
 
   if (!response.ok) {
-    const bodyPrefix = safeDiagnosticText(await readBodyPrefix(response)) || "empty body";
-    throw new Error(`Feed request failed (${responseDetails(response)}; bodyPrefix=${bodyPrefix})`);
+    let bodyPrefix = "unavailable";
+    try {
+      bodyPrefix = safeDiagnosticText(await readBodyPrefix(response)) || "empty body";
+    } catch {
+      // The HTTP status remains authoritative if its diagnostic body cannot be read.
+    }
+    throw new FeedLoadError(
+      "http",
+      `Feed request failed (${responseDetails(response)}; bodyPrefix=${bodyPrefix})`,
+      response.status,
+    );
   }
 
-  const { bytes, text: xml } = await readFeedBody(response);
+  let feedBody: Awaited<ReturnType<typeof readFeedBody>>;
+  try {
+    feedBody = await readFeedBody(response);
+  } catch (error) {
+    throw normalizeFeedRequestError(error);
+  }
+  const { bytes, text: xml } = feedBody;
   if (!looksLikeFeedXml(xml)) {
     const bodyPrefix = safeDiagnosticText(xml) || "empty body";
-    throw new Error(
+    throw new FeedLoadError(
+      "invalid_content",
       `Feed response was not RSS/Atom XML (${responseDetails(response)}; bytes=${bytes}; bodyPrefix=${bodyPrefix})`,
     );
   }
@@ -376,7 +364,8 @@ async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsArticle[]> {
     parsed = await parser.parseString(xml);
   } catch (error) {
     const reason = safeDiagnosticText(error instanceof Error ? error.message : String(error));
-    throw new Error(
+    throw new FeedLoadError(
+      "parse",
       `Feed XML parsing failed (${responseDetails(response)}; bytes=${bytes}; reason=${reason || "unknown"})`,
     );
   }
@@ -386,9 +375,7 @@ async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsArticle[]> {
   const inspectedItems = parsed.items.slice(0, 50);
   const items = inspectedItems.flatMap((raw) => {
     const item = raw as Parser.Item & CustomItem;
-    const link = [item.link, item.guid]
-      .map((candidate) => canonicalLink(candidate, feed.allowedRoot, response.url))
-      .find((candidate): candidate is string => candidate !== null) ?? null;
+    const link = resolveArticleLink(item.link, item.guid, feed.allowedRoot, response.url);
     const title = plainText(item.title);
     if (!link) missingLinkCount += 1;
     if (!title) missingTitleCount += 1;
@@ -420,7 +407,8 @@ async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsArticle[]> {
   });
 
   if (items.length === 0) {
-    throw new Error(
+    throw new FeedLoadError(
+      "no_valid_items",
       `Feed contained no valid items (${responseDetails(response)}; parsedItems=${parsed.items.length}; inspectedItems=${inspectedItems.length}; missingLinks=${missingLinkCount}; missingTitles=${missingTitleCount})`,
     );
   }
@@ -428,14 +416,20 @@ async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsArticle[]> {
   return items;
 }
 
+async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsArticle[]> {
+  return withFeedRetry(() => loadFeedOnce(feed));
+}
+
 export async function GET(): Promise<Response> {
   const settled = await Promise.allSettled(FEEDS.map(loadFeed));
   const failed: FeedName[] = [];
+  const failures: FeedFailure[] = [];
   const byLink = new Map<string, NewsArticle>();
 
   settled.forEach((result, index) => {
     if (result.status === "rejected") {
       failed.push(FEEDS[index].name);
+      failures.push(publicFeedFailure(FEEDS[index].name, result.reason));
       console.error(`Failed to load ${FEEDS[index].name} feed`, result.reason);
       return;
     }
@@ -450,7 +444,15 @@ export async function GET(): Promise<Response> {
 
   if (items.length === 0) {
     return Response.json(
-      { error: "Uudiste laadimine ebaõnnestus. Palun proovi mõne hetke pärast uuesti." },
+      {
+        error: "Uudiste laadimine ebaõnnestus. Palun proovi mõne hetke pärast uuesti.",
+        sources: {
+          loaded: 0,
+          total: FEEDS.length,
+          failed,
+          failures,
+        },
+      },
       { status: 502, headers: { "Cache-Control": "no-store" } },
     );
   }
@@ -462,6 +464,7 @@ export async function GET(): Promise<Response> {
       loaded: FEEDS.length - failed.length,
       total: FEEDS.length,
       failed,
+      failures,
     },
   };
 
