@@ -279,8 +279,8 @@ export function NewsPortal() {
         <div className="mx-auto max-w-[96rem] px-3 sm:px-5 lg:px-7">
           <div className="flex min-h-12 items-center justify-between gap-4 border-b border-[#263d50]">
             <a href="#" className="flex items-center gap-2.5 font-mono outline-none focus-visible:ring-1 focus-visible:ring-signal" aria-label="117.ee avaleht">
-              <span className="relative block size-9 shrink-0 overflow-hidden bg-black" aria-hidden="true">
-                <img src="/117.png" alt="" className="size-full max-w-none scale-[1.9] object-cover" />
+              <span className="block size-10 shrink-0" aria-hidden="true">
+                <img src="/117.png" alt="" className="size-full object-contain" />
               </span>
               <span className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-[#8da1b0] sm:inline">Uudisvoog</span>
             </a>
