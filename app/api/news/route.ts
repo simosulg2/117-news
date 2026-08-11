@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import Parser from "rss-parser";
 
-import type { FeedCategory, NewsItem, NewsResponse, NewsSource } from "@/lib/types";
+import type { FeedCategory, NewsItem, NewsResponse } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const revalidate = 300;
@@ -13,21 +13,13 @@ type CustomItem = {
 
 type FeedDefinition = {
   category: FeedCategory;
-  source: NewsSource;
   url: string;
-  domain: "err.ee" | "geenius.ee" | "sirp.ee";
 };
 
 const FEEDS: ReadonlyArray<FeedDefinition> = [
-  { category: "Eesti", source: "ERR", url: "https://www.err.ee/rss/eesti", domain: "err.ee" },
-  { category: "Majandus", source: "ERR", url: "https://www.err.ee/rss/majandus", domain: "err.ee" },
-  { category: "Kultuur", source: "ERR", url: "https://www.err.ee/rss/kultuur", domain: "err.ee" },
-  { category: "Sport", source: "ERR", url: "https://sport.err.ee/rss", domain: "err.ee" },
-  { category: "Teadus", source: "Novaator", url: "https://novaator.err.ee/rss", domain: "err.ee" },
-  { category: "Arvamus", source: "ERR", url: "https://www.err.ee/rss/arvamus", domain: "err.ee" },
-  { category: "Tehnoloogia", source: "Geenius", url: "https://geenius.ee/feed/", domain: "geenius.ee" },
-  { category: "Kultuur/Ühiskond", source: "Sirp", url: "https://sirp.ee/feed/", domain: "sirp.ee" },
-  { category: "Uudised", source: "ERR", url: "https://www.err.ee/rss", domain: "err.ee" },
+  { category: "Eesti", url: "https://www.err.ee/rss/eesti" },
+  { category: "Majandus", url: "https://www.err.ee/rss/majandus" },
+  { category: "Sport", url: "https://sport.err.ee/rss" },
 ];
 
 const parser = new Parser<Record<string, never>, CustomItem>({
@@ -77,12 +69,12 @@ function shorten(value: string, limit = 230): string {
   return `${shortened.slice(0, lastSpace > limit * 0.7 ? lastSpace : limit).trim()}…`;
 }
 
-function canonicalLink(value: string | undefined, domain: FeedDefinition["domain"]): string | null {
+function canonicalLink(value: string | undefined): string | null {
   const normalized = normalizeUrl(value);
   if (!normalized) return null;
 
   const url = new URL(normalized);
-  if (url.hostname !== domain && !url.hostname.endsWith(`.${domain}`)) return null;
+  if (url.hostname !== "err.ee" && !url.hostname.endsWith(".err.ee")) return null;
   url.hash = "";
   for (const key of [...url.searchParams.keys()]) {
     if (key.startsWith("utm_") || key === "ref") url.searchParams.delete(key);
@@ -105,14 +97,14 @@ async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsItem[]> {
   }
 
   const xml = await response.text();
-  if (xml.length > 5_000_000) {
+  if (xml.length > 2_000_000) {
     throw new Error("Feed response was unexpectedly large");
   }
   const parsed = await parser.parseString(xml);
 
-  return parsed.items.slice(0, 50).flatMap((raw) => {
+  const items = parsed.items.slice(0, 50).flatMap((raw) => {
     const item = raw as Parser.Item & CustomItem;
-    const link = canonicalLink(item.link ?? item.guid, feed.domain);
+    const link = canonicalLink(item.link ?? item.guid);
     const title = plainText(item.title);
     if (!link || !title) return [];
 
@@ -136,10 +128,16 @@ async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsItem[]> {
         summary,
         publishedAt,
         category: feed.category,
-        source: feed.source,
+        source: "ERR" as const,
       },
     ];
   });
+
+  if (items.length === 0) {
+    throw new Error("Feed contained no valid items");
+  }
+
+  return items;
 }
 
 export async function GET(): Promise<Response> {
@@ -165,7 +163,7 @@ export async function GET(): Promise<Response> {
       const bTime = b.publishedAt ? Date.parse(b.publishedAt) : 0;
       return bTime - aTime;
     })
-    .slice(0, 180);
+    .slice(0, 120);
 
   if (items.length === 0) {
     return Response.json(

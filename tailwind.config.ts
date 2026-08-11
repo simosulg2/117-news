@@ -9,16 +9,14 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        ink: "#111315",
-        paper: "#f4f3ee",
-        signal: "#315efb",
+        ink: "#12171b",
+        paper: "#f1f0ea",
+        signal: "#f4a62a",
       },
       fontFamily: {
         sans: ["var(--font-sans)", "Arial", "sans-serif"],
         display: ["var(--font-display)", "Arial", "sans-serif"],
-      },
-      boxShadow: {
-        float: "0 24px 70px -30px rgba(20, 27, 45, 0.32)",
+        mono: ["var(--font-mono)", "Consolas", "monospace"],
       },
     },
   },

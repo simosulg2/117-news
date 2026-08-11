@@ -2,17 +2,12 @@ export const CATEGORIES = [
   "Kõik",
   "Eesti",
   "Majandus",
-  "Kultuur",
   "Sport",
-  "Teadus",
-  "Arvamus",
-  "Tehnoloogia",
-  "Kultuur/Ühiskond",
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number];
-export type FeedCategory = Exclude<Category, "Kõik"> | "Uudised";
-export type NewsSource = "ERR" | "Novaator" | "Geenius" | "Sirp";
+export type FeedCategory = Exclude<Category, "Kõik">;
+export type NewsSource = "ERR";
 
 export type NewsItem = {
   id: string;
