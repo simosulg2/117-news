@@ -1,6 +1,6 @@
 # 117.ee
 
-Kiire uudisterminal, mis koondab ERR-i Eesti, majanduse ja spordi RSS-vood tihedasse tüpograafiapõhisesse vaatesse. Kujundus kasutab 117.ee läbipaistva taustaga sinist märki ning jahedat sinise, mündirohelise ja violetse signaalpaletti.
+Kiire uudislaud, mis koondab ERR-i Eesti, majanduse ja spordi RSS-vood tihedasse tüpograafiapõhisesse vaatesse. Kujundus kasutab 117.ee läbipaistva taustaga sinist märki, Cairo kirjatüüpi ning jahedat sinise, mündirohelise ja violetse signaalpaletti. Vaikimisi avaneb hele teema, kuid kasutaja salvestatud valikut austatakse.
 
 ## Käivitamine
 

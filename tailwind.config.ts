@@ -16,7 +16,6 @@ const config: Config = {
       fontFamily: {
         sans: ["var(--font-sans)", "Arial", "sans-serif"],
         display: ["var(--font-display)", "Arial", "sans-serif"],
-        mono: ["var(--font-mono)", "Consolas", "monospace"],
       },
     },
   },

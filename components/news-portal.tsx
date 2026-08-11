@@ -44,11 +44,11 @@ const numberFormatter = new Intl.NumberFormat("et-EE");
 
 function relativeTime(value: string, nowMs = Date.now()): string {
   const elapsedMinutes = Math.max(0, Math.round((nowMs - Date.parse(value)) / 60_000));
-  if (elapsedMinutes < 1) return "NÜÜD";
-  if (elapsedMinutes < 60) return `${elapsedMinutes}M`;
+  if (elapsedMinutes < 1) return "praegu";
+  if (elapsedMinutes < 60) return `${elapsedMinutes} min`;
   const hours = Math.floor(elapsedMinutes / 60);
-  if (hours < 24) return `${hours}H`;
-  return `${Math.floor(hours / 24)}P`;
+  if (hours < 24) return `${hours} t`;
+  return `${Math.floor(hours / 24)} p`;
 }
 
 function formatItemTime(value: string): string {
@@ -70,10 +70,10 @@ function categoryColor(category: NewsItem["category"]): string {
   }
 }
 
-function CategoryCode({ category }: { category: NewsItem["category"] }) {
+function CategoryLabel({ category }: { category: NewsItem["category"] }) {
   return (
-    <span className={`font-mono text-[11px] font-bold uppercase tracking-[0.08em] ${categoryColor(category)}`}>
-      [{category}]
+    <span className={`inline-flex border-l-2 border-current pl-2 text-xs font-semibold leading-4 ${categoryColor(category)}`}>
+      {category}
     </span>
   );
 }
@@ -90,15 +90,15 @@ function ArticleRow({ item, nowMs }: { item: NewsItem; nowMs: number }) {
           aria-label={`${item.title} — ERR, avaneb uuel vahelehel`}
         >
           <div className="flex items-center gap-3 md:hidden">
-            <CategoryCode category={item.category} />
-            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-[#526878] dark:text-[#8da1b0]">
+            <CategoryLabel category={item.category} />
+            <span className="text-[11px] font-semibold text-[#526878] dark:text-[#8da1b0]">
               {item.source}
             </span>
             {item.publishedAt && (
               <time
                 dateTime={item.publishedAt}
                 title={exactDateFormatter.format(new Date(item.publishedAt))}
-                className="font-mono text-[10px] tabular-nums text-[#526878] dark:text-[#8da1b0]"
+                className="text-[11px] tabular-nums text-[#526878] dark:text-[#8da1b0]"
               >
                 {formatItemTime(item.publishedAt)} / {relativeTime(item.publishedAt, nowMs)}
               </time>
@@ -109,20 +109,20 @@ function ArticleRow({ item, nowMs }: { item: NewsItem; nowMs: number }) {
             <time
               dateTime={item.publishedAt}
               title={exactDateFormatter.format(new Date(item.publishedAt))}
-              className="hidden whitespace-nowrap font-mono text-[10px] tabular-nums text-[#495e6d] dark:text-[#a9b7c2] md:block"
+              className="hidden whitespace-nowrap text-[11px] tabular-nums text-[#495e6d] dark:text-[#a9b7c2] md:block"
             >
-              {formatItemTime(item.publishedAt)} <span className="text-[#738795] dark:text-[#687f91]">{relativeTime(item.publishedAt, nowMs)}</span>
+              {formatItemTime(item.publishedAt)} <span className="text-[#526878] dark:text-[#8da1b0]">{relativeTime(item.publishedAt, nowMs)}</span>
             </time>
           ) : (
-            <span className="hidden font-mono text-[10px] text-[#738795] md:block">—</span>
+            <span className="hidden text-[11px] text-[#526878] dark:text-[#8da1b0] md:block">—</span>
           )}
 
           <div className="hidden md:block">
-            <CategoryCode category={item.category} />
+            <CategoryLabel category={item.category} />
           </div>
 
           <div className="min-w-0">
-            <h2 className="text-[15px] font-bold leading-[1.25] tracking-[-0.012em] text-[#101a24] transition-colors group-hover:text-[#245fae] dark:text-[#edf4f8] dark:group-hover:text-[#7db0ff] sm:text-base">
+            <h2 className="text-base font-bold leading-[1.35] text-[#101a24] transition-colors group-hover:text-[#245fae] dark:text-[#edf4f8] dark:group-hover:text-[#7db0ff]">
               {item.title}
             </h2>
             {item.summary && (
@@ -132,7 +132,7 @@ function ArticleRow({ item, nowMs }: { item: NewsItem; nowMs: number }) {
             )}
           </div>
 
-          <span className="hidden font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-[#495e6d] dark:text-[#a9b7c2] md:block">
+          <span className="hidden text-[11px] font-semibold text-[#495e6d] dark:text-[#a9b7c2] md:block">
             {item.source}
           </span>
 
@@ -170,9 +170,9 @@ function LoadingState() {
 
 function EmptyState({ hasQuery, onReset }: { hasQuery: boolean; onReset: () => void }) {
   return (
-    <div className="flex min-h-24 flex-col justify-center gap-3 border-y border-[#9fb2c0] px-3 py-4 font-mono dark:border-[#35536a] sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex min-h-24 flex-col justify-center gap-3 border-y border-[#9fb2c0] px-3 py-4 dark:border-[#35536a] sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <p className="text-[11px] font-bold tracking-[0.14em] text-signal">[ 0 VASTET ] <span className="ml-2 text-[#192630] dark:text-[#e5eef4]">TULEMUSI EI LEITUD</span></p>
+        <p className="text-sm font-bold text-[#192630] dark:text-[#e5eef4]">Tulemusi ei leitud</p>
         <p className="mt-1.5 text-xs text-[#526878] dark:text-[#8da1b0]">
           {hasQuery ? "Muuda päringut või lähtesta filtrid." : "Valitud sektoris pole praegu uudiseid."}
         </p>
@@ -180,7 +180,7 @@ function EmptyState({ hasQuery, onReset }: { hasQuery: boolean; onReset: () => v
       <button
         type="button"
         onClick={onReset}
-        className="min-h-10 w-fit border border-[#29485f] bg-[#0b1b29] px-4 text-[11px] font-bold uppercase tracking-[0.1em] text-white outline-none hover:border-signal hover:text-[#7db0ff] focus-visible:ring-2 focus-visible:ring-signal dark:border-[#4b6a80]"
+        className="min-h-10 w-fit border border-[#29485f] bg-[#0b1b29] px-4 text-xs font-semibold text-white outline-none hover:border-signal hover:text-[#7db0ff] focus-visible:ring-2 focus-visible:ring-signal dark:border-[#4b6a80]"
       >
         Tühjenda filtrid
       </button>
@@ -195,7 +195,7 @@ export function NewsPortal() {
   const [category, setCategory] = useState<Category>("Kõik");
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
-  const [theme, setTheme] = useState<"light" | "dark">("dark");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const [now, setNow] = useState<Date | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -270,7 +270,7 @@ export function NewsPortal() {
     <div className="min-h-screen">
       <a
         href="#newswire"
-        className="fixed left-3 top-3 z-[60] -translate-y-20 bg-signal px-3 py-2 font-mono text-[11px] font-bold uppercase text-black outline-none focus:translate-y-0 focus:ring-2 focus:ring-white"
+        className="fixed left-3 top-3 z-[60] -translate-y-20 bg-signal px-3 py-2 text-xs font-semibold text-[#07131f] outline-none focus:translate-y-0 focus:ring-2 focus:ring-white"
       >
         Liigu uudisvoogu
       </a>
@@ -278,17 +278,17 @@ export function NewsPortal() {
       <header className="sticky top-0 z-50 border-b border-[#172b3b] bg-[#08131f] text-[#e8f0f6] shadow-[0_1px_0_#4f8cff]">
         <div className="mx-auto max-w-[96rem] px-3 sm:px-5 lg:px-7">
           <div className="flex min-h-12 items-center justify-between gap-4 border-b border-[#263d50]">
-            <a href="#" className="flex items-center gap-2.5 font-mono outline-none focus-visible:ring-1 focus-visible:ring-signal" aria-label="117.ee avaleht">
+            <a href="#" className="flex items-center gap-2.5 outline-none focus-visible:ring-1 focus-visible:ring-signal" aria-label="117.ee avaleht">
               <span className="block size-10 shrink-0" aria-hidden="true">
                 <img src="/117.png" alt="" className="size-full object-contain" />
               </span>
-              <span className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-[#8da1b0] sm:inline">Uudisvoog</span>
+              <span className="hidden text-xs font-medium text-[#8da1b0] sm:inline">ERR-i uudisvoog</span>
             </a>
 
-            <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.08em]">
-              <span aria-live="polite" className="hidden text-[#8da1b0] sm:inline">
-                Vood <b className={data && data.sources.loaded === data.sources.total ? "text-[#55d6b2]" : "text-[#b6a3ff]"}>{data ? `${data.sources.loaded}/${data.sources.total}` : "—/3"}</b>
-                <span className="ml-3 text-[#687f91]">{now ? `${deskClockFormatter.format(now)} EE` : "--:--:-- EE"}</span>
+            <div className="flex items-center gap-3 text-[11px]">
+              <span className="hidden text-[#8da1b0] sm:inline">
+                <b aria-live="polite" className={data && data.sources.loaded === data.sources.total ? "text-[#55d6b2]" : "text-[#b6a3ff]"}>{data ? `${data.sources.loaded}/${data.sources.total} voogu` : "—/3 voogu"}</b>
+                <span aria-hidden="true" className="ml-3 tabular-nums text-[#8295a4]">{now ? `${deskClockFormatter.format(now)} Eesti` : "--:--:-- Eesti"}</span>
               </span>
               <button
                 type="button"
@@ -311,8 +311,8 @@ export function NewsPortal() {
                     type="button"
                     onClick={() => setCategory(item)}
                     aria-pressed={active}
-                    className={`min-h-10 shrink-0 border-r border-[#263d50] px-4 font-mono text-[11px] font-bold uppercase tracking-[0.08em] outline-none transition-colors last:border-r-0 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal ${
-                      active ? "bg-signal text-white" : "text-[#a9b7c2] hover:bg-[#102538] hover:text-white"
+                    className={`min-h-10 shrink-0 border-r border-[#263d50] px-4 text-xs font-semibold outline-none transition-colors last:border-r-0 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal ${
+                      active ? "bg-signal text-[#07131f]" : "text-[#a9b7c2] hover:bg-[#102538] hover:text-white"
                     }`}
                   >
                     {item}
@@ -322,64 +322,62 @@ export function NewsPortal() {
             </nav>
 
             <label className="relative flex min-h-10 flex-1 items-stretch bg-[#0b1b29] sm:min-w-[18rem]">
-              <span className="flex items-center border-r border-[#263d50] px-3 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-signal">Otsing</span>
+              <span className="flex items-center border-r border-[#263d50] px-3 text-xs font-semibold text-signal">Otsing</span>
               <input
                 ref={searchRef}
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Pealkiri või märksõna"
-                className="min-w-0 flex-1 bg-transparent px-3 font-mono text-xs text-white outline-none placeholder:text-[#60788a] focus:bg-[#06101a]"
+                className="min-w-0 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-[#8da1b0] focus:bg-[#06101a]"
               />
               {query ? (
                 <button
                   type="button"
                   onClick={() => setQuery("")}
-                  className="min-w-11 border-l border-[#263d50] px-2 font-mono text-[10px] font-bold uppercase text-[#8da1b0] outline-none hover:text-signal focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal"
+                  className="min-w-[5.5rem] border-l border-[#263d50] px-3 text-xs font-semibold text-[#8da1b0] outline-none hover:text-signal focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal"
                   aria-label="Tühjenda otsing"
                 >
-                  CLR
+                  Tühjenda
                 </button>
-              ) : (
-                <kbd className="flex items-center border-l border-[#263d50] px-3 font-mono text-[10px] text-[#60788a]">/</kbd>
-              )}
+              ) : null}
             </label>
           </div>
         </div>
       </header>
 
       <main id="newswire" className="mx-auto max-w-[96rem] px-3 pb-10 pt-4 sm:px-5 lg:px-7">
-        <div className="mb-3 grid gap-2 border-y border-[#9fb2c0] bg-[#dfe8ee] px-2 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-[#2d4353] dark:border-[#35536a] dark:bg-[#0d2030] dark:text-[#a9b7c2] sm:grid-cols-[1fr_auto] sm:items-center">
+        <div className="mb-3 grid gap-2 border-y border-[#9fb2c0] bg-[#dfe8ee] px-2 py-2 text-[11px] font-semibold text-[#2d4353] dark:border-[#35536a] dark:bg-[#0d2030] dark:text-[#a9b7c2] sm:grid-cols-[1fr_auto] sm:items-center">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-            <h1 className="text-signal">117 Uudislaud</h1>
-            <span>{now ? deskDateFormatter.format(now).toUpperCase() : "--.--.----"}</span>
-            <span>Piirkond: EE</span>
+            <h1 className="font-bold text-[#245fae] dark:text-signal">117 uudislaud</h1>
+            <span>{now ? deskDateFormatter.format(now) : "--.--.----"}</span>
+            <span>Eesti uudised</span>
           </div>
-          <div aria-live="polite" className="flex flex-wrap items-center gap-x-4 gap-y-1 tabular-nums">
-            <span>Kirjeid: {data ? numberFormatter.format(filteredItems.length) : "—"}</span>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 tabular-nums">
+            <span aria-live="polite">{data ? `${numberFormatter.format(filteredItems.length)} uudist` : "— uudist"}</span>
             <span>Teema: {category}</span>
-            <span>Sync: {data ? relativeTime(data.updatedAt, now?.getTime()) : "—"}</span>
+            <span>Uuendatud: {data ? relativeTime(data.updatedAt, now?.getTime()) : "—"}</span>
           </div>
         </div>
 
         {data && data.sources.failed.length > 0 && (
-          <div className="mb-3 border border-[#7964bd] bg-[#b6a3ff]/10 px-3 py-2 font-mono text-[11px] text-[#60459f] dark:text-[#c7b8ff]">
-            <b>[ PIIRATUD ]</b> MAAS: {data.sources.failed.join(", ").toUpperCase()} — NÄITAME ÜLEJÄÄNUD VOOGE
+          <div className="mb-3 border border-[#7964bd] bg-[#b6a3ff]/10 px-3 py-2 text-xs text-[#60459f] dark:text-[#c7b8ff]">
+            <b>Mõni uudisvoog pole hetkel saadaval:</b> {data.sources.failed.join(", ")}. Näitame ülejäänud uudiseid.
           </div>
         )}
 
         {!data && !error && <LoadingState />}
 
         {error && (
-          <div role="alert" className="flex min-h-28 flex-col justify-center gap-3 border-y border-[#9d2f2f] bg-[#b42318]/5 px-3 py-4 font-mono sm:flex-row sm:items-center sm:justify-between">
+          <div role="alert" className="flex min-h-28 flex-col justify-center gap-3 border-y border-[#9d2f2f] bg-[#b42318]/5 px-3 py-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-[11px] font-bold tracking-[0.14em] text-[#d9473f]">[ VOO VIGA ] <span className="ml-2 text-[#202326] dark:text-[#eef0f1]">ÜHENDUS KATKESTATUD</span></p>
+              <p className="text-sm font-bold text-[#b42318] dark:text-[#ff6b63]">Uudiste laadimine ebaõnnestus</p>
               <p className="mt-1.5 max-w-2xl text-xs leading-5 text-[#526878] dark:text-[#8da1b0]">{error}</p>
             </div>
             <button
               type="button"
               onClick={() => setRetryKey((value) => value + 1)}
-              className="min-h-10 w-fit border border-[#9d2f2f] px-4 text-[11px] font-bold uppercase tracking-[0.1em] text-[#b42318] outline-none hover:bg-[#b42318] hover:text-white focus-visible:ring-2 focus-visible:ring-[#d9473f] dark:text-[#ff6b63]"
+              className="min-h-10 w-fit border border-[#9d2f2f] px-4 text-xs font-semibold text-[#b42318] outline-none hover:bg-[#b42318] hover:text-white focus-visible:ring-2 focus-visible:ring-[#d9473f] dark:text-[#ff6b63]"
             >
               Proovi uuesti
             </button>
@@ -390,10 +388,10 @@ export function NewsPortal() {
 
         {data && filteredItems.length > 0 && (
           <section aria-label="Uudiste nimekiri">
-            <div className="hidden grid-cols-[7.5rem_7.5rem_minmax(0,1fr)_5rem] gap-x-4 border-y border-[#9fb2c0] bg-[#d5e0e7] px-2 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-[#4b6170] dark:border-[#35536a] dark:bg-[#102538] dark:text-[#7890a2] md:grid">
-              <span>Aeg / Vanus</span>
-              <span>Sektor</span>
-              <span>Pealkiri / Kokkuvõte</span>
+            <div className="hidden grid-cols-[7.5rem_7.5rem_minmax(0,1fr)_5rem] gap-x-4 border-y border-[#9fb2c0] bg-[#d5e0e7] px-2 py-1.5 text-[10px] font-semibold text-[#4b6170] dark:border-[#35536a] dark:bg-[#102538] dark:text-[#7890a2] md:grid">
+              <span>Avaldatud</span>
+              <span>Teema</span>
+              <span>Uudis</span>
               <span>Allikas</span>
             </div>
             <ul>
@@ -406,8 +404,8 @@ export function NewsPortal() {
       </main>
 
       <footer className="border-t border-[#9fb2c0] bg-[#dfe8ee] dark:border-[#35536a] dark:bg-[#0b1b29]">
-        <div className="mx-auto flex max-w-[96rem] flex-col gap-2 px-3 py-3 font-mono text-[9px] uppercase tracking-[0.08em] text-[#526878] dark:text-[#7890a2] sm:flex-row sm:items-center sm:justify-between sm:px-5 lg:px-7">
-          <span><b className="text-signal">117.EE</b> / ERR UUDISTERMINAL</span>
+        <div className="mx-auto flex max-w-[96rem] flex-col gap-2 px-3 py-3 text-[10px] text-[#526878] dark:text-[#7890a2] sm:flex-row sm:items-center sm:justify-between sm:px-5 lg:px-7">
+          <span><b className="text-[#245fae] dark:text-signal">117.ee</b> · ERR-i uudisvoog</span>
           <span>Uudiste sisu © ERR · Lingid avanevad algallikas</span>
         </div>
       </footer>
