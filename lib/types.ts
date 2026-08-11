@@ -4,11 +4,15 @@ export const CATEGORIES = [
   "Majandus",
   "Kultuur",
   "Sport",
-  "English",
+  "Teadus",
+  "Arvamus",
+  "Tehnoloogia",
+  "Kultuur/Ühiskond",
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number];
-export type FeedCategory = Exclude<Category, "Kõik"> | "Viimased";
+export type FeedCategory = Exclude<Category, "Kõik"> | "Uudised";
+export type NewsSource = "ERR" | "Novaator" | "Geenius" | "Sirp";
 
 export type NewsItem = {
   id: string;
@@ -17,7 +21,7 @@ export type NewsItem = {
   summary: string;
   publishedAt: string | null;
   category: FeedCategory;
-  imageUrl: string | null;
+  source: NewsSource;
 };
 
 export type NewsResponse = {

@@ -17,16 +17,7 @@ html.dark {
 }
 
 body {
-  background-image:
-    radial-gradient(circle at 8% 0%, rgb(49 94 251 / 0.07), transparent 26rem),
-    linear-gradient(rgb(17 19 21 / 0.035) 1px, transparent 1px);
-  background-size: auto, 100% 4.5rem;
-}
-
-.dark body {
-  background-image:
-    radial-gradient(circle at 8% 0%, rgb(75 130 255 / 0.1), transparent 28rem),
-    linear-gradient(rgb(255 255 255 / 0.025) 1px, transparent 1px);
+  text-rendering: optimizeLegibility;
 }
 
 button,

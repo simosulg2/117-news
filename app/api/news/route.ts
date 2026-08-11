@@ -1,80 +1,51 @@
 import { createHash } from "node:crypto";
 import Parser from "rss-parser";
 
-import type { FeedCategory, NewsItem, NewsResponse } from "@/lib/types";
+import type { FeedCategory, NewsItem, NewsResponse, NewsSource } from "@/lib/types";
 
 export const runtime = "nodejs";
 export const revalidate = 300;
 
-type MediaNode = {
-  $?: {
-    url?: string;
-    medium?: string;
-    type?: string;
-  };
-};
-
 type CustomItem = {
-  mediaContent?: MediaNode[];
-  mediaThumbnail?: MediaNode[];
   "content:encoded"?: string;
+  "content:encodedSnippet"?: string;
 };
 
-const FEEDS: ReadonlyArray<{ category: FeedCategory; url: string }> = [
-  { category: "Eesti", url: "https://www.err.ee/rss/eesti" },
-  { category: "Majandus", url: "https://www.err.ee/rss/majandus" },
-  { category: "Kultuur", url: "https://www.err.ee/rss/kultuur" },
-  { category: "Sport", url: "https://sport.err.ee/rss" },
-  { category: "English", url: "https://news.err.ee/rss" },
-  { category: "Viimased", url: "https://www.err.ee/rss" },
+type FeedDefinition = {
+  category: FeedCategory;
+  source: NewsSource;
+  url: string;
+  domain: "err.ee" | "geenius.ee" | "sirp.ee";
+};
+
+const FEEDS: ReadonlyArray<FeedDefinition> = [
+  { category: "Eesti", source: "ERR", url: "https://www.err.ee/rss/eesti", domain: "err.ee" },
+  { category: "Majandus", source: "ERR", url: "https://www.err.ee/rss/majandus", domain: "err.ee" },
+  { category: "Kultuur", source: "ERR", url: "https://www.err.ee/rss/kultuur", domain: "err.ee" },
+  { category: "Sport", source: "ERR", url: "https://sport.err.ee/rss", domain: "err.ee" },
+  { category: "Teadus", source: "Novaator", url: "https://novaator.err.ee/rss", domain: "err.ee" },
+  { category: "Arvamus", source: "ERR", url: "https://www.err.ee/rss/arvamus", domain: "err.ee" },
+  { category: "Tehnoloogia", source: "Geenius", url: "https://geenius.ee/feed/", domain: "geenius.ee" },
+  { category: "Kultuur/Ühiskond", source: "Sirp", url: "https://sirp.ee/feed/", domain: "sirp.ee" },
+  { category: "Uudised", source: "ERR", url: "https://www.err.ee/rss", domain: "err.ee" },
 ];
 
 const parser = new Parser<Record<string, never>, CustomItem>({
   customFields: {
-    item: [
-      ["media:content", "mediaContent", { keepArray: true }],
-      ["media:thumbnail", "mediaThumbnail", { keepArray: true }],
-      "content:encoded",
-    ],
+    item: ["content:encoded"],
   },
 });
 
-function asArray<T>(value: T | T[] | undefined): T[] {
-  if (!value) return [];
-  return Array.isArray(value) ? value : [value];
-}
-
-function normalizeUrl(value: string | undefined, httpsOnly = false): string | null {
+function normalizeUrl(value: string | undefined): string | null {
   if (!value) return null;
 
   try {
     const url = new URL(value.trim());
-    if (url.protocol !== "https:" && (!httpsOnly && url.protocol !== "http:")) return null;
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
     return url.toString();
   } catch {
     return null;
   }
-}
-
-function pickImage(item: Parser.Item & CustomItem): string | null {
-  const enclosure = normalizeUrl(item.enclosure?.url, true);
-  if (enclosure && (!item.enclosure?.type || item.enclosure.type.startsWith("image/"))) {
-    return enclosure;
-  }
-
-  const media = [
-    ...asArray(item.mediaThumbnail),
-    ...asArray(item.mediaContent),
-  ];
-
-  for (const node of media) {
-    const candidate = normalizeUrl(node?.$?.url, true);
-    if (candidate) return candidate;
-  }
-
-  const html = item["content:encoded"] ?? item.content ?? item.contentSnippet ?? "";
-  const match = html.match(/<img[^>]+src=["']([^"']+)["']/i);
-  return normalizeUrl(match?.[1], true);
 }
 
 function plainText(value: string | undefined): string {
@@ -88,9 +59,13 @@ function plainText(value: string | undefined): string {
     .replace(/&amp;/gi, "&")
     .replace(/&quot;/gi, '"')
     .replace(/&#39;|&apos;/gi, "'")
+    .replace(/&hellip;/gi, "…")
+    .replace(/&ndash;/gi, "–")
+    .replace(/&mdash;/gi, "—")
     .replace(/&lt;/gi, "<")
     .replace(/&gt;/gi, ">")
     .replace(/&#(\d+);/g, (_, code: string) => String.fromCharCode(Number(code)))
+    .replace(/&#x([\da-f]+);/gi, (_, code: string) => String.fromCharCode(Number.parseInt(code, 16)))
     .replace(/\s+/g, " ")
     .trim();
 }
@@ -102,12 +77,12 @@ function shorten(value: string, limit = 230): string {
   return `${shortened.slice(0, lastSpace > limit * 0.7 ? lastSpace : limit).trim()}…`;
 }
 
-function canonicalLink(value: string | undefined): string | null {
+function canonicalLink(value: string | undefined, domain: FeedDefinition["domain"]): string | null {
   const normalized = normalizeUrl(value);
   if (!normalized) return null;
 
   const url = new URL(normalized);
-  if (url.hostname !== "err.ee" && !url.hostname.endsWith(".err.ee")) return null;
+  if (url.hostname !== domain && !url.hostname.endsWith(`.${domain}`)) return null;
   url.hash = "";
   for (const key of [...url.searchParams.keys()]) {
     if (key.startsWith("utm_") || key === "ref") url.searchParams.delete(key);
@@ -122,22 +97,22 @@ async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsItem[]> {
       "User-Agent": "117.ee RSS reader (+https://117.ee)",
     },
     next: { revalidate },
-    signal: AbortSignal.timeout(8_000),
+    signal: AbortSignal.timeout(10_000),
   });
 
   if (!response.ok) {
-    throw new Error(`ERR feed returned ${response.status}`);
+    throw new Error(`Feed returned ${response.status}`);
   }
 
   const xml = await response.text();
-  if (xml.length > 2_000_000) {
-    throw new Error("ERR feed response was unexpectedly large");
+  if (xml.length > 5_000_000) {
+    throw new Error("Feed response was unexpectedly large");
   }
   const parsed = await parser.parseString(xml);
 
   return parsed.items.slice(0, 50).flatMap((raw) => {
     const item = raw as Parser.Item & CustomItem;
-    const link = canonicalLink(item.link ?? item.guid);
+    const link = canonicalLink(item.link ?? item.guid, feed.domain);
     const title = plainText(item.title);
     if (!link || !title) return [];
 
@@ -147,7 +122,10 @@ async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsItem[]> {
       ? null
       : parsedDate.toISOString();
 
-    const summarySource = item.contentSnippet ?? item.content ?? item["content:encoded"];
+    const summarySource = item.contentSnippet
+      ?? item["content:encodedSnippet"]
+      ?? item.content
+      ?? item["content:encoded"];
     const summary = shorten(plainText(summarySource));
 
     return [
@@ -158,7 +136,7 @@ async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsItem[]> {
         summary,
         publishedAt,
         category: feed.category,
-        imageUrl: pickImage(item),
+        source: feed.source,
       },
     ];
   });
@@ -187,7 +165,7 @@ export async function GET(): Promise<Response> {
       const bTime = b.publishedAt ? Date.parse(b.publishedAt) : 0;
       return bTime - aTime;
     })
-    .slice(0, 120);
+    .slice(0, 180);
 
   if (items.length === 0) {
     return Response.json(
