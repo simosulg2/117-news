@@ -354,7 +354,13 @@ export function NewsPortal() {
             <span>Eesti uudised</span>
           </div>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 tabular-nums">
-            <span aria-live="polite">{data ? `${numberFormatter.format(filteredItems.length)} uudist` : "— uudist"}</span>
+            <span aria-live="polite">
+              {data
+                ? data.sources.failed.length === 0 && category === "Kõik" && !deferredQuery.trim() && filteredItems.length === 117
+                  ? "117 värskeimat uudist"
+                  : `${numberFormatter.format(filteredItems.length)} uudist`
+                : "— uudist"}
+            </span>
             <span>Teema: {category}</span>
             <span>Uuendatud: {data ? relativeTime(data.updatedAt, now?.getTime()) : "—"}</span>
           </div>

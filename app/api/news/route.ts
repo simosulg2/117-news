@@ -22,6 +22,8 @@ const FEEDS: ReadonlyArray<FeedDefinition> = [
   { category: "Sport", url: "https://sport.err.ee/rss" },
 ];
 
+const MAX_NEWS_ITEMS = 117;
+
 const parser = new Parser<Record<string, never>, CustomItem>({
   customFields: {
     item: ["content:encoded"],
@@ -163,7 +165,7 @@ export async function GET(): Promise<Response> {
       const bTime = b.publishedAt ? Date.parse(b.publishedAt) : 0;
       return bTime - aTime;
     })
-    .slice(0, 120);
+    .slice(0, MAX_NEWS_ITEMS);
 
   if (items.length === 0) {
     return Response.json(
