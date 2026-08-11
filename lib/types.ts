@@ -7,9 +7,10 @@ export const CATEGORIES = [
 
 export type Category = (typeof CATEGORIES)[number];
 export type FeedCategory = Exclude<Category, "Kõik">;
-export type NewsSource = "ERR";
+export type NewsSource = "ERR" | "Postimees" | "Lõuna PM";
+export type FeedName = "ERR Eesti" | "ERR Majandus" | "ERR Sport" | "Postimees" | "Lõuna-Eesti Postimees";
 
-export type NewsItem = {
+export type NewsArticle = {
   id: string;
   title: string;
   link: string;
@@ -19,12 +20,16 @@ export type NewsItem = {
   source: NewsSource;
 };
 
+export type NewsItem = NewsArticle & {
+  related: NewsArticle[];
+};
+
 export type NewsResponse = {
   items: NewsItem[];
   updatedAt: string;
   sources: {
     loaded: number;
     total: number;
-    failed: FeedCategory[];
+    failed: FeedName[];
   };
 };

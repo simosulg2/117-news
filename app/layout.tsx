@@ -6,7 +6,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "117.ee",
-  description: "ERR-i Eesti, majanduse ja spordi uudised selges ja kiires vaates.",
+  description: "ERR-i ja Postimehe Eesti, majanduse ning spordi uudised selges ja kiires vaates.",
 };
 
 export const viewport: Viewport = {

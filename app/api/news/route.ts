@@ -1,7 +1,14 @@
 import { createHash } from "node:crypto";
 import Parser from "rss-parser";
 
-import type { FeedCategory, NewsItem, NewsResponse } from "@/lib/types";
+import { groupNewsItems } from "@/lib/group-stories";
+import type {
+  FeedCategory,
+  FeedName,
+  NewsArticle,
+  NewsResponse,
+  NewsSource,
+} from "@/lib/types";
 
 export const runtime = "nodejs";
 export const revalidate = 300;
@@ -12,14 +19,49 @@ type CustomItem = {
 };
 
 type FeedDefinition = {
-  category: FeedCategory;
+  name: FeedName;
+  category: FeedCategory | null;
+  source: NewsSource;
   url: string;
+  allowedRoot: "err.ee" | "postimees.ee";
 };
 
 const FEEDS: ReadonlyArray<FeedDefinition> = [
-  { category: "Eesti", url: "https://www.err.ee/rss/eesti" },
-  { category: "Majandus", url: "https://www.err.ee/rss/majandus" },
-  { category: "Sport", url: "https://sport.err.ee/rss" },
+  {
+    name: "ERR Eesti",
+    category: "Eesti",
+    source: "ERR",
+    url: "https://www.err.ee/rss/eesti",
+    allowedRoot: "err.ee",
+  },
+  {
+    name: "ERR Majandus",
+    category: "Majandus",
+    source: "ERR",
+    url: "https://www.err.ee/rss/majandus",
+    allowedRoot: "err.ee",
+  },
+  {
+    name: "ERR Sport",
+    category: "Sport",
+    source: "ERR",
+    url: "https://sport.err.ee/rss",
+    allowedRoot: "err.ee",
+  },
+  {
+    name: "Lõuna-Eesti Postimees",
+    category: "Eesti",
+    source: "Lõuna PM",
+    url: "https://lounapostimees.postimees.ee/rss/",
+    allowedRoot: "postimees.ee",
+  },
+  {
+    name: "Postimees",
+    category: null,
+    source: "Postimees",
+    url: "https://postimees.ee/rss/",
+    allowedRoot: "postimees.ee",
+  },
 ];
 
 const MAX_NEWS_ITEMS = 117;
@@ -71,20 +113,50 @@ function shorten(value: string, limit = 230): string {
   return `${shortened.slice(0, lastSpace > limit * 0.7 ? lastSpace : limit).trim()}…`;
 }
 
-function canonicalLink(value: string | undefined): string | null {
+function canonicalLink(value: string | undefined, allowedRoot: FeedDefinition["allowedRoot"]): string | null {
   const normalized = normalizeUrl(value);
   if (!normalized) return null;
 
   const url = new URL(normalized);
-  if (url.hostname !== "err.ee" && !url.hostname.endsWith(".err.ee")) return null;
+  if (url.hostname !== allowedRoot && !url.hostname.endsWith(`.${allowedRoot}`)) return null;
   url.hash = "";
   for (const key of [...url.searchParams.keys()]) {
-    if (key.startsWith("utm_") || key === "ref") url.searchParams.delete(key);
+    const normalizedKey = key.toLocaleLowerCase("en-US");
+    if (
+      normalizedKey.startsWith("utm_")
+      || normalizedKey === "ref"
+      || normalizedKey === "fbclid"
+      || normalizedKey === "gclid"
+    ) {
+      url.searchParams.delete(key);
+    }
   }
   return url.toString();
 }
 
-async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsItem[]> {
+function normalizedCategoryText(value: string): string {
+  return value
+    .toLocaleLowerCase("et-EE")
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "");
+}
+
+function resolveCategory(feed: FeedDefinition, item: Parser.Item, link: string): FeedCategory {
+  if (feed.category) return feed.category;
+
+  const categoryText = normalizedCategoryText((item.categories ?? []).join(" "));
+  const articleUrl = new URL(link);
+  const linkText = normalizedCategoryText(
+    `${articleUrl.hostname} ${articleUrl.pathname.replaceAll("-", " ")}`,
+  );
+  const searchable = `${categoryText} ${linkText}`;
+
+  if (/\b(sport|jalgpall|korvpall|tennis|ralli|motosport)\b/.test(searchable)) return "Sport";
+  if (/\b(majandus|raha|investor|ettevotlus|business)\b/.test(searchable)) return "Majandus";
+  return "Eesti";
+}
+
+async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsArticle[]> {
   const response = await fetch(feed.url, {
     headers: {
       Accept: "application/rss+xml, application/xml, text/xml",
@@ -99,14 +171,14 @@ async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsItem[]> {
   }
 
   const xml = await response.text();
-  if (xml.length > 2_000_000) {
+  if (xml.length > 5_000_000) {
     throw new Error("Feed response was unexpectedly large");
   }
   const parsed = await parser.parseString(xml);
 
   const items = parsed.items.slice(0, 50).flatMap((raw) => {
     const item = raw as Parser.Item & CustomItem;
-    const link = canonicalLink(item.link ?? item.guid);
+    const link = canonicalLink(item.link ?? item.guid, feed.allowedRoot);
     const title = plainText(item.title);
     if (!link || !title) return [];
 
@@ -129,8 +201,8 @@ async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsItem[]> {
         link,
         summary,
         publishedAt,
-        category: feed.category,
-        source: "ERR" as const,
+        category: resolveCategory(feed, item, link),
+        source: feed.source,
       },
     ];
   });
@@ -144,13 +216,13 @@ async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsItem[]> {
 
 export async function GET(): Promise<Response> {
   const settled = await Promise.allSettled(FEEDS.map(loadFeed));
-  const failed: FeedCategory[] = [];
-  const byLink = new Map<string, NewsItem>();
+  const failed: FeedName[] = [];
+  const byLink = new Map<string, NewsArticle>();
 
   settled.forEach((result, index) => {
     if (result.status === "rejected") {
-      failed.push(FEEDS[index].category);
-      console.error(`Failed to load ${FEEDS[index].category} feed`, result.reason);
+      failed.push(FEEDS[index].name);
+      console.error(`Failed to load ${FEEDS[index].name} feed`, result.reason);
       return;
     }
 
@@ -159,13 +231,8 @@ export async function GET(): Promise<Response> {
     }
   });
 
-  const items = [...byLink.values()]
-    .sort((a, b) => {
-      const aTime = a.publishedAt ? Date.parse(a.publishedAt) : 0;
-      const bTime = b.publishedAt ? Date.parse(b.publishedAt) : 0;
-      return bTime - aTime;
-    })
-    .slice(0, MAX_NEWS_ITEMS);
+  const generatedAt = new Date();
+  const items = groupNewsItems([...byLink.values()], generatedAt).slice(0, MAX_NEWS_ITEMS);
 
   if (items.length === 0) {
     return Response.json(
@@ -176,7 +243,7 @@ export async function GET(): Promise<Response> {
 
   const payload: NewsResponse = {
     items,
-    updatedAt: new Date().toISOString(),
+    updatedAt: generatedAt.toISOString(),
     sources: {
       loaded: FEEDS.length - failed.length,
       total: FEEDS.length,
