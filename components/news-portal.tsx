@@ -126,15 +126,13 @@ type ArticleRowProps = {
   isRead: (item: NewsArticle) => boolean;
   onOpen: (item: NewsArticle) => void;
   registerHeadline: (id: string, node: HTMLAnchorElement | null) => void;
-  readStateLoaded: boolean;
 };
 
-function ArticleRow({ item, nowMs, isRead, onOpen, registerHeadline, readStateLoaded }: ArticleRowProps) {
+function ArticleRow({ item, nowMs, isRead, onOpen, registerHeadline }: ArticleRowProps) {
   const [relatedOpen, setRelatedOpen] = useState(false);
   const relatedPanelId = useId();
   const related = relatedItems(item);
   const itemIsRead = isRead(item);
-  const showUnread = readStateLoaded && !itemIsRead;
   const relatedButtonText = `+${related.length} seotud ${related.length === 1 ? "allikas" : "allikat"}`;
 
   return (
@@ -202,11 +200,6 @@ function ArticleRow({ item, nowMs, isRead, onOpen, registerHeadline, readStateLo
 
         <div className="min-w-0">
           <div className="flex items-start gap-2">
-            {showUnread && (
-              <span className="mt-0.5 shrink-0 border border-[#4f8cff] px-1 py-px text-[9px] font-extrabold leading-4 tracking-[0.08em] text-[#245fae] dark:text-[#7db0ff]">
-                UUS<span className="sr-only">, lugemata</span>
-              </span>
-            )}
             <h2 className="min-w-0 text-base font-bold leading-[1.35] md:text-[17px]">
               <a
                 ref={(node) => registerHeadline(item.id, node)}
@@ -271,7 +264,6 @@ function ArticleRow({ item, nowMs, isRead, onOpen, registerHeadline, readStateLo
             <ul className="divide-y divide-[#bdcad3] dark:divide-[#294154]">
               {related.map((relatedItem) => {
                 const relatedIsRead = isRead(relatedItem);
-                const relatedShowUnread = readStateLoaded && !relatedIsRead;
 
                 return (
                   <li
@@ -293,11 +285,6 @@ function ArticleRow({ item, nowMs, isRead, onOpen, registerHeadline, readStateLo
                       <span className="text-[11px] text-[#5a6d79] dark:text-[#708390]">—</span>
                     )}
                     <div className="flex min-w-0 items-start gap-2">
-                      {relatedShowUnread && (
-                        <span className="shrink-0 border border-[#4f8cff] px-1 py-px text-[9px] font-extrabold leading-4 tracking-[0.08em] text-[#245fae] dark:text-[#7db0ff]">
-                          UUS<span className="sr-only">, lugemata</span>
-                        </span>
-                      )}
                       <a
                         href={relatedItem.link}
                         target="_blank"
@@ -722,7 +709,6 @@ export function NewsPortal() {
                   isRead={isItemRead}
                   onOpen={markItemRead}
                   registerHeadline={registerHeadline}
-                  readStateLoaded={readStateLoaded}
                 />
               ))}
             </ul>

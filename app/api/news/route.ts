@@ -59,12 +59,15 @@ const FEEDS: ReadonlyArray<FeedDefinition> = [
     name: "Postimees",
     category: null,
     source: "Postimees",
-    url: "https://postimees.ee/rss/",
+    url: "https://www.postimees.ee/rss/",
     allowedRoot: "postimees.ee",
   },
 ];
 
 const MAX_NEWS_ITEMS = 117;
+const MAX_FEED_BYTES = 5_000_000;
+const MAX_FEED_REDIRECTS = 3;
+const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
 
 const parser = new Parser<Record<string, never>, CustomItem>({
   customFields: {
@@ -72,11 +75,11 @@ const parser = new Parser<Record<string, never>, CustomItem>({
   },
 });
 
-function normalizeUrl(value: string | undefined): string | null {
+function normalizeUrl(value: string | undefined, baseUrl?: string): string | null {
   if (!value) return null;
 
   try {
-    const url = new URL(value.trim());
+    const url = baseUrl ? new URL(value.trim(), baseUrl) : new URL(value.trim());
     if (url.protocol !== "https:" && url.protocol !== "http:") return null;
     return url.toString();
   } catch {
@@ -113,8 +116,12 @@ function shorten(value: string, limit = 230): string {
   return `${shortened.slice(0, lastSpace > limit * 0.7 ? lastSpace : limit).trim()}…`;
 }
 
-function canonicalLink(value: string | undefined, allowedRoot: FeedDefinition["allowedRoot"]): string | null {
-  const normalized = normalizeUrl(value);
+function canonicalLink(
+  value: string | undefined,
+  allowedRoot: FeedDefinition["allowedRoot"],
+  baseUrl: string,
+): string | null {
+  const normalized = normalizeUrl(value, baseUrl);
   if (!normalized) return null;
 
   const url = new URL(normalized);
@@ -132,6 +139,186 @@ function canonicalLink(value: string | undefined, allowedRoot: FeedDefinition["a
     }
   }
   return url.toString();
+}
+
+function allowedFeedRequestUrl(
+  value: string,
+  allowedRoot: FeedDefinition["allowedRoot"],
+  baseUrl?: string,
+): URL | null {
+  try {
+    const url = baseUrl ? new URL(value, baseUrl) : new URL(value);
+    const allowedHost = url.hostname === allowedRoot || url.hostname.endsWith(`.${allowedRoot}`);
+    const standardHttpsPort = url.port === "";
+    const hasNoCredentials = url.username === "" && url.password === "";
+    return url.protocol === "https:" && standardHttpsPort && hasNoCredentials && allowedHost
+      ? url
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function safeLogUrl(value: string): string {
+  try {
+    const url = new URL(value);
+    url.username = "";
+    url.password = "";
+    url.search = "";
+    url.hash = "";
+    return url.toString();
+  } catch {
+    return "invalid-url";
+  }
+}
+
+function safeDiagnosticText(value: string, limit = 180): string {
+  return plainText(value)
+    .replace(
+      /\b(token|secret|password|authorization|cookie|api[-_]?key)\s*[:=]\s*\S+/gi,
+      "$1=[redacted]",
+    )
+    .slice(0, limit);
+}
+
+function responseDetails(response: Response): string {
+  const statusText = safeDiagnosticText(response.statusText || "unknown", 60);
+  const contentType = safeDiagnosticText(response.headers.get("content-type") ?? "unknown", 100);
+  const server = safeDiagnosticText(response.headers.get("server") ?? "unknown", 60);
+  const requestId = safeDiagnosticText(response.headers.get("cf-ray") ?? "unknown", 80);
+  return [
+    `status=${response.status} ${statusText}`,
+    `finalUrl=${safeLogUrl(response.url)}`,
+    `redirected=${response.redirected}`,
+    `contentType=${contentType}`,
+    `server=${server}`,
+    `requestId=${requestId}`,
+  ].join("; ");
+}
+
+function looksLikeFeedXml(value: string): boolean {
+  const prefix = value.replace(/^\uFEFF/, "").trimStart().slice(0, 2_048);
+  return /<(?:rss|feed|rdf:RDF)\b/i.test(prefix);
+}
+
+async function discardBody(response: Response): Promise<void> {
+  if (!response.body) return;
+  try {
+    await response.body.cancel();
+  } catch {
+    // The redirect response is no longer needed; cancellation is best-effort.
+  }
+}
+
+async function fetchFeedResponse(feed: FeedDefinition, headers: HeadersInit): Promise<Response> {
+  const signal = AbortSignal.timeout(15_000);
+  let currentUrl = allowedFeedRequestUrl(feed.url, feed.allowedRoot);
+  if (!currentUrl) throw new Error("Configured feed URL is outside the approved HTTPS host");
+
+  for (let redirectCount = 0; redirectCount <= MAX_FEED_REDIRECTS; redirectCount += 1) {
+    const response = await fetch(currentUrl, {
+      headers,
+      next: { revalidate },
+      redirect: "manual",
+      signal,
+    });
+
+    if (!REDIRECT_STATUSES.has(response.status)) return response;
+
+    const location = response.headers.get("location");
+    if (!location) {
+      await discardBody(response);
+      throw new Error(`Feed redirect had no destination (${responseDetails(response)})`);
+    }
+    if (redirectCount === MAX_FEED_REDIRECTS) {
+      await discardBody(response);
+      throw new Error(`Feed exceeded ${MAX_FEED_REDIRECTS} redirects (${responseDetails(response)})`);
+    }
+
+    const nextUrl = allowedFeedRequestUrl(location, feed.allowedRoot, currentUrl.toString());
+    if (!nextUrl) {
+      await discardBody(response);
+      throw new Error(`Feed redirect left the approved HTTPS host (${responseDetails(response)})`);
+    }
+
+    await discardBody(response);
+    currentUrl = nextUrl;
+  }
+
+  throw new Error("Feed redirect handling ended unexpectedly");
+}
+
+async function readBodyPrefix(response: Response, maxBytes = 2_048): Promise<string> {
+  if (!response.body) return "";
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let remaining = maxBytes;
+  let text = "";
+
+  try {
+    while (remaining > 0) {
+      const { done, value } = await reader.read();
+      if (done) {
+        text += decoder.decode();
+        return text;
+      }
+
+      const chunk = value.subarray(0, remaining);
+      text += decoder.decode(chunk, { stream: true });
+      remaining -= chunk.byteLength;
+
+      if (chunk.byteLength < value.byteLength) break;
+    }
+
+    await reader.cancel();
+    text += decoder.decode();
+    return text;
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+async function readFeedBody(response: Response): Promise<{ bytes: number; text: string }> {
+  const declaredLength = response.headers.get("content-length")?.trim();
+  if (declaredLength && /^\d+$/.test(declaredLength)) {
+    const declaredBytes = Number(declaredLength);
+    if (Number.isFinite(declaredBytes) && declaredBytes > MAX_FEED_BYTES) {
+      await discardBody(response);
+      throw new Error(
+        `Feed response was unexpectedly large (${responseDetails(response)}; bytes=${declaredBytes})`,
+      );
+    }
+  }
+
+  if (!response.body) return { bytes: 0, text: "" };
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let bytes = 0;
+  let text = "";
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      bytes += value.byteLength;
+      if (bytes > MAX_FEED_BYTES) {
+        await reader.cancel();
+        throw new Error(
+          `Feed response was unexpectedly large (${responseDetails(response)}; bytes>${MAX_FEED_BYTES})`,
+        );
+      }
+
+      text += decoder.decode(value, { stream: true });
+    }
+
+    text += decoder.decode();
+    return { bytes, text };
+  } finally {
+    reader.releaseLock();
+  }
 }
 
 function normalizedCategoryText(value: string): string {
@@ -157,29 +344,54 @@ function resolveCategory(feed: FeedDefinition, item: Parser.Item, link: string):
 }
 
 async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsArticle[]> {
-  const response = await fetch(feed.url, {
-    headers: {
-      Accept: "application/rss+xml, application/xml, text/xml",
-      "User-Agent": "117.ee RSS reader (+https://117.ee)",
-    },
-    next: { revalidate },
-    signal: AbortSignal.timeout(10_000),
-  });
+  const isPostimees = feed.allowedRoot === "postimees.ee";
+  const headers: HeadersInit = {
+    Accept: isPostimees
+      ? "application/rss+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.5"
+      : "application/rss+xml, application/xml, text/xml",
+    ...(isPostimees
+      ? {
+          "Accept-Language": "et-EE,et;q=0.9,en;q=0.6",
+          "User-Agent": "Mozilla/5.0 (compatible; 117.ee RSS reader/1.0; +https://117.ee)",
+        }
+      : { "User-Agent": "117.ee RSS reader (+https://117.ee)" }),
+  };
+  const response = await fetchFeedResponse(feed, headers);
 
   if (!response.ok) {
-    throw new Error(`Feed returned ${response.status}`);
+    const bodyPrefix = safeDiagnosticText(await readBodyPrefix(response)) || "empty body";
+    throw new Error(`Feed request failed (${responseDetails(response)}; bodyPrefix=${bodyPrefix})`);
   }
 
-  const xml = await response.text();
-  if (xml.length > 5_000_000) {
-    throw new Error("Feed response was unexpectedly large");
+  const { bytes, text: xml } = await readFeedBody(response);
+  if (!looksLikeFeedXml(xml)) {
+    const bodyPrefix = safeDiagnosticText(xml) || "empty body";
+    throw new Error(
+      `Feed response was not RSS/Atom XML (${responseDetails(response)}; bytes=${bytes}; bodyPrefix=${bodyPrefix})`,
+    );
   }
-  const parsed = await parser.parseString(xml);
 
-  const items = parsed.items.slice(0, 50).flatMap((raw) => {
+  let parsed: Awaited<ReturnType<typeof parser.parseString>>;
+  try {
+    parsed = await parser.parseString(xml);
+  } catch (error) {
+    const reason = safeDiagnosticText(error instanceof Error ? error.message : String(error));
+    throw new Error(
+      `Feed XML parsing failed (${responseDetails(response)}; bytes=${bytes}; reason=${reason || "unknown"})`,
+    );
+  }
+
+  let missingLinkCount = 0;
+  let missingTitleCount = 0;
+  const inspectedItems = parsed.items.slice(0, 50);
+  const items = inspectedItems.flatMap((raw) => {
     const item = raw as Parser.Item & CustomItem;
-    const link = canonicalLink(item.link ?? item.guid, feed.allowedRoot);
+    const link = [item.link, item.guid]
+      .map((candidate) => canonicalLink(candidate, feed.allowedRoot, response.url))
+      .find((candidate): candidate is string => candidate !== null) ?? null;
     const title = plainText(item.title);
+    if (!link) missingLinkCount += 1;
+    if (!title) missingTitleCount += 1;
     if (!link || !title) return [];
 
     const date = item.isoDate ?? item.pubDate;
@@ -208,7 +420,9 @@ async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsArticle[]> {
   });
 
   if (items.length === 0) {
-    throw new Error("Feed contained no valid items");
+    throw new Error(
+      `Feed contained no valid items (${responseDetails(response)}; parsedItems=${parsed.items.length}; inspectedItems=${inspectedItems.length}; missingLinks=${missingLinkCount}; missingTitles=${missingTitleCount})`,
+    );
   }
 
   return items;
