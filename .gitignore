@@ -1,8 +1,9 @@
 node_modules/
 .next/
 out/
+dist/
+*.tsbuildinfo
 .env*
 !.env.example
-*.log
 .DS_Store
-117-ee-news.zip
+npm-debug.log*
