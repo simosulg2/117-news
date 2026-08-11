@@ -11,8 +11,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   colorScheme: "light dark",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f1f0ea" },
-    { media: "(prefers-color-scheme: dark)", color: "#070a0d" },
+    { media: "(prefers-color-scheme: light)", color: "#edf3f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#07131f" },
   ],
 };
 
@@ -30,7 +30,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className="min-h-screen bg-paper font-sans text-ink antialiased selection:bg-[#f4a62a] selection:text-black dark:bg-[#070a0d] dark:text-[#e8edf2]">
+      <body className="min-h-screen bg-paper font-sans text-ink antialiased selection:bg-[#4f8cff] selection:text-white dark:bg-[#07131f] dark:text-[#e8f0f6]">
         {children}
       </body>
     </html>

@@ -62,11 +62,11 @@ function normalizeSearch(value: string): string {
 function categoryColor(category: NewsItem["category"]): string {
   switch (category) {
     case "Eesti":
-      return "text-[#2f83d1] dark:text-[#62b2ff]";
+      return "text-[#2268bd] dark:text-[#6eb1ff]";
     case "Majandus":
-      return "text-[#087f4d] dark:text-[#46d990]";
+      return "text-[#087663] dark:text-[#55d6b2]";
     case "Sport":
-      return "text-[#b45400] dark:text-[#ffad42]";
+      return "text-[#6f56b3] dark:text-[#b6a3ff]";
   }
 }
 
@@ -86,19 +86,19 @@ function ArticleRow({ item, nowMs }: { item: NewsItem; nowMs: number }) {
           href={item.link}
           target="_blank"
           rel="noopener noreferrer external"
-          className="terminal-row group relative grid min-h-[5.25rem] grid-cols-1 gap-1.5 border-b border-[#c7c7c0] px-2 py-3 outline-none transition-colors hover:bg-[#f4a62a]/[0.07] focus-visible:bg-[#f4a62a]/[0.09] focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal dark:border-[#282c30] md:grid-cols-[7.5rem_7.5rem_minmax(0,1fr)_5rem] md:gap-x-4 md:py-3"
+          className="terminal-row group relative grid min-h-[5.25rem] grid-cols-1 gap-1.5 border-b border-[#bccbd6] px-2 py-3 outline-none transition-colors hover:bg-[#4f8cff]/[0.07] focus-visible:bg-[#4f8cff]/[0.1] focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal dark:border-[#24394a] md:grid-cols-[7.5rem_7.5rem_minmax(0,1fr)_5rem] md:gap-x-4 md:py-3"
           aria-label={`${item.title} — ERR, avaneb uuel vahelehel`}
         >
           <div className="flex items-center gap-3 md:hidden">
             <CategoryCode category={item.category} />
-            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-[#656560] dark:text-[#8e959c]">
+            <span className="font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-[#526878] dark:text-[#8da1b0]">
               {item.source}
             </span>
             {item.publishedAt && (
               <time
                 dateTime={item.publishedAt}
                 title={exactDateFormatter.format(new Date(item.publishedAt))}
-                className="font-mono text-[10px] tabular-nums text-[#656560] dark:text-[#8e959c]"
+                className="font-mono text-[10px] tabular-nums text-[#526878] dark:text-[#8da1b0]"
               >
                 {formatItemTime(item.publishedAt)} / {relativeTime(item.publishedAt, nowMs)}
               </time>
@@ -109,12 +109,12 @@ function ArticleRow({ item, nowMs }: { item: NewsItem; nowMs: number }) {
             <time
               dateTime={item.publishedAt}
               title={exactDateFormatter.format(new Date(item.publishedAt))}
-              className="hidden whitespace-nowrap font-mono text-[10px] tabular-nums text-[#595954] dark:text-[#a7adb2] md:block"
+              className="hidden whitespace-nowrap font-mono text-[10px] tabular-nums text-[#495e6d] dark:text-[#a9b7c2] md:block"
             >
-              {formatItemTime(item.publishedAt)} <span className="text-[#898984] dark:text-[#656c72]">{relativeTime(item.publishedAt, nowMs)}</span>
+              {formatItemTime(item.publishedAt)} <span className="text-[#738795] dark:text-[#687f91]">{relativeTime(item.publishedAt, nowMs)}</span>
             </time>
           ) : (
-            <span className="hidden font-mono text-[10px] text-[#898984] md:block">—</span>
+            <span className="hidden font-mono text-[10px] text-[#738795] md:block">—</span>
           )}
 
           <div className="hidden md:block">
@@ -122,17 +122,17 @@ function ArticleRow({ item, nowMs }: { item: NewsItem; nowMs: number }) {
           </div>
 
           <div className="min-w-0">
-            <h2 className="text-[15px] font-bold leading-[1.25] tracking-[-0.012em] text-[#111214] transition-colors group-hover:text-[#8a4700] dark:text-[#f0f2f3] dark:group-hover:text-[#ffad42] sm:text-base">
+            <h2 className="text-[15px] font-bold leading-[1.25] tracking-[-0.012em] text-[#101a24] transition-colors group-hover:text-[#245fae] dark:text-[#edf4f8] dark:group-hover:text-[#7db0ff] sm:text-base">
               {item.title}
             </h2>
             {item.summary && (
-              <p className="mt-1 line-clamp-2 max-w-5xl text-xs leading-[1.45] text-[#5c5c57] dark:text-[#9299a0] md:line-clamp-1">
+              <p className="mt-1 line-clamp-2 max-w-5xl text-xs leading-[1.45] text-[#526878] dark:text-[#8da1b0] md:line-clamp-1">
                 {item.summary}
               </p>
             )}
           </div>
 
-          <span className="hidden font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-[#595954] dark:text-[#a7adb2] md:block">
+          <span className="hidden font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-[#495e6d] dark:text-[#a9b7c2] md:block">
             {item.source}
           </span>
 
@@ -148,12 +148,12 @@ function Skeleton({ className = "" }: { className?: string }) {
 
 function LoadingState() {
   return (
-    <div role="status" aria-label="Uudiste laadimine" className="border-t border-[#aaa9a1] dark:border-[#3a3f44]">
+    <div role="status" aria-label="Uudiste laadimine" className="border-t border-[#9fb2c0] dark:border-[#35536a]">
       <span className="sr-only">Laadin värskeid uudiseid…</span>
       {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
         <div
           key={item}
-          className="grid min-h-[5.25rem] grid-cols-1 gap-2 border-b border-[#c7c7c0] px-2 py-3 dark:border-[#282c30] md:grid-cols-[7.5rem_7.5rem_minmax(0,1fr)_5rem] md:gap-x-4"
+          className="grid min-h-[5.25rem] grid-cols-1 gap-2 border-b border-[#bccbd6] px-2 py-3 dark:border-[#24394a] md:grid-cols-[7.5rem_7.5rem_minmax(0,1fr)_5rem] md:gap-x-4"
         >
           <Skeleton className="h-3 w-24" />
           <Skeleton className="hidden h-3 w-16 md:block" />
@@ -170,17 +170,17 @@ function LoadingState() {
 
 function EmptyState({ hasQuery, onReset }: { hasQuery: boolean; onReset: () => void }) {
   return (
-    <div className="flex min-h-24 flex-col justify-center gap-3 border-y border-[#aaa9a1] px-3 py-4 font-mono dark:border-[#3a3f44] sm:flex-row sm:items-center sm:justify-between">
+    <div className="flex min-h-24 flex-col justify-center gap-3 border-y border-[#9fb2c0] px-3 py-4 font-mono dark:border-[#35536a] sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <p className="text-[11px] font-bold tracking-[0.14em] text-signal">[ 0 VASTET ] <span className="ml-2 text-[#222522] dark:text-[#e0e3e5]">TULEMUSI EI LEITUD</span></p>
-        <p className="mt-1.5 text-xs text-[#62625d] dark:text-[#9299a0]">
+        <p className="text-[11px] font-bold tracking-[0.14em] text-signal">[ 0 VASTET ] <span className="ml-2 text-[#192630] dark:text-[#e5eef4]">TULEMUSI EI LEITUD</span></p>
+        <p className="mt-1.5 text-xs text-[#526878] dark:text-[#8da1b0]">
           {hasQuery ? "Muuda päringut või lähtesta filtrid." : "Valitud sektoris pole praegu uudiseid."}
         </p>
       </div>
       <button
         type="button"
         onClick={onReset}
-        className="min-h-10 w-fit border border-[#282b2e] bg-[#121416] px-4 text-[11px] font-bold uppercase tracking-[0.1em] text-white outline-none hover:border-signal hover:text-[#f4a62a] focus-visible:ring-2 focus-visible:ring-signal dark:border-[#5b6065]"
+        className="min-h-10 w-fit border border-[#29485f] bg-[#0b1b29] px-4 text-[11px] font-bold uppercase tracking-[0.1em] text-white outline-none hover:border-signal hover:text-[#7db0ff] focus-visible:ring-2 focus-visible:ring-signal dark:border-[#4b6a80]"
       >
         Tühjenda filtrid
       </button>
@@ -275,24 +275,25 @@ export function NewsPortal() {
         Liigu uudisvoogu
       </a>
 
-      <header className="sticky top-0 z-50 border-b border-[#1a1c1e] bg-[#0b0c0d] text-[#e8eaeb] shadow-[0_1px_0_#f4a62a]">
+      <header className="sticky top-0 z-50 border-b border-[#172b3b] bg-[#08131f] text-[#e8f0f6] shadow-[0_1px_0_#4f8cff]">
         <div className="mx-auto max-w-[96rem] px-3 sm:px-5 lg:px-7">
-          <div className="flex min-h-11 items-center justify-between gap-4 border-b border-[#292c2f]">
-            <a href="#" className="flex items-baseline gap-2 font-mono outline-none focus-visible:ring-1 focus-visible:ring-signal" aria-label="117.ee avaleht">
-              <span className="bg-signal px-1.5 py-0.5 text-lg font-black leading-none tracking-[-0.08em] text-black">117</span>
-              <span className="text-sm font-bold tracking-[-0.03em]">.EE</span>
-              <span className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-[#8e959c] sm:inline">Uudisvoog</span>
+          <div className="flex min-h-12 items-center justify-between gap-4 border-b border-[#263d50]">
+            <a href="#" className="flex items-center gap-2.5 font-mono outline-none focus-visible:ring-1 focus-visible:ring-signal" aria-label="117.ee avaleht">
+              <span className="relative block size-9 shrink-0 overflow-hidden bg-black" aria-hidden="true">
+                <img src="/117.png" alt="" className="size-full max-w-none scale-[1.9] object-cover" />
+              </span>
+              <span className="hidden text-[10px] font-medium uppercase tracking-[0.16em] text-[#8da1b0] sm:inline">Uudisvoog</span>
             </a>
 
             <div className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.08em]">
-              <span aria-live="polite" className="hidden text-[#8e959c] sm:inline">
-                Vood <b className={data && data.sources.loaded === data.sources.total ? "text-[#47d78b]" : "text-[#f4a62a]"}>{data ? `${data.sources.loaded}/${data.sources.total}` : "—/3"}</b>
-                <span className="ml-3 text-[#697077]">{now ? `${deskClockFormatter.format(now)} EE` : "--:--:-- EE"}</span>
+              <span aria-live="polite" className="hidden text-[#8da1b0] sm:inline">
+                Vood <b className={data && data.sources.loaded === data.sources.total ? "text-[#55d6b2]" : "text-[#b6a3ff]"}>{data ? `${data.sources.loaded}/${data.sources.total}` : "—/3"}</b>
+                <span className="ml-3 text-[#687f91]">{now ? `${deskClockFormatter.format(now)} EE` : "--:--:-- EE"}</span>
               </span>
               <button
                 type="button"
                 onClick={toggleTheme}
-                className="min-h-8 border border-[#4a4f54] px-2.5 font-bold text-[#c9cdd0] outline-none hover:border-signal hover:text-[#f4a62a] focus-visible:ring-1 focus-visible:ring-signal"
+                className="min-h-8 border border-[#3b5870] px-2.5 font-bold text-[#c7d5df] outline-none hover:border-signal hover:text-[#7db0ff] focus-visible:ring-1 focus-visible:ring-signal"
                 aria-label={theme === "dark" ? "Kasuta heledat kujundust" : "Kasuta tumedat kujundust"}
               >
                 {theme === "dark" ? "Hele" : "Tume"}
@@ -300,8 +301,8 @@ export function NewsPortal() {
             </div>
           </div>
 
-          <div className="flex flex-col border-x border-[#292c2f] sm:flex-row sm:items-stretch">
-            <nav aria-label="Uudiste kategooriad" className="no-scrollbar flex overflow-x-auto border-b border-[#292c2f] sm:border-b-0 sm:border-r">
+          <div className="flex flex-col border-x border-[#263d50] sm:flex-row sm:items-stretch">
+            <nav aria-label="Uudiste kategooriad" className="no-scrollbar flex overflow-x-auto border-b border-[#263d50] sm:border-b-0 sm:border-r">
               {CATEGORIES.map((item) => {
                 const active = item === category;
                 return (
@@ -310,8 +311,8 @@ export function NewsPortal() {
                     type="button"
                     onClick={() => setCategory(item)}
                     aria-pressed={active}
-                    className={`min-h-10 shrink-0 border-r border-[#292c2f] px-4 font-mono text-[11px] font-bold uppercase tracking-[0.08em] outline-none transition-colors last:border-r-0 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal ${
-                      active ? "bg-signal text-black" : "text-[#aeb3b7] hover:bg-[#1a1c1e] hover:text-white"
+                    className={`min-h-10 shrink-0 border-r border-[#263d50] px-4 font-mono text-[11px] font-bold uppercase tracking-[0.08em] outline-none transition-colors last:border-r-0 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal ${
+                      active ? "bg-signal text-white" : "text-[#a9b7c2] hover:bg-[#102538] hover:text-white"
                     }`}
                   >
                     {item}
@@ -320,27 +321,27 @@ export function NewsPortal() {
               })}
             </nav>
 
-            <label className="relative flex min-h-10 flex-1 items-stretch bg-[#111315] sm:min-w-[18rem]">
-              <span className="flex items-center border-r border-[#292c2f] px-3 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-signal">Otsing</span>
+            <label className="relative flex min-h-10 flex-1 items-stretch bg-[#0b1b29] sm:min-w-[18rem]">
+              <span className="flex items-center border-r border-[#263d50] px-3 font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-signal">Otsing</span>
               <input
                 ref={searchRef}
                 type="search"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 placeholder="Pealkiri või märksõna"
-                className="min-w-0 flex-1 bg-transparent px-3 font-mono text-xs text-white outline-none placeholder:text-[#62686d] focus:bg-black/30"
+                className="min-w-0 flex-1 bg-transparent px-3 font-mono text-xs text-white outline-none placeholder:text-[#60788a] focus:bg-[#06101a]"
               />
               {query ? (
                 <button
                   type="button"
                   onClick={() => setQuery("")}
-                  className="min-w-11 border-l border-[#292c2f] px-2 font-mono text-[10px] font-bold uppercase text-[#8e959c] outline-none hover:text-signal focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal"
+                  className="min-w-11 border-l border-[#263d50] px-2 font-mono text-[10px] font-bold uppercase text-[#8da1b0] outline-none hover:text-signal focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal"
                   aria-label="Tühjenda otsing"
                 >
                   CLR
                 </button>
               ) : (
-                <kbd className="flex items-center border-l border-[#292c2f] px-3 font-mono text-[10px] text-[#62686d]">/</kbd>
+                <kbd className="flex items-center border-l border-[#263d50] px-3 font-mono text-[10px] text-[#60788a]">/</kbd>
               )}
             </label>
           </div>
@@ -348,7 +349,7 @@ export function NewsPortal() {
       </header>
 
       <main id="newswire" className="mx-auto max-w-[96rem] px-3 pb-10 pt-4 sm:px-5 lg:px-7">
-        <div className="mb-3 grid gap-2 border-y border-[#aaa9a1] bg-[#deded8] px-2 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-[#353532] dark:border-[#3a3f44] dark:bg-[#121416] dark:text-[#a7adb2] sm:grid-cols-[1fr_auto] sm:items-center">
+        <div className="mb-3 grid gap-2 border-y border-[#9fb2c0] bg-[#dfe8ee] px-2 py-2 font-mono text-[10px] font-bold uppercase tracking-[0.08em] text-[#2d4353] dark:border-[#35536a] dark:bg-[#0d2030] dark:text-[#a9b7c2] sm:grid-cols-[1fr_auto] sm:items-center">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <h1 className="text-signal">117 Uudislaud</h1>
             <span>{now ? deskDateFormatter.format(now).toUpperCase() : "--.--.----"}</span>
@@ -362,7 +363,7 @@ export function NewsPortal() {
         </div>
 
         {data && data.sources.failed.length > 0 && (
-          <div className="mb-3 border border-[#b36200] bg-[#f4a62a]/10 px-3 py-2 font-mono text-[11px] text-[#754000] dark:text-[#f4a62a]">
+          <div className="mb-3 border border-[#7964bd] bg-[#b6a3ff]/10 px-3 py-2 font-mono text-[11px] text-[#60459f] dark:text-[#c7b8ff]">
             <b>[ PIIRATUD ]</b> MAAS: {data.sources.failed.join(", ").toUpperCase()} — NÄITAME ÜLEJÄÄNUD VOOGE
           </div>
         )}
@@ -373,7 +374,7 @@ export function NewsPortal() {
           <div role="alert" className="flex min-h-28 flex-col justify-center gap-3 border-y border-[#9d2f2f] bg-[#b42318]/5 px-3 py-4 font-mono sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-[11px] font-bold tracking-[0.14em] text-[#d9473f]">[ VOO VIGA ] <span className="ml-2 text-[#202326] dark:text-[#eef0f1]">ÜHENDUS KATKESTATUD</span></p>
-              <p className="mt-1.5 max-w-2xl text-xs leading-5 text-[#62625d] dark:text-[#9299a0]">{error}</p>
+              <p className="mt-1.5 max-w-2xl text-xs leading-5 text-[#526878] dark:text-[#8da1b0]">{error}</p>
             </div>
             <button
               type="button"
@@ -389,7 +390,7 @@ export function NewsPortal() {
 
         {data && filteredItems.length > 0 && (
           <section aria-label="Uudiste nimekiri">
-            <div className="hidden grid-cols-[7.5rem_7.5rem_minmax(0,1fr)_5rem] gap-x-4 border-y border-[#aaa9a1] bg-[#d0d0c9] px-2 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-[#555550] dark:border-[#3a3f44] dark:bg-[#17191b] dark:text-[#7e858b] md:grid">
+            <div className="hidden grid-cols-[7.5rem_7.5rem_minmax(0,1fr)_5rem] gap-x-4 border-y border-[#9fb2c0] bg-[#d5e0e7] px-2 py-1.5 font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-[#4b6170] dark:border-[#35536a] dark:bg-[#102538] dark:text-[#7890a2] md:grid">
               <span>Aeg / Vanus</span>
               <span>Sektor</span>
               <span>Pealkiri / Kokkuvõte</span>
@@ -404,8 +405,8 @@ export function NewsPortal() {
         )}
       </main>
 
-      <footer className="border-t border-[#aaa9a1] bg-[#deded8] dark:border-[#3a3f44] dark:bg-[#111315]">
-        <div className="mx-auto flex max-w-[96rem] flex-col gap-2 px-3 py-3 font-mono text-[9px] uppercase tracking-[0.08em] text-[#656560] dark:text-[#747b81] sm:flex-row sm:items-center sm:justify-between sm:px-5 lg:px-7">
+      <footer className="border-t border-[#9fb2c0] bg-[#dfe8ee] dark:border-[#35536a] dark:bg-[#0b1b29]">
+        <div className="mx-auto flex max-w-[96rem] flex-col gap-2 px-3 py-3 font-mono text-[9px] uppercase tracking-[0.08em] text-[#526878] dark:text-[#7890a2] sm:flex-row sm:items-center sm:justify-between sm:px-5 lg:px-7">
           <span><b className="text-signal">117.EE</b> / ERR UUDISTERMINAL</span>
           <span>Uudiste sisu © ERR · Lingid avanevad algallikas</span>
         </div>

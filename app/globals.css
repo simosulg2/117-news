@@ -10,11 +10,11 @@
 
 html {
   scroll-behavior: smooth;
-  background: #f1f0ea;
+  background: #edf3f7;
 }
 
 html.dark {
-  background: #070a0d;
+  background: #07131f;
 }
 
 body {
@@ -44,12 +44,12 @@ input[type="search"]::-webkit-search-cancel-button {
 }
 
 .skeleton {
-  background: #c9c9c2;
+  background: #c7d3dc;
   animation: terminal-pulse 1.2s steps(2, end) infinite;
 }
 
 .dark .skeleton {
-  background: #242b31;
+  background: #203447;
 }
 
 .terminal-row::before {
@@ -57,7 +57,7 @@ input[type="search"]::-webkit-search-cancel-button {
   inset: 0 auto 0 0;
   width: 2px;
   content: "";
-  background: #f4a62a;
+  background: #4f8cff;
   opacity: 0;
 }
 
