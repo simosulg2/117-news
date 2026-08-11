@@ -9,7 +9,7 @@ import {
   publicFeedFailure,
   withFeedRetry,
 } from "@/lib/feed-retry";
-import { groupNewsItems } from "@/lib/group-stories";
+import { buildNewsCollections } from "@/lib/news-collections";
 import type {
   FeedCategory,
   FeedFailure,
@@ -73,7 +73,7 @@ const FEEDS: ReadonlyArray<FeedDefinition> = [
   },
 ];
 
-const MAX_NEWS_ITEMS = 117;
+const MAX_INSPECTED_FEED_ITEMS = 117;
 const MAX_FEED_BYTES = 5_000_000;
 const MAX_FEED_REDIRECTS = 3;
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
@@ -372,7 +372,7 @@ async function loadFeedOnce(feed: (typeof FEEDS)[number]): Promise<NewsArticle[]
 
   let missingLinkCount = 0;
   let missingTitleCount = 0;
-  const inspectedItems = parsed.items.slice(0, 50);
+  const inspectedItems = parsed.items.slice(0, MAX_INSPECTED_FEED_ITEMS);
   const items = inspectedItems.flatMap((raw) => {
     const item = raw as Parser.Item & CustomItem;
     const link = resolveArticleLink(item.link, item.guid, feed.allowedRoot, response.url);
@@ -440,9 +440,9 @@ export async function GET(): Promise<Response> {
   });
 
   const generatedAt = new Date();
-  const items = groupNewsItems([...byLink.values()], generatedAt).slice(0, MAX_NEWS_ITEMS);
+  const collections = buildNewsCollections([...byLink.values()], generatedAt);
 
-  if (items.length === 0) {
+  if (collections.items.length === 0) {
     return Response.json(
       {
         error: "Uudiste laadimine ebaõnnestus. Palun proovi mõne hetke pärast uuesti.",
@@ -458,7 +458,7 @@ export async function GET(): Promise<Response> {
   }
 
   const payload: NewsResponse = {
-    items,
+    ...collections,
     updatedAt: generatedAt.toISOString(),
     sources: {
       loaded: FEEDS.length - failed.length,

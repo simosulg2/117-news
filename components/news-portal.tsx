@@ -450,8 +450,11 @@ export function NewsPortal() {
   const filteredItems = useMemo(() => {
     if (!data) return [];
     const needle = normalizeSearch(deferredQuery.trim());
+    const availableItems = category === "Kõik"
+      ? data.items
+      : data.itemsByCategory?.[category] ?? data.items;
 
-    return data.items.filter((item) => {
+    return availableItems.filter((item) => {
       if (category !== "Kõik" && item.category !== category) return false;
       if (!needle) return true;
       const relatedSearchText = relatedItems(item)

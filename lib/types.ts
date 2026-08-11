@@ -1,12 +1,13 @@
-export const CATEGORIES = [
-  "Kõik",
+export const FEED_CATEGORIES = [
   "Eesti",
   "Majandus",
   "Sport",
 ] as const;
 
+export const CATEGORIES = ["Kõik", ...FEED_CATEGORIES] as const;
+
 export type Category = (typeof CATEGORIES)[number];
-export type FeedCategory = Exclude<Category, "Kõik">;
+export type FeedCategory = (typeof FEED_CATEGORIES)[number];
 export type NewsSource = "ERR" | "Postimees" | "Lõuna PM";
 export type FeedName = "ERR Eesti" | "ERR Majandus" | "ERR Sport" | "Postimees" | "Lõuna-Eesti Postimees";
 
@@ -40,8 +41,11 @@ export type NewsItem = NewsArticle & {
   related: NewsArticle[];
 };
 
+export type NewsItemsByCategory = Record<FeedCategory, NewsItem[]>;
+
 export type NewsResponse = {
   items: NewsItem[];
+  itemsByCategory?: NewsItemsByCategory;
   updatedAt: string;
   sources: {
     loaded: number;

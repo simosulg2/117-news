@@ -1,6 +1,6 @@
 # 117.ee
 
-Kiire uudislaud, mis koondab ERR-i ja Postimehe Eesti, majanduse ning spordi RSS-vood. Kuni 117 kõige värskemat uudislugu kuvatakse kompaktses Cairo kirjatüübiga vaates; sama sündmust kajastavad eri allikad koondatakse ühe rea alla. Vaikimisi avaneb hele teema, kuid kasutaja salvestatud valikut austatakse.
+Kiire uudislaud, mis koondab ERR-i ja Postimehe Eesti, majanduse ning spordi RSS-vood. Üldvaates kuvatakse kuni 117 kõige värskemat uudislugu ning igas teemavaates kuni 117 selle teema värskeimat saadaolevat lugu. Sama sündmust kajastavad eri allikad koondatakse ühe rea alla. Vaikimisi avaneb hele teema, kuid kasutaja salvestatud valikut austatakse.
 
 ## Käivitamine
 
@@ -17,6 +17,7 @@ Ava `http://localhost:3000`.
 - API laadib serveris ERR-i Eesti, majanduse ja spordi ning Postimehe ja Lõuna-Eesti Postimehe RSS-vood ja töötleb need `rss-parser` abil.
 - Vastused puhverdatakse viieks minutiks; üksiku voo viga ei peata teisi vooge.
 - Täpselt korduvad lingid eemaldatakse ning viimase 24 tunni sarnased eri allikate pealkirjad koondatakse ilma tehisintellekti või mudelite väljakutseteta.
+- Eesti, majanduse ja spordi teemavaated koostatakse kogu saadaolevast uudiste hulgast eraldi, mitte ainult üldvaate 117 loo seast.
 - Kategooriafiltrid, otsing, loetud uudiste kohalik ajalugu, kiirklahvid ja tumeda teema valik töötavad brauseris kohe.
 
 Loetud artiklite ajalugu säilib selles brauseris 30 päeva ja seda saab uudislaua teaberibalt lähtestada. Kiirklahv `/` viib otsingusse ning `j` ja `k` liiguvad nähtavate uudiste vahel; fokuseeritud uudise avab tavapäraselt `Enter`.
