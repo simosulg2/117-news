@@ -52,14 +52,14 @@ const FEEDS: ReadonlyArray<FeedDefinition> = [
     name: "Lõuna-Eesti Postimees",
     category: "Eesti",
     source: "Lõuna PM",
-    url: "https://lounapostimees.postimees.ee/rss/",
+    url: "https://lounapostimees.postimees.ee/rss",
     allowedRoot: "postimees.ee",
   },
   {
     name: "Postimees",
     category: null,
     source: "Postimees",
-    url: "https://www.postimees.ee/rss/",
+    url: "https://www.postimees.ee/rss",
     allowedRoot: "postimees.ee",
   },
 ];

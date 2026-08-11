@@ -26,8 +26,8 @@ Loetud artiklite ajalugu säilib selles brauseris 30 päeva ja seda saab uudisla
 - `https://www.err.ee/rss/eesti`
 - `https://www.err.ee/rss/majandus`
 - `https://sport.err.ee/rss`
-- `https://postimees.ee/rss/`
-- `https://lounapostimees.postimees.ee/rss/`
+- `https://www.postimees.ee/rss`
+- `https://lounapostimees.postimees.ee/rss`
 
 Artiklid avanevad alati algallika lehel. Postimehe tellijasisu kasutab seal brauseri olemasolevat sisselogimist; 117.ee ei töötle Postimehe kasutajaandmeid ega artiklite täistekste.
 
