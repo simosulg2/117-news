@@ -86,7 +86,7 @@ function ArticleRow({ item, nowMs }: { item: NewsItem; nowMs: number }) {
           href={item.link}
           target="_blank"
           rel="noopener noreferrer external"
-          className="terminal-row group relative grid min-h-[5.25rem] grid-cols-1 gap-1.5 border-b border-[#bccbd6] px-2 py-3 outline-none transition-colors hover:bg-[#4f8cff]/[0.07] focus-visible:bg-[#4f8cff]/[0.1] focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal dark:border-[#24394a] md:grid-cols-[7.5rem_7.5rem_minmax(0,1fr)_5rem] md:gap-x-4 md:py-3"
+          className="terminal-row group relative grid min-h-[5.25rem] grid-cols-1 gap-1.5 border-b border-[#bccbd6] px-2 py-3 outline-none transition-colors hover:bg-[#4f8cff]/[0.07] focus-visible:bg-[#4f8cff]/[0.1] focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal dark:border-[#24394a] md:grid-cols-[9rem_8rem_minmax(0,1fr)_5rem] md:gap-x-5 md:py-3"
           aria-label={`${item.title} — ERR, avaneb uuel vahelehel`}
         >
           <div className="flex items-center gap-3 md:hidden">
@@ -98,7 +98,7 @@ function ArticleRow({ item, nowMs }: { item: NewsItem; nowMs: number }) {
               <time
                 dateTime={item.publishedAt}
                 title={exactDateFormatter.format(new Date(item.publishedAt))}
-                className="text-[11px] tabular-nums text-[#526878] dark:text-[#8da1b0]"
+                className="text-xs tabular-nums text-[#526878] dark:text-[#8da1b0]"
               >
                 {formatItemTime(item.publishedAt)} / {relativeTime(item.publishedAt, nowMs)}
               </time>
@@ -109,12 +109,12 @@ function ArticleRow({ item, nowMs }: { item: NewsItem; nowMs: number }) {
             <time
               dateTime={item.publishedAt}
               title={exactDateFormatter.format(new Date(item.publishedAt))}
-              className="hidden whitespace-nowrap text-[11px] tabular-nums text-[#495e6d] dark:text-[#a9b7c2] md:block"
+              className="hidden whitespace-nowrap text-xs font-medium tabular-nums text-[#495e6d] dark:text-[#a9b7c2] md:block"
             >
-              {formatItemTime(item.publishedAt)} <span className="text-[#526878] dark:text-[#8da1b0]">{relativeTime(item.publishedAt, nowMs)}</span>
+              {formatItemTime(item.publishedAt)} <span className="mx-1 text-[#738795] dark:text-[#7890a2]">/</span><span className="text-[#526878] dark:text-[#8da1b0]">{relativeTime(item.publishedAt, nowMs)}</span>
             </time>
           ) : (
-            <span className="hidden text-[11px] text-[#526878] dark:text-[#8da1b0] md:block">—</span>
+            <span className="hidden text-xs text-[#526878] dark:text-[#8da1b0] md:block">—</span>
           )}
 
           <div className="hidden md:block">
@@ -122,17 +122,17 @@ function ArticleRow({ item, nowMs }: { item: NewsItem; nowMs: number }) {
           </div>
 
           <div className="min-w-0">
-            <h2 className="text-base font-bold leading-[1.35] text-[#101a24] transition-colors group-hover:text-[#245fae] dark:text-[#edf4f8] dark:group-hover:text-[#7db0ff]">
+            <h2 className="text-base font-bold leading-[1.35] text-[#101a24] transition-colors group-hover:text-[#245fae] dark:text-[#edf4f8] dark:group-hover:text-[#7db0ff] md:text-[17px]">
               {item.title}
             </h2>
             {item.summary && (
-              <p className="mt-1 line-clamp-2 max-w-5xl text-xs leading-[1.45] text-[#526878] dark:text-[#8da1b0] md:line-clamp-1">
+              <p className="mt-1 line-clamp-2 max-w-5xl text-xs leading-[1.5] text-[#526878] dark:text-[#8da1b0] md:line-clamp-1 md:text-[13px] md:leading-[1.55]">
                 {item.summary}
               </p>
             )}
           </div>
 
-          <span className="hidden text-[11px] font-semibold text-[#495e6d] dark:text-[#a9b7c2] md:block">
+          <span className="hidden text-xs font-semibold text-[#495e6d] dark:text-[#a9b7c2] md:block">
             {item.source}
           </span>
 
@@ -153,7 +153,7 @@ function LoadingState() {
       {[0, 1, 2, 3, 4, 5, 6, 7, 8].map((item) => (
         <div
           key={item}
-          className="grid min-h-[5.25rem] grid-cols-1 gap-2 border-b border-[#bccbd6] px-2 py-3 dark:border-[#24394a] md:grid-cols-[7.5rem_7.5rem_minmax(0,1fr)_5rem] md:gap-x-4"
+          className="grid min-h-[5.25rem] grid-cols-1 gap-2 border-b border-[#bccbd6] px-2 py-3 dark:border-[#24394a] md:grid-cols-[9rem_8rem_minmax(0,1fr)_5rem] md:gap-x-5"
         >
           <Skeleton className="h-3 w-24" />
           <Skeleton className="hidden h-3 w-16 md:block" />
@@ -282,10 +282,10 @@ export function NewsPortal() {
               <span className="block size-10 shrink-0" aria-hidden="true">
                 <img src="/117.png" alt="" className="size-full object-contain" />
               </span>
-              <span className="hidden text-xs font-medium text-[#8da1b0] sm:inline">ERR-i uudisvoog</span>
+              <span className="hidden text-[13px] font-medium text-[#8da1b0] sm:inline">ERR-i uudisvoog</span>
             </a>
 
-            <div className="flex items-center gap-3 text-[11px]">
+            <div className="flex items-center gap-3 text-xs">
               <span className="hidden text-[#8da1b0] sm:inline">
                 <b aria-live="polite" className={data && data.sources.loaded === data.sources.total ? "text-[#55d6b2]" : "text-[#b6a3ff]"}>{data ? `${data.sources.loaded}/${data.sources.total} voogu` : "—/3 voogu"}</b>
                 <span aria-hidden="true" className="ml-3 tabular-nums text-[#8295a4]">{now ? `${deskClockFormatter.format(now)} Eesti` : "--:--:-- Eesti"}</span>
@@ -311,7 +311,7 @@ export function NewsPortal() {
                     type="button"
                     onClick={() => setCategory(item)}
                     aria-pressed={active}
-                    className={`min-h-10 shrink-0 border-r border-[#263d50] px-4 text-xs font-semibold outline-none transition-colors last:border-r-0 focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal ${
+                    className={`min-h-10 shrink-0 border-r border-[#263d50] px-4 text-[13px] font-semibold outline-none transition-colors focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal sm:last:border-r-0 ${
                       active ? "bg-signal text-[#07131f]" : "text-[#a9b7c2] hover:bg-[#102538] hover:text-white"
                     }`}
                   >
@@ -322,7 +322,7 @@ export function NewsPortal() {
             </nav>
 
             <label className="relative flex min-h-10 flex-1 items-stretch bg-[#0b1b29] sm:min-w-[18rem]">
-              <span className="flex items-center border-r border-[#263d50] px-3 text-xs font-semibold text-signal">Otsing</span>
+              <span className="flex items-center border-r border-[#263d50] px-3 text-[13px] font-semibold text-signal">Otsing</span>
               <input
                 ref={searchRef}
                 type="search"
@@ -347,7 +347,7 @@ export function NewsPortal() {
       </header>
 
       <main id="newswire" className="mx-auto max-w-[96rem] px-3 pb-10 pt-4 sm:px-5 lg:px-7">
-        <div className="mb-3 grid gap-2 border-y border-[#9fb2c0] bg-[#dfe8ee] px-2 py-2 text-[11px] font-semibold text-[#2d4353] dark:border-[#35536a] dark:bg-[#0d2030] dark:text-[#a9b7c2] sm:grid-cols-[1fr_auto] sm:items-center">
+        <div className="mb-3 grid gap-2 border-y border-[#9fb2c0] bg-[#dfe8ee] px-2 py-2 text-xs font-semibold text-[#2d4353] dark:border-[#35536a] dark:bg-[#0d2030] dark:text-[#a9b7c2] sm:grid-cols-[1fr_auto] sm:items-center">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
             <h1 className="font-bold text-[#245fae] dark:text-signal">117 uudislaud</h1>
             <span>{now ? deskDateFormatter.format(now) : "--.--.----"}</span>
@@ -388,8 +388,8 @@ export function NewsPortal() {
 
         {data && filteredItems.length > 0 && (
           <section aria-label="Uudiste nimekiri">
-            <div className="hidden grid-cols-[7.5rem_7.5rem_minmax(0,1fr)_5rem] gap-x-4 border-y border-[#9fb2c0] bg-[#d5e0e7] px-2 py-1.5 text-[10px] font-semibold text-[#4b6170] dark:border-[#35536a] dark:bg-[#102538] dark:text-[#7890a2] md:grid">
-              <span>Avaldatud</span>
+            <div className="hidden grid-cols-[9rem_8rem_minmax(0,1fr)_5rem] gap-x-5 border-y border-[#9fb2c0] bg-[#d5e0e7] px-2 py-1.5 text-[11px] font-semibold text-[#4b6170] dark:border-[#35536a] dark:bg-[#102538] dark:text-[#7890a2] md:grid">
+              <span>Avaldatud / möödas</span>
               <span>Teema</span>
               <span>Uudis</span>
               <span>Allikas</span>
@@ -404,7 +404,7 @@ export function NewsPortal() {
       </main>
 
       <footer className="border-t border-[#9fb2c0] bg-[#dfe8ee] dark:border-[#35536a] dark:bg-[#0b1b29]">
-        <div className="mx-auto flex max-w-[96rem] flex-col gap-2 px-3 py-3 text-[10px] text-[#526878] dark:text-[#7890a2] sm:flex-row sm:items-center sm:justify-between sm:px-5 lg:px-7">
+        <div className="mx-auto flex max-w-[96rem] flex-col gap-2 px-3 py-3 text-[11px] text-[#526878] dark:text-[#7890a2] sm:flex-row sm:items-center sm:justify-between sm:px-5 lg:px-7">
           <span><b className="text-[#245fae] dark:text-signal">117.ee</b> · ERR-i uudisvoog</span>
           <span>Uudiste sisu © ERR · Lingid avanevad algallikas</span>
         </div>
