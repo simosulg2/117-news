@@ -326,8 +326,7 @@ export function RatingsPortal() {
                   Ilm
                 </a>
                 <a href="/reitingud" aria-current="page" className="flex min-h-12 items-center border-r border-[#263d50] bg-[#102538] px-2 text-xs font-bold text-signal outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal sm:px-4">
-                  <span className="sm:hidden">Reit.</span>
-                  <span className="hidden sm:inline">Reitingud</span>
+                  Reitingud
                 </a>
               </nav>
             </div>
