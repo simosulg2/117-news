@@ -64,7 +64,7 @@ Mõlemad väärtused peavad Coolifys olema ainult runtime-keskkonnas, `Literal` 
 ```text
 Nimi: collect-voru-weather
 Kava: */10 * * * *
-Käsk: node -e "(async()=>{const t=process.env.WEATHER_COLLECTOR_TOKEN;if(!t)throw new Error('missing token');const u='http://127.0.0.1:'+(process.env.PORT||'3000')+'/api/weather';const r=await fetch(u,{method:'POST',headers:{Authorization:'Bearer '+t},signal:AbortSignal.timeout(45000)});if(!r.ok)throw new Error('HTTP '+r.status);const b=await r.json();if(!b||b.ok!==true)throw new Error('invalid response')})().catch(e=>{console.error('Weather collection failed:',e.message);process.exit(1)})"
+Käsk: node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/weather',{method:'POST',headers:{Authorization:'Bearer '+process.env.WEATHER_COLLECTOR_TOKEN},signal:AbortSignal.timeout(45000)}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
 ```
 
 Scheduled Task loeb võtme konteineri runtime-keskkonnast ja pöördub rakenduse poole
