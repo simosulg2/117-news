@@ -1,6 +1,6 @@
 # 117.ee
 
-117.ee koondab ühte kiiresse töölauale Eesti uudised ja Võru ilma. Uudiste üldvaates kuvatakse kuni 117 kõige värskemat lugu ning igas teemavaates kuni 117 selle teema värskeimat saadaolevat lugu. Sama sündmust kajastavad eri allikad koondatakse ühe rea alla. Eraldi `/ilm` vaates saab uurida hetkeilma, mõõdetud ajalugu, mudelprognoosi, valitud ajavahemiku ilmaülevaadet ja sademeradarit. Vaikimisi avaneb hele teema, kuid kasutaja salvestatud valikut austatakse.
+117.ee koondab ühte kiiresse töölauale Eesti uudised, Võru ilma ja erakondade reitingud. Uudiste üldvaates kuvatakse kuni 117 kõige värskemat lugu ning igas teemavaates kuni 117 selle teema värskeimat saadaolevat lugu. Sama sündmust kajastavad eri allikad koondatakse ühe rea alla. Eraldi `/ilm` vaates saab uurida hetkeilma, mõõdetud ajalugu, mudelprognoosi, valitud ajavahemiku ilmaülevaadet ja sademeradarit. `/reitingud` kuvab Norstati viimase nelja nädala koondtulemuse, 101-kohalise Riigikogu projektsiooni ja Kantar Emori ametliku kuuvõrdluse. Vaikimisi avaneb hele teema, kuid kasutaja salvestatud valikut austatakse.
 
 ## Käivitamine
 
@@ -80,6 +80,17 @@ kogumist õnnestunuks.
 
 `DATABASE_URL` ja `WEATHER_COLLECTOR_TOKEN` on salajased runtime-väärtused: neid ei
 lisata GitHubi, brauserikoodi, URL-i ega logidesse.
+
+## Erakondade reitingud
+
+- `/api/ratings` laadib Ühiskonnauuringute Instituudi ja Norstati dokumenteeritud avalikust JSON-andmestikust viimase üleriigilise nelja nädala koondtulemuse, valimi ning eelmise võrreldava perioodi.
+- Vastus puhverdatakse tunniks. Allika ajutise vea korral jääb viimati õnnestunud seis kasutatavaks ning kasutajale näidatakse, et värskendus hilineb.
+- Riigikogu projektsioon jätab alla 5% toetusega erakonnad välja ja jaotab 101 kohta Eesti modifitseeritud D’Hondti jagajatega `1, 2^0,9, 3^0,9 …`. Täpselt 5% läheb arvesse.
+- Projektsioon on üleriigiline küsitlusmudel, mitte ametlik valimistulemus ega ennustus. Tegelik jaotus sõltub 12 valimisringkonnast ning isiku-, ringkonna- ja kompensatsioonimandaatidest.
+- Koalitsioonilabor lubab valida projektsioonis kohti saanud erakondi ja kontrollida 51 koha enamust. Valitsuse võrdlus kasutab praegust Reformierakonna ja Eesti 200 valitsusliitu.
+- Kantar Emori kuureiting kuvatakse Emori ametliku interaktiivse graafikuna. Selle väärtusi ei kraabita kohtade kalkulaatorisse ega keskmistata Norstatiga, sest Emor ei paku reitingutele dokumenteeritud avalikku andme-API-t ning uuringute metoodika ja avaldamisrütm erinevad.
+
+Reitingute juures kuvatakse küsitlusperiood, valim, eelistuseta vastajate osakaal, muutus eelmise võrreldava koondi suhtes, andmete laadimise aeg ning allika- ja metoodikaviited.
 
 ## Kontrollid
 

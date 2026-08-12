@@ -1538,6 +1538,13 @@ export function WeatherPortal() {
                 >
                   Ilm
                 </a>
+                <a
+                  href="/reitingud"
+                  className="flex min-h-12 items-center border-r border-[#263d50] px-2 text-xs font-semibold text-[#a9b7c2] outline-none hover:bg-[#102538] hover:text-white focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal sm:px-4"
+                >
+                  <span className="sm:hidden">Reit.</span>
+                  <span className="hidden sm:inline">Reitingud</span>
+                </a>
               </nav>
             </div>
 
