@@ -1,4 +1,4 @@
-import { Pool, type QueryResultRow } from "pg";
+import { Pool, type PoolConfig, type QueryResultRow } from "pg";
 
 import type { WeatherPoint } from "./weather-types";
 
@@ -9,6 +9,7 @@ const MAX_HISTORY_RANGE_MS = 31 * 24 * 60 * 60 * 1_000;
 // persisted as rainfall; a later request safely fills the canonical row.
 const PRECIPITATION_UPDATE_MINUTE = 10;
 const PRECIPITATION_SETTLE_MINUTES = 5;
+const DATABASE_TIMEOUT_MS = 5_000;
 
 type WeatherStoreGlobal = typeof globalThis & {
   __weatherPool117?: Pool;
@@ -49,18 +50,25 @@ function databaseUrl(): string | null {
   }
 }
 
+export function weatherPoolConfig(connectionString: string): PoolConfig {
+  return {
+    connectionString,
+    max: 3,
+    connectionTimeoutMillis: DATABASE_TIMEOUT_MS,
+    statement_timeout: DATABASE_TIMEOUT_MS,
+    lock_timeout: DATABASE_TIMEOUT_MS,
+    query_timeout: DATABASE_TIMEOUT_MS,
+    idleTimeoutMillis: 30_000,
+  };
+}
+
 function weatherPool(): Pool | null {
   const connectionString = databaseUrl();
   if (!connectionString) return null;
 
   const shared = globalThis as WeatherStoreGlobal;
   if (!shared.__weatherPool117) {
-    const pool = new Pool({
-      connectionString,
-      max: 3,
-      connectionTimeoutMillis: 5_000,
-      idleTimeoutMillis: 30_000,
-    });
+    const pool = new Pool(weatherPoolConfig(connectionString));
     // pg reports failures on idle clients through the Pool's error event.
     // Handling it here keeps an optional database outage from terminating the
     // Next.js process, while deliberately avoiding credentials in the log.

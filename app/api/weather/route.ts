@@ -12,6 +12,13 @@ import {
   saveWeatherObservation,
   weatherStoreConfigured,
 } from "@/lib/weather-store";
+import {
+  authenticateWeatherCollector,
+  publicWeatherStatus,
+  runWeatherCollection,
+  weatherCollectorPublicResult,
+  type WeatherCollectorOutcome,
+} from "@/lib/weather-route-policy";
 import type {
   WeatherAttribution,
   WeatherResponse,
@@ -108,7 +115,8 @@ async function fetchText(
   options: {
     accept: string;
     maximumBytes: number;
-    revalidateSeconds: number;
+    revalidateSeconds?: number;
+    noStore?: boolean;
     headers?: Record<string, string>;
   },
 ): Promise<string> {
@@ -120,7 +128,9 @@ async function fetchText(
         "User-Agent": "117.ee weather (+https://117.ee)",
         ...options.headers,
       },
-      next: { revalidate: options.revalidateSeconds },
+      ...(options.noStore
+        ? { cache: "no-store" as const }
+        : { next: { revalidate: options.revalidateSeconds ?? revalidate } }),
       redirect: "error",
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
@@ -146,11 +156,11 @@ function parseJson(text: string): unknown {
   }
 }
 
-async function loadCurrentObservation() {
+async function loadCurrentObservation(noStore = false) {
   const xml = await fetchText(CURRENT_OBSERVATIONS_URL, {
     accept: "application/xml, text/xml;q=0.9",
     maximumBytes: MAX_XML_BYTES,
-    revalidateSeconds: 300,
+    ...(noStore ? { noStore: true } : { revalidateSeconds: 300 }),
   });
   return parseCurrentObservationXml(xml);
 }
@@ -234,9 +244,60 @@ function sourceStatus(
   };
 }
 
+function safeErrorDetails(error: unknown): { name: string; code?: string } {
+  return {
+    name: error instanceof Error ? error.name : "UnknownError",
+    code: error && typeof error === "object" && "code" in error
+      ? String(error.code).slice(0, 40)
+      : undefined,
+  };
+}
+
+function collectorResponse(outcome: WeatherCollectorOutcome, observedAt?: string): Response {
+  const result = weatherCollectorPublicResult(outcome, observedAt);
+  const headers: Record<string, string> = { "Cache-Control": "no-store" };
+  if (result.status === 401) {
+    headers["WWW-Authenticate"] = 'Bearer realm="117.ee weather collector"';
+  }
+  return Response.json(result.body, { status: result.status, headers });
+}
+
+export async function POST(request: Request): Promise<Response> {
+  const authorization = authenticateWeatherCollector(
+    request.headers.get("authorization"),
+    process.env.WEATHER_COLLECTOR_TOKEN,
+  );
+  if (authorization === "unconfigured") return collectorResponse("collector_not_configured");
+  if (authorization === "unauthorized") return collectorResponse("unauthorized");
+
+  const result = await runWeatherCollection({
+    storeConfigured: weatherStoreConfigured(),
+    loadCurrent: () => loadCurrentObservation(true),
+    save: ({ point }) => saveWeatherObservation(point),
+  });
+
+  if (result.outcome === "current_observation_unavailable") {
+    console.error("Weather collector current observation failed", safeErrorDetails(result.cause));
+  } else if (result.outcome === "weather_store_unavailable" && result.cause !== undefined) {
+    console.error("Weather collector persistence failed", safeErrorDetails(result.cause));
+  }
+
+  return result.outcome === "saved"
+    ? collectorResponse("saved", result.value.point.time)
+    : collectorResponse(result.outcome);
+}
+
 export async function GET(request: Request): Promise<Response> {
+  if (new URL(request.url).searchParams.has("collect")) {
+    return Response.json(
+      { ok: false, code: "collector_requires_post" },
+      {
+        status: 405,
+        headers: { Allow: "POST", "Cache-Control": "no-store" },
+      },
+    );
+  }
   const generatedAt = new Date();
-  const collectionRequest = new URL(request.url).searchParams.has("collect");
   const historyStart = new Date(generatedAt.getTime() - 7 * 24 * 60 * 60 * 1_000);
   const persistenceEnabled = weatherStoreConfigured();
   const [currentResult, historyResult, modelResult, storedResult] = await Promise.allSettled([
@@ -261,30 +322,10 @@ export async function GET(request: Request): Promise<Response> {
   }
 
   if (storedResult.status === "rejected") {
-    console.error("Weather persistence read failed", {
-      name: storedResult.reason instanceof Error ? storedResult.reason.name : "UnknownError",
-      code: storedResult.reason && typeof storedResult.reason === "object" && "code" in storedResult.reason
-        ? String(storedResult.reason.code).slice(0, 40)
-        : undefined,
-    });
+    console.error("Weather persistence read failed", safeErrorDetails(storedResult.reason));
   }
 
   const current = currentResult.status === "fulfilled" ? currentResult.value.point : null;
-  // A failed read already proves this request cannot currently use the store.
-  // Skipping a second connection attempt avoids adding another timeout while
-  // the optional database is unavailable; the next request will retry.
-  if (current && persistenceEnabled && storedResult.status === "fulfilled") {
-    try {
-      await saveWeatherObservation(current);
-    } catch (error) {
-      console.error("Weather persistence write failed", {
-        name: error instanceof Error ? error.name : "UnknownError",
-        code: error && typeof error === "object" && "code" in error
-          ? String(error.code).slice(0, 40)
-          : undefined,
-      });
-    }
-  }
   const archivedObservations = historyResult.status === "fulfilled"
     ? historyResult.value.points
     : [];
@@ -322,14 +363,13 @@ export async function GET(request: Request): Promise<Response> {
   };
 
   const everySourceFailed = sources.every((source) => source.status === "error");
+  const status = publicWeatherStatus(everySourceFailed, storedObservations.length);
   return Response.json(payload, {
-    status: everySourceFailed ? 502 : 200,
+    status,
     headers: {
-      "Cache-Control": everySourceFailed
+      "Cache-Control": everySourceFailed || status === 502
         ? "no-store"
-        : collectionRequest
-          ? "no-store"
-          : "public, s-maxage=300, stale-while-revalidate=900",
+        : "public, s-maxage=300, stale-while-revalidate=900",
     },
   });
 }

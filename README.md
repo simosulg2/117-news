@@ -41,6 +41,7 @@ Artiklid avanevad alati algallika lehel. Postimehe tellijasisu kasutab seal brau
 - Ametlikus tunniarhiivis puudub Võru numbriline pilvisus. Varasema pilvisuse protsent on seetõttu mudelhinnang; hetkevaatluse kirjeldav pilvisus on mõõdetud vaatlus.
 - `/api/weather/radar` koostab ametliku radariteenuse ajajoone. Brauser kuvab Keskkonnaagentuuri mõõdetud ja lühiprognoosi WMS-kihte 117.ee enda interaktiivsel kaardil.
 - Ilma ja radari vead on teineteisest ning uudiste API-st isoleeritud. Iga töötav osa jääb teise allika vea korral kasutatavaks.
+- Kui kõik välised ilmaallikad ajutiselt ebaõnnestuvad, jääb PostgreSQL-i salvestatud mõõteajalugu kasutatavaks; seda ei esitata ekslikult värske hetkevaatlusena.
 - Vaate, ajavahemiku, valitud näitajate ja jooksu aja eelistused säilivad ainult kasutaja brauseris.
 
 Andmete juures kuvatakse Keskkonnaagentuuri, Ilmateenistuse, Open-Meteo ja OpenStreetMapi viited ning litsentsid.
@@ -51,21 +52,30 @@ Kui `DATABASE_URL` puudub, kasutab ilmavaade ametlikku tunniarhiivi ja mudelajal
 
 ```env
 DATABASE_URL=postgresql://kasutaja:parool@host:5432/andmebaas
+WEATHER_COLLECTOR_TOKEN=vähemalt-32-baidine-juhuslik-saladus
 ```
 
-Rakendus loob esimesel ühendumisel ise tabeli `weather_observations`. Iga värske `/api/weather` päring talletab hetkevaatluse idempotentselt. Katkematu kogumise jaoks lisa Coolifys rakenduse Scheduled Task:
+64-märgilise juhusliku võtme saab luua näiteks käsuga
+`node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`.
+Käsu väljund läheb ainult Coolify runtime-saladuseks, mitte faili ega GitHubi.
+
+Mõlemad väärtused peavad Coolifys olema ainult runtime-keskkonnas, `Literal` ja salajased; build-keskkonda neid ei lisata. Rakendus loob esimesel ühendumisel ise tabeli `weather_observations`. Avalik `GET /api/weather` ainult loeb andmeid ning talletamine toimub autentitud `POST /api/weather` kaudu. Katkematu kogumise jaoks lisa Coolifys rakenduse Scheduled Task:
 
 ```text
 Nimi: collect-voru-weather
 Kava: */10 * * * *
-Käsk: node -e "fetch('https://117.ee/api/weather?collect=' + Date.now(), { cache: 'no-store', headers: { 'Cache-Control': 'no-cache' } }).then(r => { if (!r.ok) process.exit(1) })"
+Käsk: node -e "(async()=>{const t=process.env.WEATHER_COLLECTOR_TOKEN;if(!t)throw new Error('missing token');const u='http://127.0.0.1:'+(process.env.PORT||'3000')+'/api/weather';const r=await fetch(u,{method:'POST',headers:{Authorization:'Bearer '+t},signal:AbortSignal.timeout(45000)});if(!r.ok)throw new Error('HTTP '+r.status);const b=await r.json();if(!b||b.ok!==true)throw new Error('invalid response')})().catch(e=>{console.error('Weather collection failed:',e.message);process.exit(1)})"
 ```
 
-`collect` päringuparameeter annab igale kogumispäringule eraldi puhvõtme ning
-vastus saadetakse `no-store` päisega. Nii jõuab ajastatud päring alati rakenduseni
-ka siis, kui avaliku ilmavaate vastuseid puhverdab vaheserver.
+Scheduled Task loeb võtme konteineri runtime-keskkonnast ja pöördub rakenduse poole
+sama konteineri loopback-aadressil. Võti saadetakse ainult `Authorization` päises;
+saladus ei jõua URL-i, käsu teksti ega avaliku pöördproksi kaudu võrku. Päringul on
+45-sekundiline ülempiir. Koguja vastused on `no-store` ning puuduv mõõtmine või
+ebaõnnestunud PostgreSQL kirjutus tagastab veakoodi, et Coolify ei märgiks katkist
+kogumist õnnestunuks.
 
-`DATABASE_URL` on salajane runtime-väärtus: seda ei lisata GitHubi ega brauserikoodi.
+`DATABASE_URL` ja `WEATHER_COLLECTOR_TOKEN` on salajased runtime-väärtused: neid ei
+lisata GitHubi, brauserikoodi, URL-i ega logidesse.
 
 ## Kontrollid
 

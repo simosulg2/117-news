@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   storedWeatherRowToPoint,
   weatherObservationRowsForPersistence,
+  weatherPoolConfig,
 } from "../lib/weather-store.ts";
 import type { WeatherPoint } from "../lib/weather-types.ts";
 
@@ -161,4 +162,15 @@ test("does not create an hourly precipitation row when the XML value is absent",
 test("does not persist modeled or invalid-time points", () => {
   assert.deepEqual(weatherObservationRowsForPersistence(observation({ kind: "modeled" })), []);
   assert.deepEqual(weatherObservationRowsForPersistence(observation({ time: "invalid" })), []);
+});
+
+test("bounds connection, statement, lock, and client-side query waits", () => {
+  const config = weatherPoolConfig("postgresql://weather:secret@database/weather");
+
+  assert.equal(config.connectionTimeoutMillis, 5_000);
+  assert.equal(config.statement_timeout, 5_000);
+  assert.equal(config.lock_timeout, 5_000);
+  assert.equal(config.query_timeout, 5_000);
+  assert.equal(config.idleTimeoutMillis, 30_000);
+  assert.equal(config.max, 3);
 });
