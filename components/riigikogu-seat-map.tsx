@@ -114,6 +114,8 @@ export function RiigikoguSeatMap({
   const renderedParties = useMemo(() => assignSeats(parties), [parties]);
   const previewParty = renderedParties.find((party) => party.key === previewPartyKey) ?? null;
   const hasCoalitionSelection = renderedParties.some((party) => selectedPartyIds.has(party.id));
+  const coalitionHasMajority = hasCoalitionSelection
+    && selectedSeatCount >= RIIGIKOGU_MAJORITY_SEATS;
 
   const clearPreview = (partyKey: string) => {
     setPreviewPartyKey((current) => current === partyKey ? null : current);
@@ -152,6 +154,7 @@ export function RiigikoguSeatMap({
             Erakonna andmete vaatamiseks hõljuta selle kohtade rühma. Koalitsioonilaboris
             valitud erakondade kohad on koondatud vasakule ja tugevamalt esile tõstetud;
             ülejäänud erakonnad on paremal.
+            {coalitionHasMajority && " Valitud koalitsioon on saavutanud vähemalt 51 kohta."}
           </desc>
 
           <g aria-hidden="true">
@@ -160,8 +163,10 @@ export function RiigikoguSeatMap({
               y1="38"
               x2={RIIGIKOGU_VIEWBOX.width / 2}
               y2="218"
-              className="stroke-[#718896] dark:stroke-[#58768b]"
-              strokeWidth="1.5"
+              className={coalitionHasMajority
+                ? "stroke-[#087663] transition-colors dark:stroke-[#55d6b2]"
+                : "stroke-[#718896] transition-colors dark:stroke-[#58768b]"}
+              strokeWidth={coalitionHasMajority ? 2.5 : 1.5}
               strokeDasharray="5 6"
             />
             <rect
@@ -170,15 +175,20 @@ export function RiigikoguSeatMap({
               width="124"
               height="26"
               rx="2"
-              className="fill-[#e8eef2] stroke-[#9fb2c0] dark:fill-[#102538] dark:stroke-[#35536a]"
+              className={coalitionHasMajority
+                ? "fill-[#d7eee8] stroke-[#087663] transition-colors dark:fill-[#0d302b] dark:stroke-[#55d6b2]"
+                : "fill-[#e8eef2] stroke-[#9fb2c0] transition-colors dark:fill-[#102538] dark:stroke-[#35536a]"}
+              strokeWidth={coalitionHasMajority ? 2.5 : 1}
             />
             <text
               x={RIIGIKOGU_VIEWBOX.width / 2}
               y="26"
               textAnchor="middle"
-              className="fill-[#405767] text-[12px] font-bold tracking-[0.06em] dark:fill-[#a9b7c2]"
+              className={coalitionHasMajority
+                ? "fill-[#087663] text-[12px] font-black tracking-[0.06em] transition-colors dark:fill-[#55d6b2]"
+                : "fill-[#405767] text-[12px] font-bold tracking-[0.06em] transition-colors dark:fill-[#a9b7c2]"}
             >
-              51 · ENAMUS
+              {coalitionHasMajority ? "51 · ENAMUS ✓" : "51 · ENAMUS"}
             </text>
           </g>
 
