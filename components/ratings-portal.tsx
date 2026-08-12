@@ -243,6 +243,13 @@ export function RatingsPortal() {
   const selectedCoalitionCount = projectedParties
     .filter((party) => selectedCoalitionIds.has(party.id))
     .length;
+  const chamberParties = useMemo(() => {
+    if (selectedCoalitionIds.size === 0) return hemicycleParties;
+    return [
+      ...hemicycleParties.filter((party) => selectedCoalitionIds.has(party.id)),
+      ...hemicycleParties.filter((party) => !selectedCoalitionIds.has(party.id)),
+    ];
+  }, [hemicycleParties, selectedCoalitionIds]);
   const tableParties = data
     ? data.poll.parties.filter((party) => party.kind === "party" && party.supportPct !== null)
     : [];
@@ -395,7 +402,7 @@ export function RatingsPortal() {
             <section aria-labelledby="projection-heading" className="grid gap-3 lg:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.72fr)]">
               <h2 id="projection-heading" className="sr-only">Riigikogu kohtade projektsioon</h2>
               <RiigikoguSeatMap
-                parties={hemicycleParties}
+                parties={chamberParties}
                 selectedPartyIds={selectedCoalitionIds}
                 selectedSeatCount={selectedCoalitionSeats}
               />

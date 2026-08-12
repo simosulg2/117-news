@@ -134,6 +134,12 @@ export function RiigikoguSeatMap({
       </figcaption>
 
       <div className="m-2 border border-[#c5d2da] bg-[#eaf0f4] px-2 pb-1 pt-2 dark:border-[#243d51] dark:bg-[#071521] sm:m-3 sm:px-4">
+        {hasCoalitionSelection && (
+          <div aria-hidden="true" className="flex items-center justify-between border-b border-[#c5d2da] px-1 pb-2 text-[10px] font-bold uppercase tracking-[0.08em] dark:border-[#243d51]">
+            <span className="text-[#087663] dark:text-[#55d6b2]">← Koalitsioon · {selectedSeatCount}</span>
+            <span className="text-[#607583] dark:text-[#7890a2]">Opositsioon · {RIIGIKOGU_SEAT_COUNT - selectedSeatCount} →</span>
+          </div>
+        )}
         <svg
           viewBox={`0 0 ${RIIGIKOGU_VIEWBOX.width} ${RIIGIKOGU_VIEWBOX.height}`}
           className="block h-auto w-full"
@@ -144,7 +150,8 @@ export function RiigikoguSeatMap({
           <desc id={descriptionId}>
             101 Riigikogu kohta kuuel poolringikujulisel real. Enamuseks on vaja 51 kohta.
             Erakonna andmete vaatamiseks hõljuta selle kohtade rühma. Koalitsioonilaboris
-            valitud erakondade kohad on tugevamalt esile tõstetud.
+            valitud erakondade kohad on koondatud vasakule ja tugevamalt esile tõstetud;
+            ülejäänud erakonnad on paremal.
           </desc>
 
           <g aria-hidden="true">
