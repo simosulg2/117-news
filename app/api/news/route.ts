@@ -10,6 +10,7 @@ import {
   withFeedRetry,
 } from "@/lib/feed-retry";
 import { buildNewsCollections } from "@/lib/news-collections";
+import { InProcessSnapshotCache } from "@/lib/snapshot-cache";
 import type {
   FeedCategory,
   FeedFailure,
@@ -20,7 +21,7 @@ import type {
 } from "@/lib/types";
 
 export const runtime = "nodejs";
-export const revalidate = 300;
+export const dynamic = "force-dynamic";
 
 type CustomItem = {
   "content:encoded"?: string;
@@ -76,7 +77,14 @@ const FEEDS: ReadonlyArray<FeedDefinition> = [
 const MAX_INSPECTED_FEED_ITEMS = 117;
 const MAX_FEED_BYTES = 5_000_000;
 const MAX_FEED_REDIRECTS = 3;
+const NEWS_SNAPSHOT_TTL_MS = 5 * 60 * 1_000;
+const NEWS_STALE_RETRY_DELAY_MS = 30_000;
 const REDIRECT_STATUSES = new Set([301, 302, 303, 307, 308]);
+
+const newsSnapshotCache = new InProcessSnapshotCache<NewsResponse>(
+  NEWS_SNAPSHOT_TTL_MS,
+  NEWS_STALE_RETRY_DELAY_MS,
+);
 
 const parser = new Parser<Record<string, never>, CustomItem>({
   customFields: {
@@ -175,8 +183,8 @@ async function fetchFeedResponse(feed: FeedDefinition, headers: HeadersInit): Pr
     let response: Response;
     try {
       response = await fetch(currentUrl, {
+        cache: "no-store",
         headers,
-        next: { revalidate },
         redirect: "manual",
         signal,
       });
@@ -420,7 +428,22 @@ async function loadFeed(feed: (typeof FEEDS)[number]): Promise<NewsArticle[]> {
   return withFeedRetry(() => loadFeedOnce(feed));
 }
 
-export async function GET(): Promise<Response> {
+type NewsUnavailableBody = {
+  error: string;
+  sources: NewsResponse["sources"];
+};
+
+class NewsSnapshotRefreshError extends Error {
+  readonly responseBody: NewsUnavailableBody;
+
+  constructor(responseBody: NewsUnavailableBody) {
+    super(responseBody.error);
+    this.name = "NewsSnapshotRefreshError";
+    this.responseBody = responseBody;
+  }
+}
+
+async function refreshNewsSnapshot(): Promise<NewsResponse> {
   const settled = await Promise.allSettled(FEEDS.map(loadFeed));
   const failed: FeedName[] = [];
   const failures: FeedFailure[] = [];
@@ -443,21 +466,18 @@ export async function GET(): Promise<Response> {
   const collections = buildNewsCollections([...byLink.values()], generatedAt);
 
   if (collections.items.length === 0) {
-    return Response.json(
-      {
-        error: "Uudiste laadimine ebaõnnestus. Palun proovi mõne hetke pärast uuesti.",
-        sources: {
-          loaded: 0,
-          total: FEEDS.length,
-          failed,
-          failures,
-        },
+    throw new NewsSnapshotRefreshError({
+      error: "Uudiste laadimine ebaõnnestus. Palun proovi mõne hetke pärast uuesti.",
+      sources: {
+        loaded: 0,
+        total: FEEDS.length,
+        failed,
+        failures,
       },
-      { status: 502, headers: { "Cache-Control": "no-store" } },
-    );
+    });
   }
 
-  const payload: NewsResponse = {
+  return {
     ...collections,
     updatedAt: generatedAt.toISOString(),
     sources: {
@@ -467,10 +487,41 @@ export async function GET(): Promise<Response> {
       failures,
     },
   };
+}
 
-  return Response.json(payload, {
-    headers: {
-      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=900",
-    },
-  });
+export async function GET(): Promise<Response> {
+  try {
+    const snapshot = await newsSnapshotCache.get(refreshNewsSnapshot);
+
+    return Response.json(snapshot.value, {
+      headers: {
+        "Cache-Control": "no-store",
+        "X-News-Snapshot": snapshot.status,
+      },
+    });
+  } catch (error) {
+    if (!(error instanceof NewsSnapshotRefreshError)) {
+      console.error("Failed to refresh news snapshot", error);
+    }
+
+    const responseBody: NewsUnavailableBody = error instanceof NewsSnapshotRefreshError
+      ? error.responseBody
+      : {
+          error: "Uudiste laadimine ebaõnnestus. Palun proovi mõne hetke pärast uuesti.",
+          sources: {
+            loaded: 0,
+            total: FEEDS.length,
+            failed: [],
+            failures: [],
+          },
+        };
+
+    return Response.json(responseBody, {
+      status: 502,
+      headers: {
+        "Cache-Control": "no-store",
+        "X-News-Snapshot": "unavailable",
+      },
+    });
+  }
 }

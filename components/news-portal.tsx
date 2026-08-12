@@ -43,6 +43,8 @@ const deskClockFormatter = new Intl.DateTimeFormat("et-EE", {
 const numberFormatter = new Intl.NumberFormat("et-EE");
 const READ_STORAGE_KEY = "117-read-articles";
 const READ_RETENTION_MS = 30 * 24 * 60 * 60 * 1_000;
+const NEWS_REFRESH_MS = 5 * 60 * 1_000;
+const NEWS_REFRESH_CHECK_MS = 60 * 1_000;
 
 type ReadTimestamps = Record<string, number>;
 
@@ -363,7 +365,8 @@ function EmptyState({ hasQuery, onReset }: { hasQuery: boolean; onReset: () => v
 export function NewsPortal() {
   const [data, setData] = useState<NewsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [retryKey, setRetryKey] = useState(0);
+  const [refreshing, setRefreshing] = useState(false);
+  const [refreshError, setRefreshError] = useState<string | null>(null);
   const [category, setCategory] = useState<Category>("Kõik");
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
@@ -371,6 +374,9 @@ export function NewsPortal() {
   const [now, setNow] = useState<Date | null>(null);
   const [readTimestamps, setReadTimestamps] = useState<ReadTimestamps>({});
   const [readStateLoaded, setReadStateLoaded] = useState(false);
+  const dataRef = useRef<NewsResponse | null>(null);
+  const snapshotUpdatedAtRef = useRef(0);
+  const refreshNewsRef = useRef<((force?: boolean) => void) | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const headlineRefs = useRef(new Map<string, HTMLAnchorElement>());
 
@@ -416,23 +422,90 @@ export function NewsPortal() {
   }, [readStateLoaded, readTimestamps]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    setError(null);
+    let disposed = false;
+    let inFlight = false;
+    let activeController: AbortController | null = null;
 
-    async function loadNews() {
+    async function loadNews(force = false) {
+      if (inFlight) return;
+      if (
+        !force
+        && snapshotUpdatedAtRef.current > 0
+        && Date.now() - snapshotUpdatedAtRef.current < NEWS_REFRESH_MS
+      ) {
+        return;
+      }
+
+      inFlight = true;
+      const controller = new AbortController();
+      activeController = controller;
+      if (dataRef.current) {
+        setRefreshing(true);
+        setRefreshError(null);
+      } else {
+        setError(null);
+      }
+
       try {
-        const response = await fetch("/api/news", { signal: controller.signal });
+        const response = await fetch("/api/news", {
+          signal: controller.signal,
+          cache: "no-store",
+        });
         if (!response.ok) throw new Error("Uudiste laadimine ebaõnnestus.");
-        setData((await response.json()) as NewsResponse);
+        const servedStaleSnapshot = response.headers.get("X-News-Snapshot") === "stale-if-error";
+        const nextData = (await response.json()) as NewsResponse;
+        if (disposed) return;
+        dataRef.current = nextData;
+        const snapshotUpdatedAt = Date.parse(nextData.updatedAt);
+        snapshotUpdatedAtRef.current = Number.isFinite(snapshotUpdatedAt)
+          ? snapshotUpdatedAt
+          : Date.now();
+        setData(nextData);
+        setError(null);
+        setRefreshError(
+          servedStaleSnapshot
+            ? "Uuendamine ebaõnnestus; kuvame viimati laaditud uudiseid."
+            : null,
+        );
       } catch (reason) {
         if (reason instanceof DOMException && reason.name === "AbortError") return;
-        setError("Uudisvoogudega ei saadud ühendust. Kontrolli ühendust ja proovi uuesti.");
+        if (disposed) return;
+        if (dataRef.current) {
+          setRefreshError("Uuendamine ebaõnnestus; kuvame viimati laaditud uudiseid.");
+        } else {
+          setError("Uudisvoogudega ei saadud ühendust. Kontrolli ühendust ja proovi uuesti.");
+        }
+      } finally {
+        if (activeController === controller) activeController = null;
+        inFlight = false;
+        if (!disposed && !controller.signal.aborted) setRefreshing(false);
       }
     }
 
+    refreshNewsRef.current = (force = false) => void loadNews(force);
     void loadNews();
-    return () => controller.abort();
-  }, [retryKey]);
+    const refreshWhenActive = () => {
+      if (document.visibilityState === "visible") void loadNews();
+    };
+    const refreshInterval = window.setInterval(refreshWhenActive, NEWS_REFRESH_CHECK_MS);
+    document.addEventListener("visibilitychange", refreshWhenActive);
+    window.addEventListener("pageshow", refreshWhenActive);
+    window.addEventListener("focus", refreshWhenActive);
+
+    return () => {
+      disposed = true;
+      refreshNewsRef.current = null;
+      activeController?.abort();
+      window.clearInterval(refreshInterval);
+      document.removeEventListener("visibilitychange", refreshWhenActive);
+      window.removeEventListener("pageshow", refreshWhenActive);
+      window.removeEventListener("focus", refreshWhenActive);
+    };
+  }, []);
+
+  const refreshNews = useCallback(() => {
+    refreshNewsRef.current?.(true);
+  }, []);
 
   const toggleTheme = useCallback(() => {
     setTheme((current) => {
@@ -674,6 +747,19 @@ export function NewsPortal() {
             </span>
             <span>Teema: {category}</span>
             <span>Uuendatud: {data ? relativeTime(data.updatedAt, now?.getTime()) : "—"}</span>
+            <button
+              type="button"
+              onClick={refreshNews}
+              disabled={refreshing || (!data && !error)}
+              className="font-semibold text-[#4b6170] underline decoration-[#8194a1] underline-offset-2 outline-none hover:text-[#245fae] focus-visible:ring-1 focus-visible:ring-signal disabled:cursor-wait disabled:no-underline disabled:opacity-60 dark:text-[#8da1b0] dark:hover:text-[#7db0ff]"
+            >
+              {refreshing ? "Värskendan…" : "Uuenda"}
+            </button>
+            {refreshError && (
+              <span role="status" className="text-[#9d2733] dark:text-[#ff929d]">
+                {refreshError}
+              </span>
+            )}
             {readStateLoaded && readCount > 0 && (
               <button
                 type="button"
@@ -703,7 +789,7 @@ export function NewsPortal() {
             </div>
             <button
               type="button"
-              onClick={() => setRetryKey((value) => value + 1)}
+              onClick={refreshNews}
               className="min-h-10 w-fit border border-[#9d2f2f] px-4 text-xs font-semibold text-[#b42318] outline-none hover:bg-[#b42318] hover:text-white focus-visible:ring-2 focus-visible:ring-[#d9473f] dark:text-[#ff6b63]"
             >
               Proovi uuesti
