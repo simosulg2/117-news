@@ -72,3 +72,34 @@ export type WeatherResponse = {
   attributions: WeatherAttribution[];
   generatedAt: string;
 };
+
+export type WeatherHistorySourceStatus = {
+  id: "environment_agency_history" | "environment_agency_current";
+  label: string;
+  status: "ok" | "partial" | "error" | "not_configured";
+  updatedAt: string | null;
+  pointCount: number;
+  errorCode?: WeatherSourceErrorCode;
+};
+
+export type WeatherHistoryResponse = {
+  location: WeatherResponse["location"];
+  range: {
+    from: string;
+    to: string;
+    durationHours: number;
+  };
+  points: WeatherPoint[];
+  resolution: {
+    mode: "detail" | "hourly";
+    intervalMinutes: number | null;
+  };
+  coverage: {
+    from: string | null;
+    to: string | null;
+    pointCount: number;
+  };
+  sources: WeatherHistorySourceStatus[];
+  partial: boolean;
+  generatedAt: string;
+};

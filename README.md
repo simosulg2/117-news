@@ -1,6 +1,6 @@
 # 117.ee
 
-117.ee koondab ühte kiiresse töölauale Eesti uudised ja Võru ilma. Uudiste üldvaates kuvatakse kuni 117 kõige värskemat lugu ning igas teemavaates kuni 117 selle teema värskeimat saadaolevat lugu. Sama sündmust kajastavad eri allikad koondatakse ühe rea alla. Eraldi `/ilm` vaates saab uurida hetkeilma, mõõdetud ajalugu, mudelprognoosi, jooksu ajavahemikku ja sademeradarit. Vaikimisi avaneb hele teema, kuid kasutaja salvestatud valikut austatakse.
+117.ee koondab ühte kiiresse töölauale Eesti uudised ja Võru ilma. Uudiste üldvaates kuvatakse kuni 117 kõige värskemat lugu ning igas teemavaates kuni 117 selle teema värskeimat saadaolevat lugu. Sama sündmust kajastavad eri allikad koondatakse ühe rea alla. Eraldi `/ilm` vaates saab uurida hetkeilma, mõõdetud ajalugu, mudelprognoosi, valitud ajavahemiku ilmaülevaadet ja sademeradarit. Vaikimisi avaneb hele teema, kuid kasutaja salvestatud valikut austatakse.
 
 ## Käivitamine
 
@@ -37,12 +37,16 @@ Artiklid avanevad alati algallika lehel. Postimehe tellijasisu kasutab seal brau
 ## Võru ilm
 
 - `/api/weather` laadib Võru hetkevaatluse Keskkonnaagentuuri XML-ist, seitsme päeva tunniandmed Keskkonnaportaali andmeteenusest ning seitsme päeva mudelajaloo ja prognoosi Open-Meteost.
-- Mõõdetud ja mudelandmeid ei esitata ühe allikana: graafikud, jooksu kokkuvõte ja allikate olek eristavad need selgelt.
+- Ajaloo vaates saab valida 24 tundi, 3, 7, 30 või 90 päeva ning kuni 90-päevase kohandatud ajavahemiku. Pikemad vaated laaditakse eraldi `/api/weather/history` otspunktist, et tavavaade püsiks kiire.
+- Kuni seitsme päeva vaates säilivad talletatud mõõtmiste üksikasjad; pikemad graafikud koondatakse tunnipunktideks. Vanem ametlik arhiiv on tunnise sammuga ning 10 minuti täpsus koguneb PostgreSQL-i alles koguja käivitamisest.
+- Valitud ajaloo ajavahemiku algandmed saab ilma graafiku koondamiseta CSV-failina alla laadida.
+- Mõõdetud ja mudelandmeid ei esitata ühe allikana: graafikud, ajavahemiku kokkuvõte ja allikate olek eristavad need selgelt.
+- Graafikul hõljutamine või puudutamine kuvab täpse Eesti aja ja väärtuse kõigil graafikutel sama ajapunkti juures; valikut saab juhtida ka nooleklahvidega.
 - Ametlikus tunniarhiivis puudub Võru numbriline pilvisus. Varasema pilvisuse protsent on seetõttu mudelhinnang; hetkevaatluse kirjeldav pilvisus on mõõdetud vaatlus.
 - `/api/weather/radar` koostab ametliku radariteenuse ajajoone. Brauser kuvab Keskkonnaagentuuri mõõdetud ja lühiprognoosi WMS-kihte 117.ee enda interaktiivsel kaardil.
 - Ilma ja radari vead on teineteisest ning uudiste API-st isoleeritud. Iga töötav osa jääb teise allika vea korral kasutatavaks.
 - Kui kõik välised ilmaallikad ajutiselt ebaõnnestuvad, jääb PostgreSQL-i salvestatud mõõteajalugu kasutatavaks; seda ei esitata ekslikult värske hetkevaatlusena.
-- Vaate, ajavahemiku, valitud näitajate ja jooksu aja eelistused säilivad ainult kasutaja brauseris.
+- Vaate, ajavahemiku, valitud näitajate ja kokkuvõtte aja eelistused säilivad ainult kasutaja brauseris.
 
 Andmete juures kuvatakse Keskkonnaagentuuri, Ilmateenistuse, Open-Meteo ja OpenStreetMapi viited ning litsentsid.
 

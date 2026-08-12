@@ -4,6 +4,11 @@ import type { WeatherPoint } from "./weather-types";
 
 const STATION_WMO_CODE = "26249";
 const MAX_HISTORY_RANGE_MS = 31 * 24 * 60 * 60 * 1_000;
+const MAX_EXTENDED_HISTORY_RANGE_MS = 90 * 24 * 60 * 60 * 1_000 + 60 * 60 * 1_000;
+// Six ten-minute snapshots plus one canonical precipitation row per hour are
+// roughly 15,120 rows across a full 90-day window. Keep a little headroom so
+// a complete collector history is not truncated at the advertised limit.
+const MAX_EXTENDED_HISTORY_ROWS = 20_000;
 // The XML feed publishes the previous full hour's precipitation ten minutes
 // after the hour. Requests in the short update window are deliberately not
 // persisted as rainfall; a later request safely fills the canonical row.
@@ -324,4 +329,67 @@ export async function loadStoredWeatherObservations(from: Date, to: Date): Promi
   return result.rows
     .map(storedWeatherRowToPoint)
     .filter((point): point is WeatherPoint => point !== null);
+}
+
+export type StoredWeatherObservationRange = {
+  points: WeatherPoint[];
+  truncated: boolean;
+};
+
+/**
+ * Loads the longer, explicitly requested history window without changing the
+ * conservative limits used by the normal weather-page request. One extra row
+ * is requested so callers can report incomplete database coverage honestly
+ * instead of silently treating a SQL LIMIT as complete history.
+ */
+export async function loadStoredWeatherObservationRange(
+  from: Date,
+  to: Date,
+): Promise<StoredWeatherObservationRange> {
+  const pool = weatherPool();
+  if (!pool) return { points: [], truncated: false };
+
+  const fromTime = from.getTime();
+  const toTime = to.getTime();
+  if (
+    !Number.isFinite(fromTime)
+    || !Number.isFinite(toTime)
+    || fromTime >= toTime
+    || toTime - fromTime > MAX_EXTENDED_HISTORY_RANGE_MS
+  ) return { points: [], truncated: false };
+
+  await ensureSchema(pool);
+  const result = await pool.query<StoredWeatherRow>(
+    `
+      SELECT
+        observed_at,
+        temperature_c,
+        apparent_temperature_c,
+        relative_humidity_pct,
+        cloud_cover_pct,
+        precipitation_mm,
+        pressure_hpa,
+        wind_speed_ms,
+        wind_gust_ms,
+        wind_direction_deg,
+        weather_code,
+        phenomenon
+      FROM weather_observations
+      WHERE station_wmo_code = $1
+        AND observed_at >= $2
+        AND observed_at < $3
+      ORDER BY observed_at ASC
+      LIMIT $4
+    `,
+    [STATION_WMO_CODE, from, to, MAX_EXTENDED_HISTORY_ROWS + 1],
+  );
+
+  const truncated = result.rows.length > MAX_EXTENDED_HISTORY_ROWS;
+  const rows = truncated ? result.rows.slice(0, MAX_EXTENDED_HISTORY_ROWS) : result.rows;
+  return {
+    points: rows
+      .map(storedWeatherRowToPoint)
+      .filter((point): point is WeatherPoint => point !== null),
+    truncated,
+  };
 }
