@@ -188,7 +188,7 @@ export function RiigikoguSeatMap({
                 ? "fill-[#087663] text-[12px] font-black tracking-[0.06em] transition-colors dark:fill-[#55d6b2]"
                 : "fill-[#405767] text-[12px] font-bold tracking-[0.06em] transition-colors dark:fill-[#a9b7c2]"}
             >
-              {coalitionHasMajority ? "51 · ENAMUS ✓" : "51 · ENAMUS"}
+              {coalitionHasMajority ? `${selectedSeatCount} · ENAMUS ✓` : "51 · ENAMUS"}
             </text>
           </g>
 
