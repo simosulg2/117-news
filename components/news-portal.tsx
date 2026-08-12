@@ -559,13 +559,31 @@ export function NewsPortal() {
 
       <header className="sticky top-0 z-50 border-b border-[#172b3b] bg-[#08131f] text-[#e8f0f6] shadow-[0_1px_0_#4f8cff]">
         <div className="mx-auto max-w-[96rem] px-3 sm:px-5 lg:px-7">
-          <div className="flex min-h-12 items-center justify-between gap-4 border-b border-[#263d50]">
-            <a href="#" className="flex items-center gap-2.5 outline-none focus-visible:ring-1 focus-visible:ring-signal" aria-label="117.ee avaleht">
-              <span className="block size-10 shrink-0" aria-hidden="true">
-                <img src="/117.png" alt="" className="size-full object-contain" />
-              </span>
-              <span className="hidden text-[13px] font-medium text-[#8da1b0] sm:inline">Eesti uudisvoog</span>
-            </a>
+          <div className="flex min-h-12 items-center justify-between gap-2 border-b border-[#263d50] sm:gap-4">
+            <div className="flex min-w-0 self-stretch">
+              <a href="/" className="flex items-center gap-2.5 outline-none focus-visible:ring-1 focus-visible:ring-signal" aria-label="117.ee avaleht">
+                <span className="block size-10 shrink-0" aria-hidden="true">
+                  <img src="/117.png" alt="" className="size-full object-contain" />
+                </span>
+                <span className="hidden text-[13px] font-medium text-[#8da1b0] lg:inline">Eesti uudisvoog</span>
+              </a>
+
+              <nav aria-label="Põhinavigatsioon" className="ml-2 flex border-l border-[#263d50] sm:ml-4">
+                <a
+                  href="/"
+                  aria-current="page"
+                  className="flex min-h-12 items-center border-r border-[#263d50] bg-[#102538] px-3 text-xs font-bold text-signal outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal sm:px-4"
+                >
+                  Uudised
+                </a>
+                <a
+                  href="/ilm"
+                  className="flex min-h-12 items-center border-r border-[#263d50] px-3 text-xs font-semibold text-[#a9b7c2] outline-none hover:bg-[#102538] hover:text-white focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal sm:px-4"
+                >
+                  Ilm
+                </a>
+              </nav>
+            </div>
 
             <div className="flex items-center gap-3 text-xs">
               <span className="hidden text-[#8da1b0] sm:inline">
