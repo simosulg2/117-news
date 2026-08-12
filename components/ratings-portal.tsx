@@ -224,10 +224,10 @@ export function RatingsPortal() {
   }, [data, projection]);
 
   const hemicycleParties = useMemo(() => {
-    const politicalOrder = ["sde", "kesk", "eesti200", "reform", "parempoolsed", "isamaa", "ekre"];
-    const order = new Map(politicalOrder.map((id, index) => [id, index]));
     return [...projectedParties].sort((left, right) =>
-      (order.get(left.id) ?? 100) - (order.get(right.id) ?? 100) || left.name.localeCompare(right.name, "et"));
+      right.seats - left.seats
+      || right.support - left.support
+      || left.name.localeCompare(right.name, "et"));
   }, [projectedParties]);
 
   const governmentSeats = projectedParties
