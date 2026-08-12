@@ -80,7 +80,8 @@ function electionParty(party: RatingsParty): party is RatingsParty & { supportPc
 
 function coalitionLabel(seats: number): string {
   const difference = seats - 51;
-  if (difference >= 0) return `enamus +${difference}`;
+  if (difference === 0) return "täpselt enamus";
+  if (difference > 0) return `enamus +${difference}`;
   return `enamusest ${Math.abs(difference)} puudu`;
 }
 
@@ -105,48 +106,6 @@ function LoadingState() {
   );
 }
 
-function KantarCard({ showEmbed, onShowEmbed }: { showEmbed: boolean; onShowEmbed: () => void }) {
-  return (
-    <section aria-labelledby="kantar-heading" className="mt-3 overflow-hidden border border-[#9fb2c0] bg-[#f4f7f9] dark:border-[#35536a] dark:bg-[#0a1926]">
-      <div className="grid gap-2 border-b border-[#bdcad3] bg-[#dfe8ee] px-3 py-2 dark:border-[#294154] dark:bg-[#0d2030] sm:grid-cols-[1fr_auto] sm:items-center">
-        <div>
-          <h2 id="kantar-heading" className="text-sm font-bold text-[#192630] dark:text-[#e5eef4]">Võrdlus: Kantar Emori kuureiting</h2>
-          <p className="mt-0.5 text-[11px] leading-4 text-[#526878] dark:text-[#8da1b0]">
-            Ametlik interaktiivne graafik · kuine uuring · ei ole ühendatud Norstati kohtade projektsiooniga
-          </p>
-        </div>
-        <a href="https://emor.ee/erakondade-toetusreitingud/" target="_blank" rel="noopener noreferrer external" className="text-xs font-semibold text-[#405767] underline decoration-[#8194a1] underline-offset-2 outline-none hover:text-[#245fae] focus-visible:ring-1 focus-visible:ring-signal dark:text-[#a9b7c2] dark:hover:text-[#7db0ff]">
-          Ava Emori lehel
-        </a>
-      </div>
-      {showEmbed ? (
-        <div className="bg-white dark:bg-[#f8fafb]">
-          <iframe
-            title="Kantar Emori ametlik erakondade toetuse graafik"
-            src="https://e.infogram.com/_/F64r02mYkSvcm6lMPtCd?src=embed"
-            loading="lazy"
-            referrerPolicy="no-referrer"
-            sandbox="allow-scripts allow-same-origin allow-popups"
-            className="block h-[42rem] w-full border-0 sm:h-[48rem]"
-          />
-        </div>
-      ) : (
-        <div className="grid min-h-40 place-items-center gap-3 bg-[#edf2f5] px-4 py-8 text-center dark:bg-[#0d2030]">
-          <p className="max-w-xl text-xs leading-5 text-[#526878] dark:text-[#8da1b0]">
-            Graafiku laadimisel luuakse ühendus kolmanda osapoole Infogrami teenusega.
-          </p>
-          <button type="button" onClick={onShowEmbed} className="min-h-10 border border-[#718896] bg-[#f8fafb] px-4 text-xs font-bold text-[#304654] outline-none hover:border-[#245fae] hover:text-[#245fae] focus-visible:ring-2 focus-visible:ring-signal dark:border-[#58768b] dark:bg-[#102538] dark:text-[#c2d0d9] dark:hover:text-[#7db0ff]">
-            Laadi Emori graafik
-          </button>
-        </div>
-      )}
-      <p className="border-t border-[#bdcad3] px-3 py-2 text-[11px] leading-5 text-[#526878] dark:border-[#294154] dark:text-[#8da1b0]">
-        Emor avaldab tulemused kord kuus ja tema enda lehel pärast ERR-i esmaavaldamise perioodi. Graafik pärineb muutmata kujul Emorilt; 117.ee ei kraabi selle väärtusi ega sega eri uuringufirmade metoodikaid üheks keskmiseks.
-      </p>
-    </section>
-  );
-}
-
 export function RatingsPortal() {
   const [data, setData] = useState<RatingsResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -155,7 +114,7 @@ export function RatingsPortal() {
   const [theme, setTheme] = useState<"light" | "dark">("light");
   const [now, setNow] = useState<Date | null>(null);
   const [retryKey, setRetryKey] = useState(0);
-  const [showKantarEmbed, setShowKantarEmbed] = useState(false);
+  const [showMinorParties, setShowMinorParties] = useState(false);
   const [selectedCoalitionIds, setSelectedCoalitionIds] = useState<Set<string>>(new Set());
   const dataRef = useRef<RatingsResponse | null>(null);
   const fetchedAtRef = useRef(0);
@@ -284,6 +243,13 @@ export function RatingsPortal() {
   const selectedCoalitionCount = projectedParties
     .filter((party) => selectedCoalitionIds.has(party.id))
     .length;
+  const tableParties = data
+    ? data.poll.parties.filter((party) => party.kind === "party" && party.supportPct !== null)
+    : [];
+  const primaryTableParties = tableParties.filter((party) =>
+    (party.supportPct ?? 0) >= 5 || CURRENT_GOVERNMENT_PARTY_IDS.has(party.id));
+  const minorTableParties = tableParties.filter((party) =>
+    (party.supportPct ?? 0) < 5 && !CURRENT_GOVERNMENT_PARTY_IDS.has(party.id));
   const thresholdWaste = data
     ? data.poll.parties
       .filter((party) => party.kind !== "independent" && party.supportPct !== null && party.supportPct < 5)
@@ -315,6 +281,15 @@ export function RatingsPortal() {
       return next;
     });
   }, []);
+
+  useEffect(() => {
+    const projectedIds = new Set(projectedParties.map((party) => party.id));
+    setSelectedCoalitionIds((current) => {
+      const next = new Set([...current].filter((id) => projectedIds.has(id)));
+      if (next.size === current.size && [...next].every((id) => current.has(id))) return current;
+      return next;
+    });
+  }, [projectedParties]);
 
   return (
     <div className="min-h-screen">
@@ -419,7 +394,11 @@ export function RatingsPortal() {
           <>
             <section aria-labelledby="projection-heading" className="grid gap-3 lg:grid-cols-[minmax(0,1.55fr)_minmax(20rem,0.72fr)]">
               <h2 id="projection-heading" className="sr-only">Riigikogu kohtade projektsioon</h2>
-              <RiigikoguSeatMap parties={hemicycleParties} />
+              <RiigikoguSeatMap
+                parties={hemicycleParties}
+                selectedPartyIds={selectedCoalitionIds}
+                selectedSeatCount={selectedCoalitionSeats}
+              />
 
               <div className="grid content-start gap-3">
                 <section aria-labelledby="government-heading" className="border border-[#9fb2c0] bg-[#f4f7f9] dark:border-[#35536a] dark:bg-[#0a1926]">
@@ -450,16 +429,24 @@ export function RatingsPortal() {
                 <section aria-labelledby="coalition-heading" className="border border-[#9fb2c0] bg-[#f4f7f9] dark:border-[#35536a] dark:bg-[#0a1926]">
                   <div className="flex items-center justify-between gap-3 border-b border-[#bdcad3] bg-[#dfe8ee] px-3 py-2 dark:border-[#294154] dark:bg-[#0d2030]">
                     <h2 id="coalition-heading" className="text-sm font-bold text-[#192630] dark:text-[#e5eef4]">Koalitsioonilabor</h2>
-                    <span className={`text-xs font-bold tabular-nums ${selectedCoalitionSeats >= 51 ? "text-[#087663] dark:text-[#55d6b2]" : "text-[#526878] dark:text-[#8da1b0]"}`}>
-                      {selectedCoalitionSeats}/101
-                    </span>
+                    <div className="flex items-center gap-3">
+                      {selectedCoalitionCount > 0 && (
+                        <button type="button" onClick={() => setSelectedCoalitionIds(new Set())} className="text-[11px] font-semibold text-[#526878] underline decoration-[#8194a1] underline-offset-2 outline-none hover:text-[#245fae] focus-visible:ring-1 focus-visible:ring-signal dark:text-[#8da1b0] dark:hover:text-[#7db0ff]">
+                          Tühjenda
+                        </button>
+                      )}
+                      <span className={`text-xs font-bold tabular-nums ${selectedCoalitionSeats >= 51 ? "text-[#087663] dark:text-[#55d6b2]" : "text-[#526878] dark:text-[#8da1b0]"}`}>
+                        {selectedCoalitionSeats}/101
+                      </span>
+                    </div>
                   </div>
                   <div className="grid grid-cols-2 gap-px bg-[#d0dbe2] p-px dark:bg-[#24394a]">
-                    {projectedParties.map((party) => {
+                    {hemicycleParties.map((party) => {
                       const selected = selectedCoalitionIds.has(party.id);
                       return (
-                        <button key={party.id} type="button" onClick={() => toggleCoalitionParty(party.id)} aria-pressed={selected} className={`grid min-h-11 grid-cols-[auto_1fr_auto] items-center gap-2 px-2 text-left text-xs outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal ${selected ? "bg-[#4f8cff]/15" : "bg-[#f8fafb] hover:bg-[#edf3f7] dark:bg-[#0d2030] dark:hover:bg-[#102538]"}`}>
-                          <span className="size-2.5 border border-[#07131f]/50 dark:border-white/70" style={{ backgroundColor: party.color }} aria-hidden="true" />
+                        <button key={party.id} type="button" onClick={() => toggleCoalitionParty(party.id)} aria-pressed={selected} className={`grid min-h-11 grid-cols-[auto_auto_1fr_auto] items-center gap-2 border-l-2 px-2 text-left text-xs outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal ${selected ? "border-[#087663] bg-[#087663]/10 dark:border-[#55d6b2]" : "border-transparent bg-[#f8fafb] hover:bg-[#edf3f7] dark:bg-[#0d2030] dark:hover:bg-[#102538]"}`}>
+                          <span aria-hidden="true" className={`grid size-4 place-items-center border text-[10px] font-black ${selected ? "border-[#087663] bg-[#087663] text-white dark:border-[#55d6b2] dark:bg-[#55d6b2] dark:text-[#07131f]" : "border-[#9fb2c0] text-transparent dark:border-[#58768b]"}`}>✓</span>
+                          <span className="size-2.5 border border-[#263946]/70 dark:border-[#d8e4eb]/80" style={{ backgroundColor: party.color }} aria-hidden="true" />
                           <span className="truncate font-semibold text-[#304654] dark:text-[#c2d0d9]">{party.shortName}</span>
                           <b className="tabular-nums text-[#192630] dark:text-[#e5eef4]">{party.seats}</b>
                         </button>
@@ -492,12 +479,25 @@ export function RatingsPortal() {
             </section>
 
             <section aria-labelledby="party-table-heading" className="mt-3 overflow-hidden border border-[#9fb2c0] bg-[#f4f7f9] dark:border-[#35536a] dark:bg-[#0a1926]">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#bdcad3] bg-[#dfe8ee] px-3 py-2 dark:border-[#294154] dark:bg-[#0d2030]">
-                <h2 id="party-table-heading" className="text-sm font-bold text-[#192630] dark:text-[#e5eef4]">Erakondade seis</h2>
-                <span className="text-[11px] text-[#526878] dark:text-[#8da1b0]">
-                  Muutus eelmise nädala avaldatud 4 nädala koondiga
-                  {data.poll.previousWave ? ` (${dateFormatter.format(new Date(`${data.poll.previousWave.startDate}T12:00:00Z`))}–${dateFormatter.format(new Date(`${data.poll.previousWave.endDate}T12:00:00Z`))})` : ""} · pp
-                </span>
+              <div className="grid gap-2 border-b border-[#bdcad3] bg-[#dfe8ee] px-3 py-2 dark:border-[#294154] dark:bg-[#0d2030] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                <div>
+                  <h2 id="party-table-heading" className="text-sm font-bold text-[#192630] dark:text-[#e5eef4]">Erakondade seis</h2>
+                  <p className="mt-0.5 text-[11px] text-[#526878] dark:text-[#8da1b0]">
+                    Põhivaates on künnise ületajad ja valitsuserakonnad. Muutus eelmise nädala 4 nädala koondiga
+                    {data.poll.previousWave ? ` (${dateFormatter.format(new Date(`${data.poll.previousWave.startDate}T12:00:00Z`))}–${dateFormatter.format(new Date(`${data.poll.previousWave.endDate}T12:00:00Z`))})` : ""} · pp
+                  </p>
+                </div>
+                {minorTableParties.length > 0 && (
+                  <button
+                    type="button"
+                    aria-expanded={showMinorParties}
+                    aria-controls="minor-party-rows"
+                    onClick={() => setShowMinorParties((current) => !current)}
+                    className="min-h-9 border border-[#718896] bg-[#edf2f5] px-3 text-xs font-bold text-[#405767] outline-none hover:border-[#245fae] hover:text-[#245fae] focus-visible:ring-2 focus-visible:ring-signal dark:border-[#58768b] dark:bg-[#102538] dark:text-[#a9b7c2] dark:hover:text-[#7db0ff]"
+                  >
+                    {showMinorParties ? "Peida" : "Näita"} väiksemaid ({minorTableParties.length})
+                  </button>
+                )}
               </div>
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[42rem] border-collapse text-xs">
@@ -511,11 +511,36 @@ export function RatingsPortal() {
                     </tr>
                   </thead>
                   <tbody>
-                    {data.poll.parties.filter((party) => party.kind === "party" && party.supportPct !== null).map((party) => {
+                    {primaryTableParties.map((party) => {
                       const projected = projectedParties.find((candidate) => candidate.id === party.id);
                       const passes = (party.supportPct ?? 0) >= 5;
                       const currentRole = CURRENT_GOVERNMENT_PARTY_IDS.has(party.id) ? "Valitsus · " : "";
                       const status = `${currentRole}${passes ? "saaks kohti" : "alla 5%"}`;
+                      return (
+                        <tr key={party.id} className="border-t border-[#d0dbe2] text-[#304654] dark:border-[#24394a] dark:text-[#c2d0d9]">
+                          <th scope="row" className="px-3 py-2 text-left font-semibold">
+                            <span className="flex items-center gap-2">
+                              <span className="size-2.5 shrink-0 border border-[#07131f]/50 dark:border-white/70" style={{ backgroundColor: party.color }} aria-hidden="true" />
+                              <span>{party.name}</span>
+                            </span>
+                          </th>
+                          <td className="px-3 py-2 text-right font-bold tabular-nums text-[#192630] dark:text-[#e5eef4]">{percentage(party.supportPct)}</td>
+                          <td className={`px-3 py-2 text-right font-semibold tabular-nums ${party.changePctPoints !== null && party.changePctPoints > 0 ? "text-[#087663] dark:text-[#55d6b2]" : party.changePctPoints !== null && party.changePctPoints < 0 ? "text-[#9d2733] dark:text-[#ff929d]" : "text-[#607583] dark:text-[#8da1b0]"}`}>
+                            {signedChange(party.changePctPoints)}
+                          </td>
+                          <td className="px-3 py-2 text-right text-lg font-bold tabular-nums text-[#245fae] dark:text-[#7db0ff]">{projected?.seats ?? 0}</td>
+                          <td className="px-3 py-2">
+                            <span className={`inline-flex border-l-2 pl-2 font-semibold ${passes ? "border-[#245fae] text-[#405767] dark:border-signal dark:text-[#a9b7c2]" : "border-[#9d762f] text-[#805818] dark:border-[#efb860] dark:text-[#efb860]"}`}>{status}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tbody id="minor-party-rows" hidden={!showMinorParties}>
+                    {minorTableParties.map((party) => {
+                      const projected = projectedParties.find((candidate) => candidate.id === party.id);
+                      const passes = (party.supportPct ?? 0) >= 5;
+                      const status = passes ? "saaks kohti" : "alla 5%";
                       return (
                         <tr key={party.id} className="border-t border-[#d0dbe2] text-[#304654] dark:border-[#24394a] dark:text-[#c2d0d9]">
                           <th scope="row" className="px-3 py-2 text-left font-semibold">
@@ -557,12 +582,16 @@ export function RatingsPortal() {
                   <a href={data.poll.source.methodologyUrl} target="_blank" rel="noopener noreferrer external" className="font-semibold underline decoration-[#8194a1] underline-offset-2 hover:text-[#245fae] focus-visible:ring-1 focus-visible:ring-signal dark:hover:text-[#7db0ff]">Metoodika</a>
                   <a href="https://www.valimised.ee/et/valimiste-meelespea/tulemuste-kindlakstegemine/valimistulemuste-kindlakstegemine-riigikogu" target="_blank" rel="noopener noreferrer external" className="font-semibold underline decoration-[#8194a1] underline-offset-2 hover:text-[#245fae] focus-visible:ring-1 focus-visible:ring-signal dark:hover:text-[#7db0ff]">Ametlik valimiskord</a>
                 </div>
+                <div className="mt-2 border-t border-[#bdcad3] pt-2 dark:border-[#294154]">
+                  <a href="https://emor.ee/erakondade-toetusreitingud/" className="font-bold text-[#405767] underline decoration-[#8194a1] underline-offset-2 hover:text-[#245fae] focus-visible:ring-1 focus-visible:ring-signal dark:text-[#a9b7c2] dark:hover:text-[#7db0ff]">
+                    Kantar Emori kuureiting →
+                  </a>
+                  <p className="mt-0.5">Eraldi metoodika; Emori tulemusi ei kasutata siin kohtade projektsioonis.</p>
+                </div>
               </div>
             </section>
           </>
         )}
-
-        <KantarCard showEmbed={showKantarEmbed} onShowEmbed={() => setShowKantarEmbed(true)} />
       </main>
 
       <footer className="border-t border-[#9fb2c0] bg-[#dfe8ee] dark:border-[#35536a] dark:bg-[#0b1b29]">

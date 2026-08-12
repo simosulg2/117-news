@@ -22,6 +22,8 @@ export type RiigikoguProjectedParty = {
 
 export type RiigikoguSeatMapProps = {
   parties: readonly RiigikoguProjectedParty[];
+  selectedPartyIds?: ReadonlySet<string>;
+  selectedSeatCount?: number;
   className?: string;
   title?: string;
 };
@@ -101,36 +103,26 @@ function assignSeats(parties: readonly RiigikoguProjectedParty[]): RenderedParty
 
 export function RiigikoguSeatMap({
   parties,
+  selectedPartyIds = new Set<string>(),
+  selectedSeatCount = 0,
   className = "",
   title = "Riigikogu kohtade projektsioon",
 }: RiigikoguSeatMapProps) {
   const titleId = useId();
   const descriptionId = useId();
   const [previewPartyKey, setPreviewPartyKey] = useState<string | null>(null);
-  const [pinnedPartyKey, setPinnedPartyKey] = useState<string | null>(null);
   const renderedParties = useMemo(() => assignSeats(parties), [parties]);
-  const activePartyKey = previewPartyKey ?? pinnedPartyKey;
-  const activeParty = renderedParties.find((party) => party.key === activePartyKey) ?? null;
-  const detailParty = activeParty ?? renderedParties.find((party) => !party.unallocated) ?? renderedParties[0] ?? null;
-  const tooltipAnchor = activeParty
-    ? activeParty.positions[Math.floor(activeParty.positions.length / 2)]
-      ?? { x: RIIGIKOGU_VIEWBOX.width / 2, y: 322 }
-    : null;
+  const previewParty = renderedParties.find((party) => party.key === previewPartyKey) ?? null;
+  const hasCoalitionSelection = renderedParties.some((party) => selectedPartyIds.has(party.id));
 
-  const setPreview = (partyKey: string) => setPreviewPartyKey(partyKey);
   const clearPreview = (partyKey: string) => {
     setPreviewPartyKey((current) => current === partyKey ? null : current);
   };
-  const togglePinned = (partyKey: string) => {
-    setPinnedPartyKey((current) => current === partyKey ? null : partyKey);
-  };
-  const clearSelection = () => {
-    setPreviewPartyKey(null);
-    setPinnedPartyKey(null);
-  };
-
-  const tooltipX = tooltipAnchor ? Math.min(606, Math.max(114, tooltipAnchor.x)) : 0;
-  const tooltipY = tooltipAnchor ? Math.min(304, Math.max(54, tooltipAnchor.y - 20)) : 0;
+  const coalitionSummary = selectedSeatCount === 51
+    ? "täpselt enamus"
+    : selectedSeatCount > 51
+      ? `enamus +${selectedSeatCount - 51}`
+      : `enamusest ${51 - selectedSeatCount} puudu`;
 
   return (
     <figure className={`border border-[#9fb2c0] bg-[#f4f7f9] dark:border-[#35536a] dark:bg-[#0a1926] ${className}`}>
@@ -141,7 +133,7 @@ export function RiigikoguSeatMap({
         </span>
       </figcaption>
 
-      <div className="px-2 pb-1 pt-2 sm:px-4">
+      <div className="m-2 border border-[#c5d2da] bg-[#eaf0f4] px-2 pb-1 pt-2 dark:border-[#243d51] dark:bg-[#071521] sm:m-3 sm:px-4">
         <svg
           viewBox={`0 0 ${RIIGIKOGU_VIEWBOX.width} ${RIIGIKOGU_VIEWBOX.height}`}
           className="block h-auto w-full"
@@ -151,7 +143,8 @@ export function RiigikoguSeatMap({
           <title id={titleId}>{title}</title>
           <desc id={descriptionId}>
             101 Riigikogu kohta kuuel poolringikujulisel real. Enamuseks on vaja 51 kohta.
-            Erakonna andmete vaatamiseks hõljuta, puuduta või fookusta selle kohtade rühm.
+            Erakonna andmete vaatamiseks hõljuta selle kohtade rühma. Koalitsioonilaboris
+            valitud erakondade kohad on tugevamalt esile tõstetud.
           </desc>
 
           <g aria-hidden="true">
@@ -184,16 +177,23 @@ export function RiigikoguSeatMap({
 
           {renderedParties.map((party) => {
             if (party.positions.length === 0) return null;
-            const isActive = party.key === activePartyKey;
+            const isPreviewed = party.key === previewPartyKey;
+            const isCoalitionParty = !party.unallocated && selectedPartyIds.has(party.id);
+            const isEmphasized = isPreviewed || (!previewParty && isCoalitionParty);
+            const isDimmed = previewParty
+              ? !isPreviewed
+              : hasCoalitionSelection && !isCoalitionParty;
 
             return (
               <g
                 key={party.key}
                 aria-hidden="true"
-                className="cursor-pointer"
-                onPointerEnter={() => setPreview(party.key)}
+                className="cursor-default"
+                onPointerEnter={(event) => {
+                  if (event.pointerType === "mouse") setPreviewPartyKey(party.key);
+                }}
                 onPointerLeave={() => clearPreview(party.key)}
-                onClick={() => togglePinned(party.key)}
+                onPointerCancel={() => clearPreview(party.key)}
               >
                 {party.positions.map((seat) => (
                   <circle
@@ -201,76 +201,48 @@ export function RiigikoguSeatMap({
                     aria-hidden="true"
                     cx={seat.x}
                     cy={seat.y}
-                    r={isActive ? RIIGIKOGU_SEAT_RADIUS + 1.15 : RIIGIKOGU_SEAT_RADIUS}
+                    r={isEmphasized ? RIIGIKOGU_SEAT_RADIUS + 1 : RIIGIKOGU_SEAT_RADIUS}
                     fill={party.color}
                     className={`transition-[r,opacity,stroke-width] duration-150 ${
-                      isActive
-                        ? "text-[#07131f] dark:text-[#f3f8fb]"
-                        : "text-white dark:text-[#07131f]"
+                      isCoalitionParty && !previewParty
+                        ? "text-[#087663] dark:text-[#55d6b2]"
+                        : "text-[#263946] dark:text-[#d8e4eb]"
                     }`}
                     stroke="currentColor"
-                    strokeWidth={isActive ? 2.5 : 1.35}
-                    opacity={activePartyKey && !isActive ? 0.58 : 1}
+                    strokeWidth={isEmphasized ? 3 : 1.2}
+                    opacity={isDimmed ? 0.24 : 1}
                   />
                 ))}
               </g>
             );
           })}
-
-          {activeParty && tooltipAnchor && (
-            <g aria-hidden="true" pointerEvents="none">
-              <rect
-                x={tooltipX - 106}
-                y={tooltipY - 40}
-                width="212"
-                height="42"
-                rx="2"
-                className="fill-[#f8fafb] stroke-[#29485f] dark:fill-[#08131f] dark:stroke-[#7db0ff]"
-                strokeWidth="1.5"
-              />
-              <text
-                x={tooltipX}
-                y={tooltipY - 23}
-                textAnchor="middle"
-                className="fill-[#101a24] text-[12px] font-bold dark:fill-[#edf4f8]"
-              >
-                {activeParty.shortName.slice(0, 24)} · {seatLabel(activeParty.seats)}
-              </text>
-              <text
-                x={tooltipX}
-                y={tooltipY - 9}
-                textAnchor="middle"
-                className="fill-[#526878] text-[10px] font-semibold dark:fill-[#a9b7c2]"
-              >
-                {supportLabel(activeParty.support)}
-              </text>
-            </g>
-          )}
         </svg>
       </div>
 
       <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
         className="mx-3 mb-3 grid gap-1 border-y border-[#bdcad3] bg-[#edf2f5] px-3 py-2 text-xs dark:border-[#294154] dark:bg-[#0d2030] sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center"
       >
-        {detailParty ? (
+        {previewParty ? (
           <>
             <span className="min-w-0 font-bold text-[#243744] dark:text-[#dce7ee]">
-              {detailParty.name}
-              {!activeParty && (
-                <span className="ml-2 font-normal text-[#607583] dark:text-[#8da1b0]">
-                  · vali kaardilt erakond
-                </span>
-              )}
+              {previewParty.name}
             </span>
             <span className="font-semibold tabular-nums text-[#405767] dark:text-[#a9b7c2]">
-              {seatLabel(detailParty.seats)} · {supportLabel(detailParty.support)}
+              {seatLabel(previewParty.seats)} · {supportLabel(previewParty.support)}
+            </span>
+          </>
+        ) : hasCoalitionSelection ? (
+          <>
+            <span className="font-bold text-[#087663] dark:text-[#55d6b2]">Valitud koalitsioon</span>
+            <span className="font-bold tabular-nums text-[#087663] dark:text-[#55d6b2]">
+              {selectedSeatCount}/101 · {coalitionSummary}
             </span>
           </>
         ) : (
-          <span className="text-[#607583] dark:text-[#8da1b0]">Kohtade projektsioon puudub.</span>
+          <>
+            <span className="font-semibold text-[#405767] dark:text-[#a9b7c2]">Vali koalitsioonilaborist erakonnad</span>
+            <span className="tabular-nums text-[#607583] dark:text-[#8da1b0]">101 kohta · enamus 51</span>
+          </>
         )}
       </div>
 
@@ -279,25 +251,18 @@ export function RiigikoguSeatMap({
         className="grid border-t border-[#bdcad3] text-[11px] dark:border-[#294154] sm:grid-cols-2 xl:grid-cols-3"
       >
         {renderedParties.map((party) => {
-          const isActive = party.key === activePartyKey;
+          const isPreviewed = party.key === previewPartyKey;
+          const isCoalitionParty = selectedPartyIds.has(party.id);
           return (
             <li key={party.key} className="min-w-0 border-b border-[#d0dbe2] dark:border-[#24394a]">
-              <button
-                type="button"
-                aria-pressed={pinnedPartyKey === party.key}
-                onPointerEnter={() => setPreview(party.key)}
-                onPointerLeave={() => clearPreview(party.key)}
-                onFocus={() => setPreview(party.key)}
-                onBlur={() => clearPreview(party.key)}
-                onClick={() => togglePinned(party.key)}
-                onKeyDown={(event) => {
-                  if (event.key !== "Escape") return;
-                  event.preventDefault();
-                  clearSelection();
-                  event.currentTarget.blur();
+              <div
+                onPointerEnter={(event) => {
+                  if (event.pointerType === "mouse") setPreviewPartyKey(party.key);
                 }}
-                className={`grid min-h-10 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal ${
-                  isActive ? "bg-[#4f8cff]/10" : "hover:bg-[#4f8cff]/[0.06]"
+                onPointerLeave={() => clearPreview(party.key)}
+                onPointerCancel={() => clearPreview(party.key)}
+                className={`grid min-h-10 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2 text-left ${
+                  isPreviewed || isCoalitionParty ? "bg-[#4f8cff]/10" : ""
                 }`}
               >
                 <span
@@ -311,7 +276,7 @@ export function RiigikoguSeatMap({
                 <span className="whitespace-nowrap tabular-nums text-[#526878] dark:text-[#8da1b0]">
                   <b className="text-[#192630] dark:text-[#e5eef4]">{party.seats}</b> · {party.support === null ? "—" : `${supportFormatter.format(party.support)}%`}
                 </span>
-              </button>
+              </div>
             </li>
           );
         })}
