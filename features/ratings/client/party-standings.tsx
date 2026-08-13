@@ -1,4 +1,5 @@
 import type { RatingsParty, RatingsWave } from "@/lib/ratings-types";
+import { WatchToggle } from "@/features/watchlist/client/watch-toggle";
 
 import {
   isGovernmentParty,
@@ -40,6 +41,12 @@ function PartyRow({ party, projectedSeats }: PartyRowProps) {
       <td className="px-3 py-2 text-right text-lg font-bold tabular-nums text-[#245fae] dark:text-[#7db0ff]">{projectedSeats}</td>
       <td className="px-3 py-2">
         <span className={`inline-flex border-l-2 pl-2 font-semibold ${passes ? "border-[#245fae] text-[#405767] dark:border-signal dark:text-[#a9b7c2]" : "border-[#9d762f] text-[#805818] dark:border-[#efb860] dark:text-[#efb860]"}`}>{status}</span>
+      </td>
+      <td className="px-3 py-2 text-right">
+        <span className="inline-flex gap-1">
+          <WatchToggle kind="party-rating" targetId={party.id} label={party.name} idleLabel="Reiting" watchedLabel="Reiting ✓" compact />
+          <WatchToggle kind="party-threshold" targetId={party.id} label={`${party.name}: 5% künnise ületus`} idleLabel="5% piir" watchedLabel="5% ✓" compact />
+        </span>
       </td>
     </tr>
   );
@@ -86,6 +93,7 @@ export function PartyStandings({
               <th scope="col" className="px-3 py-2 text-right">Muutus</th>
               <th scope="col" className="px-3 py-2 text-right">Kohad</th>
               <th scope="col" className="px-3 py-2">Staatus</th>
+              <th scope="col" className="px-3 py-2 text-right">Jälgimine</th>
             </tr>
           </thead>
           <tbody>

@@ -94,6 +94,88 @@ Chamber geometry belongs to `lib/riigikogu-layout.ts`.
 
 Validate with `npm run test:ratings`.
 
+## Shared political identities
+
+- Canonical static presentation: `lib/party-registry.ts`.
+- Dated government membership: `lib/political-context.ts`.
+- Norstat, Riigikogu, and ERJK aliases remain in their source adapters and resolve
+  to the same canonical IDs. Unknown source identities remain explicit rather
+  than being guessed.
+
+## Weather warnings (`GET /api/weather/warnings`)
+
+- Contract: `lib/weather-warning-types.ts`.
+- Official XML adapter/cache: `features/weather/server/weather-warning.server.ts`.
+- Consumers: the weather desk and `/praegu`.
+
+Only national, Võru County, and explicitly allowlisted Võru County municipality
+warnings are returned. Level, area, validity and source revision remain explicit.
+Expired warnings are removed; active and upcoming warnings stay distinct. A
+national text notice without an official numeric level uses `level: null`;
+consumers must not infer a level. Empty official XML is a successful no-warning
+state; schema drift fails closed and stale cache may be served.
+
+## Economy (`GET /api/economy`)
+
+- Contract: `lib/economy-types.ts`.
+- Approved table/series registry and PxWeb adapters: `features/economy/server/`.
+- Comparison/classification policy: `features/economy/model/`.
+- Consumer: `components/economy-portal.tsx`.
+
+The response groups prices, income, work, output, trade, and Võrumaa indicators.
+Every indicator retains unit, geography, period/frequency, price basis,
+adjustment, release/revision state, derivation, table ID, direct source link,
+freshness, and CC BY-SA 4.0 attribution. Groups fail independently.
+
+Validate with `npm run test:economy`.
+
+## Riigikogu (`GET /api/riigikogu`)
+
+- Contract: `lib/riigikogu-types.ts`.
+- Source scheduler/parsers/cache: `features/riigikogu/server/`.
+- Lazy details: `GET /api/riigikogu/votes/[id]` and
+  `GET /api/riigikogu/bills/[id]`.
+- Consumer: `components/riigikogu-portal.tsx`.
+
+The overview is scoped to the XV Riigikogu. Official UUIDs remain stable;
+`in-favor`, `against`, `neutral`, `did-not-vote`, `absent`, and unknown choices
+stay distinct. Faction plurality/deviation is a labeled deterministic derivation,
+not an official judgment. Preserve CC BY-SA 3.0 attribution and the centralized
+upstream rate scheduler.
+
+Validate with `npm run test:riigikogu`.
+
+## Praegu (`GET /api/now`) and watchlists
+
+- Compact card contract: `lib/now-types.ts`.
+- Direct cache-aware composition: `features/now/server/now-route.server.ts`.
+- Deterministic selection/personalization: `features/now/model/`.
+- Local watch contract and matching: `features/watchlist/model/watchlist.ts`.
+
+The API composes typed server services directly and returns no personal state.
+Each card carries stable event/revision IDs, priority, time, local/official links,
+and source area. Per-stream seen markers use `117-now-seen-v1`; versioned local
+watches and bounded seen matches use `117-watchlists-v1`. Both remain in the
+browser and never belong in API requests, URLs, analytics, or logs.
+
+Validate with `npm run test:now`.
+
+## Political financing (`GET /api/political-finance`)
+
+- Contract: `lib/political-finance-types.ts`.
+- ERJK config/client/parsers: `features/political-finance/server/`.
+- Aggregation/revisions: `features/political-finance/model/`.
+- Capped detail: `GET /api/political-finance/records`.
+- Consumer: `components/political-finance-portal.tsx`.
+
+Overview data are quarterly filings, not live transactions. Corrections replace
+the same filing through revision IDs. Preserve reported and canonical party
+identities, category/entity distinctions, only officially public donor fields,
+neutral wording, report links, and CC BY-SA 3.0 attribution. Detail filters and
+page size are allowlisted and bounded.
+
+Validate with `npm run test:political-finance`.
+
 ## Cross-cutting change rule
 
 When a public shape changes, update its canonical type, parser/producer,

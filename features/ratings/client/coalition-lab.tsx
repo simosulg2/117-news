@@ -1,5 +1,6 @@
 import type { ProjectionParty } from "../model/ratings-view-model";
 import { coalitionLabel } from "./ratings-formatters";
+import { WatchToggle } from "@/features/watchlist/client/watch-toggle";
 
 type CoalitionLabProps = {
   parties: readonly ProjectionParty[];
@@ -46,8 +47,17 @@ export function CoalitionLab({
           );
         })}
       </div>
-      <div aria-live="polite" className={`border-t px-3 py-2 text-xs font-semibold ${selectedSeatCount >= 51 ? "border-[#58a895] bg-[#087663]/5 text-[#087663] dark:border-[#2b7b69] dark:text-[#55d6b2]" : "border-[#bdcad3] text-[#526878] dark:border-[#294154] dark:text-[#8da1b0]"}`}>
-        {selectedPartyCount === 0 ? "Vali erakonnad, et proovida enamust." : `${selectedSeatCount} kohta · ${coalitionLabel(selectedSeatCount)}`}
+      <div className={`flex flex-wrap items-center justify-between gap-2 border-t px-3 py-2 text-xs font-semibold ${selectedSeatCount >= 51 ? "border-[#58a895] bg-[#087663]/5 text-[#087663] dark:border-[#2b7b69] dark:text-[#55d6b2]" : "border-[#bdcad3] text-[#526878] dark:border-[#294154] dark:text-[#8da1b0]"}`}>
+        <span aria-live="polite">{selectedPartyCount === 0 ? "Vali erakonnad, et proovida enamust." : `${selectedSeatCount} kohta · ${coalitionLabel(selectedSeatCount)}`}</span>
+        {selectedPartyCount > 0 && (
+          <WatchToggle
+            kind="coalition-majority"
+            targetId={[...selectedPartyIds].sort().join("+")}
+            label={`${[...selectedPartyIds].sort().join(" + ")} enamus`}
+            partyIds={[...selectedPartyIds].sort()}
+            compact
+          />
+        )}
       </div>
     </section>
   );

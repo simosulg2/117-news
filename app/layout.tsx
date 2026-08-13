@@ -4,9 +4,11 @@ import type { ReactNode } from "react";
 import "@fontsource-variable/cairo/wght.css";
 import "./globals.css";
 
+import { WatchlistProvider } from "@/features/watchlist/client/watchlist-provider";
+
 export const metadata: Metadata = {
   title: "117.ee",
-  description: "Eesti uudised, Võru ilm ning erakondade reitingud ja Riigikogu kohtade projektsioon ühes kiires vaates.",
+  description: "Isiklik Eesti infopult: uudised, Võru ilm, poliitika, Riigikogu, erakondade raha ja majandusnäitajad.",
 };
 
 export const viewport: Viewport = {
@@ -32,7 +34,7 @@ export default function RootLayout({ children }: Readonly<{ children: ReactNode 
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-screen bg-paper font-sans text-ink antialiased selection:bg-[#4f8cff] selection:text-[#07131f] dark:bg-[#07131f] dark:text-[#e8f0f6]">
-        {children}
+        <WatchlistProvider>{children}</WatchlistProvider>
       </body>
     </html>
   );

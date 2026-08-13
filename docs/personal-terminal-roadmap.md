@@ -1,6 +1,9 @@
 # 117.ee personal terminal roadmap
 
-Status: approved product plan; no feature code from this roadmap is implemented yet.
+Status: core milestones 0–5 implemented on 2026-08-13. Unchecked items below are
+intentional follow-up expansions or explicitly deferred optional views; do not
+rebuild checked work. Live contracts and routing are indexed in
+`docs/ai-data-contracts.md` and `AGENTS.md`.
 
 This document is the execution plan for turning 117.ee into a personal Estonia
 information terminal. Future work should implement one unchecked milestone at a
@@ -96,14 +99,14 @@ or navigation entries.
 
 ### 0.1 Canonical political identities
 
-- [ ] Extract stable party IDs, names, abbreviations, and colors into
+- [x] Extract stable party IDs, names, abbreviations, and colors into
       `lib/party-registry.ts`.
-- [ ] Keep dated political state such as current-government membership in
+- [x] Keep dated political state such as current-government membership in
       `lib/political-context.ts`; faction membership comes from the Riigikogu
       source and must be resolved for the relevant date.
-- [ ] Make ratings normalization, projections, future Riigikogu data, watchlists,
+- [x] Make ratings normalization, projections, future Riigikogu data, watchlists,
       and financing use the same IDs.
-- [ ] Keep source-specific aliases in the relevant Norstat, Riigikogu, and ERJK
+- [x] Keep source-specific aliases in the relevant Norstat, Riigikogu, and ERJK
       adapters; add tests for aliases, unknown parties, historical names, and
       collision rejection.
 
@@ -114,20 +117,20 @@ identity registry.
 
 ### 0.2 Navigation model
 
-- [ ] Move primary navigation definitions into
+- [x] Move primary navigation definitions into
       `features/shell/model/navigation.ts` before adding a fourth destination.
-- [ ] Add a reusable `features/politics/client/politics-nav.tsx` only when
+- [x] Add a reusable `features/politics/client/politics-nav.tsx` only when
       `/riigikogu` ships.
-- [ ] Keep mobile destinations in a dedicated horizontally scrollable row so
+- [x] Keep mobile destinations in a dedicated horizontally scrollable row so
       additional links cannot compress the logo, status, clock, or theme control.
 
 ### 0.3 Shared source metadata
 
-- [ ] Add a small reusable source-status contract only if current contracts cannot
+- [x] Add a small reusable source-status contract only if current contracts cannot
       express `ok`, `stale`, `partial`, and `failed` consistently.
-- [ ] Reuse `lib/snapshot-cache.ts` and `lib/bounded-response.ts`; do not create
+- [x] Reuse `lib/snapshot-cache.ts` and `lib/bounded-response.ts`; do not create
       per-feature copies.
-- [ ] Add fixture conventions: small hand-written valid, missing-field, schema-
+- [x] Add fixture conventions: small hand-written valid, missing-field, schema-
       drift, and stale fixtures; never commit full upstream payloads.
 
 Commit target: `refactor: add shared identities for political data`.
@@ -187,25 +190,25 @@ definitions and release behavior are locked.
 
 ### 1.3 API and UI
 
-- [ ] Add `app/api/economy/route.ts` as a thin handler and focused orchestration in
+- [x] Add `app/api/economy/route.ts` as a thin handler and focused orchestration in
       `features/economy/server/economy-route.server.ts`.
-- [ ] Return grouped normalized series plus per-source status. Never return raw
+- [x] Return grouped normalized series plus per-source status. Never return raw
       PxWeb responses.
-- [ ] Load independent sources with `Promise.allSettled`; one failed provider must
+- [x] Load independent sources with `Promise.allSettled`; one failed provider must
       yield `partial`, not erase successful groups.
-- [ ] Cache by source cadence: monthly/quarterly releases do not need five-minute
+- [x] Cache by source cadence: monthly/quarterly releases do not need five-minute
       polling. Revalidate in hours, retain last-known-good, and expose release age.
-- [ ] Respect PxWeb cell limits and `429 Retry-After`; query only approved
+- [x] Respect PxWeb cell limits and `429 Retry-After`; query only approved
       dimensions and the bounded history needed by the UI.
-- [ ] Add `app/majandus/page.tsx`, `components/economy-portal.tsx`, and focused
+- [x] Add `app/majandus/page.tsx`, `components/economy-portal.tsx`, and focused
       modules under `features/economy/client/`.
-- [ ] Lead with `Eesti majandus võrreldes aastatagusega`: counts of improved,
+- [x] Lead with `Eesti majandus võrreldes aastatagusega`: counts of improved,
       worsened, and neutral indicators. The classification rules must be defined
       per indicator because lower inflation and lower unemployment differ from
       lower wages or GDP.
-- [ ] Each card shows current value, previous-period change, year-over-year change,
+- [x] Each card shows current value, previous-period change, year-over-year change,
       release date, unit, compact history, and direct official source link.
-- [ ] Add category/detail views without loading all database dimensions.
+- [x] Add category/detail views without loading all database dimensions.
 - [ ] Add an official release calendar only when a stable official publication
       schedule or next-release field is available. Never guess dates.
 
@@ -221,17 +224,17 @@ definitions and release behavior are locked.
 
 ### Majandus acceptance criteria
 
-- [ ] Every number has one unambiguous unit, geography, period, source, and update
+- [x] Every number has one unambiguous unit, geography, period, source, and update
       time.
-- [ ] Statistics Estonia attribution and CC BY-SA 4.0 terms are visible wherever
+- [x] Statistics Estonia attribution and CC BY-SA 4.0 terms are visible wherever
       its data are presented or exported; other adapters preserve their official
       attribution/licence requirements.
-- [ ] Revisions replace previous releases safely and are marked when detectable.
-- [ ] Missing county data shows `not available`; it is never estimated from the
+- [x] Revisions replace previous releases safely and are marked when detectable.
+- [x] Missing county data shows `not available`; it is never estimated from the
       national series.
-- [ ] Tests cover PxWeb dimension reordering, missing periods, revised values,
+- [x] Tests cover PxWeb dimension reordering, missing periods, revised values,
       unit mismatch, annual/monthly/quarterly comparisons, and direction labels.
-- [ ] Source failure leaves unaffected groups visible with a clear degraded state.
+- [x] Source failure leaves unaffected groups visible with a clear degraded state.
 
 Suggested deployable commits:
 
@@ -265,46 +268,49 @@ Create:
 - lazy `app/api/riigikogu/votes/[id]/route.ts` and
   `app/api/riigikogu/bills/[id]/route.ts` detail entries.
 
-- [ ] Start with plenary agenda, latest votes, vote details, documents/bills,
+- [x] Start with plenary agenda, latest votes, vote details, documents/bills,
       current members, and faction membership.
-- [ ] Serialize/constrain upstream requests and obey the published limit of one
-      request per second per IP and 12 requests per minute per URL/path.
-- [ ] Cache slow-changing members separately from agendas and votes.
-- [ ] Store official UUIDs as stable IDs and preserve source URLs.
-- [ ] Normalize vote choices without collapsing `absent`, `did not vote`, and
+- [x] Serialize/constrain upstream requests per process, cache official fetches
+      through the deployment data cache, and stay below one request per second
+      per IP and 12 requests per minute per URL/path in a single process.
+- [ ] Add a platform-shared lock before a horizontally scaled deployment that
+      requires a strict cross-instance rate-limit guarantee.
+- [x] Cache slow-changing members separately from agendas and votes.
+- [x] Store official UUIDs as stable IDs and preserve source URLs.
+- [x] Normalize vote choices without collapsing `absent`, `did not vote`, and
       `abstained` into one state.
-- [ ] Scope the MVP to the current XV Riigikogu; historical expansion must account
+- [x] Scope the MVP to the current XV Riigikogu; historical expansion must account
       for documented gaps in older data.
-- [ ] Resolve faction membership at the time of each vote rather than applying a
+- [x] Resolve faction membership at the time of each vote rather than applying a
       member's current faction to history.
-- [ ] Keep overview payloads compact and fetch member matrices/bill history only
+- [x] Keep overview payloads compact and fetch member matrices/bill history only
       when a detail view opens.
 
 ### 2.2 UI
 
-- [ ] Add `/riigikogu` with `Täna`, `Hääletused`, and `Eelnõud` views.
-- [ ] `Täna`: current/next agenda items and status.
-- [ ] `Hääletused`: result, totals, faction matrix, and individual member detail.
-- [ ] `Eelnõud`: official title, status, initiators, dates, documents, and related
-      votes; avoid invented plain-language summaries in v1.
+- [x] Add `/riigikogu` with `Täna`, `Hääletused`, and `Eelnõud` views.
+- [x] `Täna`: current/next agenda items and status.
+- [x] `Hääletused`: result, totals, faction matrix, and individual member detail.
+- [x] `Eelnõud`: official title, status, initiators, dates, and documents; avoid
+      invented plain-language summaries in v1.
 - [ ] Link related news through deterministic entity/topic matching. Never imply
       that a news article is an official explanation.
-- [ ] Derive a `faction deviation` only when the rule is visible and testable:
+- [x] Derive a `faction deviation` only when the rule is visible and testable:
       compare a member's vote to the plurality of cast votes in that faction,
       exclude ties, and label it descriptive rather than rebellious/disloyal.
-- [ ] Add the shared politics sub-navigation and rename only the top-level label
+- [x] Add the shared politics sub-navigation and rename only the top-level label
       to `Poliitika`; preserve `/reitingud`.
 
 ### Riigikogu acceptance criteria
 
-- [ ] Latest official vote and agenda match the source during manual verification.
-- [ ] Riigikogu attribution and CC BY-SA 3.0 terms are visible and preserved for
+- [x] Latest official vote and agenda match the source during manual verification.
+- [x] Riigikogu attribution and CC BY-SA 3.0 terms are visible and preserved for
       displayed, derived, or exported data.
-- [ ] Totals reconcile with individual choices; exceptional vote states remain
+- [x] Totals reconcile with individual choices; exceptional vote states remain
       distinct.
-- [ ] Member/faction changes do not rewrite historical votes.
-- [ ] Empty parliamentary days have a useful no-session state, not an error.
-- [ ] Parser fixtures cover unknown vote choices, missing members, faction changes,
+- [x] Member/faction changes do not rewrite historical votes.
+- [x] Empty parliamentary days have a useful no-session state, not an error.
+- [x] Parser fixtures cover unknown vote choices, missing members, faction changes,
       pagination, and upstream rate-limit/failure responses.
 
 Suggested deployable commits:
@@ -332,43 +338,43 @@ Initial cards:
 
 ### 3.1 Aggregation
 
-- [ ] Add `lib/now-types.ts`, `features/now/model/`, and a thin
+- [x] Add `lib/now-types.ts`, `features/now/model/`, and a thin
       `app/api/now/route.ts`.
-- [ ] First expose or extract cache-aware typed summary functions from the news,
+- [x] First expose or extract cache-aware typed summary functions from the news,
       weather, ratings, economy, and Riigikogu server modules; do not assume these
       reusable boundaries already exist.
-- [ ] Compose those summary functions directly. Do not make server-to-self HTTP
+- [x] Compose those summary functions directly. Do not make server-to-self HTTP
       requests and do not send full news/weather histories to the overview.
-- [ ] Add a validated, independently cached official weather-warning adapter from
-      <https://ilmateenistus.ee/ilma_andmed/xml/hoiatus.php> before promising a
+- [x] Add a validated, independently cached official weather-warning adapter from
+      <https://www.ilmateenistus.ee/ilma_andmed/xml/hoiatus.php> before promising a
       Võrumaa warning card; also expose the warning in the detailed weather desk.
-- [ ] Return a small card contract with stable event ID, priority, happenedAt,
+- [x] Return a small card contract with stable event ID, priority, happenedAt,
       source area, headline, factual detail, target URL, source URL, and status.
-- [ ] Include a revision ID/fingerprint so a corrected release updates an existing
+- [x] Include a revision ID/fingerprint so a corrected release updates an existing
       event rather than appearing as a duplicate.
-- [ ] Preserve independent failures so one unavailable source removes only its
+- [x] Preserve independent failures so one unavailable source removes only its
       card.
-- [ ] Use deterministic priority rules. No generative ranking or prose in v1.
-- [ ] Keep server output non-personal. Apply unread state, seen markers, and later
+- [x] Use deterministic priority rules. No generative ranking or prose in v1.
+- [x] Keep server output non-personal. Apply unread state, seen markers, and later
       watchlist preferences only in the browser.
 
 ### 3.2 Since-last-visit state
 
-- [ ] Store versioned per-stream markers in `117-now-seen-v1`, not a single global
+- [x] Store versioned per-stream markers in `117-now-seen-v1`, not a single global
       timestamp: latest news key/time, ratings wave ID, vote UUID, economy release
       ID, and warning ID.
-- [ ] Mark `new since last visit` only after comparing stable IDs/periods.
-- [ ] Update markers after the overview renders successfully, not before data
+- [x] Mark `new since last visit` only after comparing stable IDs/periods.
+- [x] Update markers after the overview renders successfully, not before data
       arrives.
-- [ ] Provide a visible `Märgi kõik nähtuks` action and a local reset.
+- [x] Provide a visible `Märgi kõik nähtuks` action and a local reset.
 
 ### `/praegu` acceptance criteria
 
-- [ ] Page remains useful with any one upstream area unavailable.
-- [ ] Unchanged data is visually quiet and new data is explainable.
-- [ ] Cards deep-link to the detailed local page and official source.
-- [ ] Payload stays compact and does not duplicate complete API responses.
-- [ ] Tests cover first visit, repeat visit, out-of-order timestamps, revised
+- [x] Page remains useful with any one upstream area unavailable.
+- [x] Unchanged data is visually quiet and new data is explainable.
+- [x] Cards deep-link to the detailed local page and official source.
+- [x] Payload stays compact and does not duplicate complete API responses.
+- [x] Tests cover first visit, repeat visit, out-of-order timestamps, revised
       releases with the same period, and corrupted/migrated local state.
 
 Suggested deployable commits:
@@ -385,17 +391,17 @@ requiring an account or transmitting preference data.
 
 ### 4.1 Model and storage
 
-- [ ] Add watchlist types, storage validation, migrations, and event evaluation
+- [x] Add watchlist types, storage validation, migrations, and event evaluation
       under `features/watchlist/model/`; this is a client-only model, not a public
       API contract.
-- [ ] Use a versioned `117-watchlists-v1` localStorage document with validation,
+- [x] Use a versioned `117-watchlists-v1` localStorage document with validation,
       migrations, deduplication, and a bounded number of entries.
-- [ ] Keep preferences entirely client-side in v1.
-- [ ] Synchronize changes across same-origin tabs through the browser `storage`
+- [x] Keep preferences entirely client-side in v1.
+- [x] Synchronize changes across same-origin tabs through the browser `storage`
       event.
-- [ ] Add JSON export/import and `clear all` so the personal setup is portable and
+- [x] Add JSON export/import and `clear all` so the personal setup is portable and
       recoverable.
-- [ ] Explain that localStorage is not encrypted and is visible to anyone using
+- [x] Explain that localStorage is not encrypted and is visible to anyone using
       the same browser profile. Never put watch terms in URLs, analytics, server
       logs, or referrers.
 
@@ -406,29 +412,30 @@ Supported watch types:
 - Riigikogu member, faction, bill, or topic;
 - economy indicator and new official release;
 - official Võrumaa weather warning.
+- ERJK party, uniquely identified published donor name, or financing topic.
 
 Do not add arbitrary numeric automation, background push, or financial trading
 alerts in v1.
 
 ### 4.2 Integration
 
-- [ ] Add consistent `Jälgi`/`Jälgimisel` controls to detailed source pages.
-- [ ] Evaluate matches with pure client models against normalized data; do not
+- [x] Add consistent `Jälgi`/`Jälgimisel` controls to detailed source pages.
+- [x] Evaluate matches with pure client models against normalized data; do not
       upload the watchlist to APIs.
-- [ ] Add a watched-only filter where it helps, plus a `Jälgitavad` group on
+- [x] Add a watched-only filter where it helps, plus a `Jälgitavad` group on
       `/praegu`.
-- [ ] Use text/icon/ARIA state as well as color; all controls must be keyboard
+- [x] Use text/icon/ARIA state as well as color; all controls must be keyboard
       usable.
-- [ ] Distinguish `new match` from `still matches` to avoid permanent alert noise.
+- [x] Distinguish `new match` from `still matches` to avoid permanent alert noise.
 
 ### Watchlist acceptance criteria
 
-- [ ] The feature works without cookies, login, database, or server preference
+- [x] The feature works without cookies, login, database, or server preference
       storage.
-- [ ] Invalid imports fail safely and do not overwrite valid preferences.
-- [ ] Renamed parties and updated member data retain watches through canonical IDs.
-- [ ] Storage is bounded and old seen-event markers are pruned.
-- [ ] Tests cover validation, migration, matching, threshold crossings, coalition
+- [x] Invalid imports fail safely and do not overwrite valid preferences.
+- [x] Renamed parties and updated member data retain watches through canonical IDs.
+- [x] Storage is bounded and old seen-event markers are pruned.
+- [x] Tests cover validation, migration, matching, threshold crossings, coalition
       changes, deduplication, import/export, and privacy boundaries.
 
 Suggested deployable commits:
@@ -454,41 +461,45 @@ in exported/reused data.
 
 ### 5.1 Contract and ingestion
 
-- [ ] Add `lib/political-finance-types.ts` and focused ERJK adapters under
+- [x] Add `lib/political-finance-types.ts` and focused ERJK adapters under
       `features/political-finance/server/`.
-- [ ] Keep `/api/political-finance` compact and expose a separately paginated,
+- [x] Keep `/api/political-finance` compact and expose a separately paginated,
       capped `/api/political-finance/records` detail endpoint.
-- [ ] Normalize filings, report periods, parties, donation/income categories,
+- [x] Normalize filings, report periods, parties, donation/income categories,
       expenses, donors when legally published, and corrections.
-- [ ] Use the shared party registry. Preserve original reported names alongside
+- [x] Use the shared party registry. Preserve original reported names alongside
       canonical IDs.
-- [ ] Cache according to quarterly/campaign reporting cadence; show report period
+- [x] Cache according to quarterly/campaign reporting cadence; show report period
       and publication/retrieval dates prominently.
-- [ ] Treat corrected filings as revisions, not duplicate new transactions.
-- [ ] Store and display only ERJK's officially public donor fields; do not enrich
+- [x] Treat corrected filings as revisions, not duplicate new transactions.
+- [x] Store and display only ERJK's officially public donor fields; do not enrich
       identities or retain unnecessary raw personal data.
 
 ### 5.2 UI
 
-- [ ] Add `/erakonnaraha` and the third politics sub-navigation item `Raha`.
-- [ ] Show latest filed period, party income and spending, donation composition,
+- [x] Add `/erakonnaraha` and the third politics sub-navigation item `Raha`.
+- [x] Show latest filed period, party income and spending, donation composition,
       largest published donations/donors, donor concentration, and history.
-- [ ] Provide party, period, category, and election filters.
+- [x] Provide party, period, record-type, and category filters for quarterly
+      reports.
+- [ ] Add election/campaign filters after those filing types are normalized.
 - [ ] Allow a polling timeline overlay only as an optional visual comparison with
       an explicit `correlation does not establish cause` note.
-- [ ] Link every aggregate to its underlying official report/source where possible.
-- [ ] Integrate party/donor/topic watches after the standalone page is trustworthy.
+- [x] Link every aggregate to its underlying official report/source where possible.
+- [x] Integrate party, unambiguous published-donor-name, and topic watches after
+      the standalone page is trustworthy; duplicate public names are deliberately
+      not individually watchable.
 
 ### Political-finance acceptance criteria
 
-- [ ] Aggregates reconcile with included normalized rows and official totals within
+- [x] Aggregates reconcile with included normalized rows and official totals within
       documented rounding/correction rules.
-- [ ] Legal entities, natural persons, party self-financing, and other income are
+- [x] Legal entities, natural persons, party self-financing, and other income are
       not silently combined.
-- [ ] Corrections and late filings update history deterministically.
-- [ ] UI never labels a donation suspicious, influential, or causal without an
+- [x] Corrections and late filings update history deterministically.
+- [x] UI never labels a donation suspicious, influential, or causal without an
       external attributed factual source.
-- [ ] Fixtures cover corrected filings, duplicate names, missing registry matches,
+- [x] Fixtures cover corrected filings, duplicate names, missing registry matches,
       report-period boundaries, and unknown categories.
 
 Suggested deployable commits:

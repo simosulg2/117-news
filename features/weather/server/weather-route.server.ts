@@ -199,6 +199,10 @@ async function refreshWeatherSnapshot(): Promise<WeatherResponse> {
   return payload;
 }
 
+export function getWeatherSnapshot() {
+  return weatherSnapshotCache.get(refreshWeatherSnapshot);
+}
+
 export async function handleWeatherGet(request: Request): Promise<Response> {
   if (new URL(request.url).searchParams.has("collect")) {
     return Response.json(
@@ -208,7 +212,7 @@ export async function handleWeatherGet(request: Request): Promise<Response> {
   }
 
   try {
-    const snapshot = await weatherSnapshotCache.get(refreshWeatherSnapshot);
+    const snapshot = await getWeatherSnapshot();
     return Response.json(snapshot.value, {
       headers: {
         "Cache-Control": "no-store",
