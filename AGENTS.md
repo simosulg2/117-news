@@ -8,6 +8,9 @@ follow their direct imports. Do not preload whole feature trees.
 - Runtime: Next.js App Router, React, strict TypeScript, Tailwind.
 - Pages: `/` news, `/ilm` weather, `/reitingud` ratings.
 - Canonical API/type map: `docs/ai-data-contracts.md`.
+- Approved future product work: `docs/personal-terminal-roadmap.md`. Read it only
+  when implementing Majandus, Riigikogu Live, `/praegu`, watchlists, or political
+  financing.
 - Weather collector operations: `docs/weather-collector.md`.
 - Human setup and product behavior: `README.md`.
 - Use direct imports. Do not add barrel (`index.ts`) modules.
