@@ -29,6 +29,13 @@ import {
   unprojectFromLest,
 } from "../features/weather/radar/model/radar-projection.ts";
 import {
+  mapSourceTileUrl,
+  openLayersTileSlot,
+  radarSourceFallbackUrl,
+  radarSourceKey,
+  radarSourceTileUrl,
+} from "../features/weather/radar/model/radar-openlayers-model.ts";
+import {
   isRadarManifest,
   preferredFrameIndex,
   radarPrefetchFrameIndices,
@@ -327,6 +334,92 @@ test("uses aligned 256px EPSG:3301 WMS tiles only for forecast frames", () => {
   assert.equal(url.searchParams.get("TIME"), "2026-08-11T21:05:00.000Z");
   assert.equal(url.searchParams.get("BBOX"), slot.bbox.join(","));
   assert.equal(forecast.fallbackUrl, null);
+});
+
+test("keeps OpenLayers frame source keys stable and kind-specific", () => {
+  const observed = { time: "2026-08-11T21:00:00.000Z", kind: "observed" } as const;
+  const forecast = { time: observed.time, kind: "forecast" } as const;
+
+  assert.equal(radarSourceKey(observed), "observed:2026-08-11T21:00:00.000Z");
+  assert.equal(radarSourceKey({ ...observed }), radarSourceKey(observed));
+  assert.equal(radarSourceKey(forecast), "forecast:2026-08-11T21:00:00.000Z");
+  assert.notEqual(radarSourceKey(observed), radarSourceKey(forecast));
+});
+
+test("maps OpenLayers coordinates to exact official TMS and WMS tile requests", () => {
+  const manifest = radarManifest();
+  const coordinate = [2, 2, 2] as const;
+  const observed = { time: "2026-08-11T21:00:00.000Z", kind: "observed" } as const;
+  const forecast = { time: "2026-08-11T21:05:00.000Z", kind: "forecast" } as const;
+  const slot = openLayersTileSlot(coordinate);
+
+  assert.deepEqual(slot, {
+    key: "2/2/2",
+    zoom: 2,
+    x: 2,
+    y: 2,
+    tmsY: 1,
+    left: 512,
+    top: 512,
+    bbox: [552_500, 6_249_000, 808_500, 6_505_000],
+  });
+  assert.equal(
+    mapSourceTileUrl(manifest, "base", coordinate),
+    "https://tiles.envir.ee/tm/tms/1.0.0/ilmateenistus-radar@LEST/2/2/1.png",
+  );
+  assert.equal(
+    mapSourceTileUrl(manifest, "labels", coordinate),
+    "https://tiles.envir.ee/tm/tms/1.0.0/ilmateenistus-kohanimed@LEST/2/2/1.png",
+  );
+  assert.equal(
+    radarSourceTileUrl(manifest, observed, coordinate),
+    "https://ilmtiles.envir.ee/tiles/ilm/cmp_cap/2026-08-11T21%3A00%3A00.000Z/2/2/1.png",
+  );
+
+  const forecastTileUrl = radarSourceTileUrl(manifest, forecast, coordinate);
+  assert.ok(forecastTileUrl);
+  const forecastUrl = new URL(forecastTileUrl);
+  assert.equal(forecastUrl.origin, "https://ilmgs.envir.ee");
+  assert.equal(forecastUrl.pathname, "/geoserver/ilm/wms");
+  assert.equal(forecastUrl.searchParams.get("LAYERS"), "ilm:nowcasting");
+  assert.equal(forecastUrl.searchParams.get("STYLES"), "ilm:opera_radar");
+  assert.equal(forecastUrl.searchParams.get("SRS"), "EPSG:3301");
+  assert.equal(forecastUrl.searchParams.get("BBOX"), "552500,6249000,808500,6505000");
+  assert.equal(forecastUrl.searchParams.get("TIME"), forecast.time);
+  assert.equal(forecastUrl.searchParams.get("WIDTH"), "256");
+  assert.equal(forecastUrl.searchParams.get("HEIGHT"), "256");
+  assert.equal(forecastUrl.searchParams.get("TILED"), "true");
+  assert.equal(radarSourceFallbackUrl(manifest, forecast, coordinate), null);
+
+  const observedFallbackUrl = radarSourceFallbackUrl(manifest, observed, coordinate);
+  assert.ok(observedFallbackUrl);
+  const observedFallback = new URL(observedFallbackUrl);
+  assert.equal(observedFallback.searchParams.get("LAYERS"), "ilm:cmp_cap");
+  assert.equal(observedFallback.searchParams.get("BBOX"), "552500,6249000,808500,6505000");
+  assert.equal(observedFallback.searchParams.get("TIME"), observed.time);
+});
+
+test("rejects invalid and out-of-grid OpenLayers tile coordinates", () => {
+  const manifest = radarManifest();
+  const frame = { time: "2026-08-11T21:00:00.000Z", kind: "observed" } as const;
+  const invalidCoordinates = [
+    null,
+    [-1, 0, 0],
+    [RADAR_RESOLUTIONS.length, 0, 0],
+    [2, -1, 0],
+    [2, 0, -1],
+    [2, 4, 0],
+    [2, 0, 4],
+    [2, 1.5, 1],
+  ] as const;
+
+  for (const coordinate of invalidCoordinates) {
+    assert.equal(openLayersTileSlot(coordinate), null);
+    assert.equal(radarSourceTileUrl(manifest, frame, coordinate), undefined);
+    assert.equal(radarSourceFallbackUrl(manifest, frame, coordinate), null);
+    assert.equal(mapSourceTileUrl(manifest, "base", coordinate), undefined);
+    assert.equal(mapSourceTileUrl(manifest, "labels", coordinate), undefined);
+  }
 });
 
 test("accepts only the trusted official native-grid manifest contract", () => {

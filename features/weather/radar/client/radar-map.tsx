@@ -1,103 +1,36 @@
-import type { CSSProperties } from "react";
-
-import {
-  MAX_ZOOM,
-  TILE_SIZE,
-} from "../model/radar-map-model";
-import { RadarFrameTileLayer } from "./radar-frame-tile-layer";
+import { MAX_ZOOM } from "../model/radar-map-model";
+import { RadarOpenLayersMap } from "./radar-openlayers-map";
 import type { ReadyRadarController } from "./use-radar-controller";
 
 export function RadarMap({ radar }: { radar: ReadyRadarController }) {
-  const layerTransform: CSSProperties = {
-    transform: `translate3d(${radar.dragOffset.x}px, ${radar.dragOffset.y}px, 0)`,
-  };
-
   return (
     <div
       ref={radar.mapElementRef}
       role="region"
       aria-label="Interaktiivne sademeradar. Liiguta nooleklahvidega ning suurenda pluss- ja miinusklahviga."
       tabIndex={0}
-      onKeyDown={radar.handleMapKey}
-      onWheel={radar.handleMapWheel}
-      onPointerDown={radar.startDrag}
-      onPointerMove={radar.moveDrag}
-      onPointerUp={radar.finishDrag}
-      onPointerCancel={radar.cancelDrag}
-      className="relative h-[20rem] cursor-grab touch-pan-y overflow-hidden bg-[#dfe9ee] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#4f8cff] active:cursor-grabbing dark:bg-[#162735] sm:h-[26rem]"
+      className="relative h-[20rem] touch-pan-y overflow-hidden bg-[#dfe9ee] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#4f8cff] dark:bg-[#162735] sm:h-[26rem]"
     >
-      <div className="absolute inset-0 dark:brightness-[0.68] dark:contrast-125" style={layerTransform} aria-hidden="true">
-        {radar.mapTiles.map((tile) => (
-          <img
-            key={tile.key}
-            src={tile.url}
-            alt=""
-            draggable={false}
-            decoding="async"
-            referrerPolicy="strict-origin-when-cross-origin"
-            style={{
-              position: "absolute",
-              left: tile.left,
-              top: tile.top,
-              width: TILE_SIZE,
-              height: TILE_SIZE,
-              maxWidth: "none",
-              userSelect: "none",
-            }}
-          />
-        ))}
-      </div>
-
-      <RadarFrameTileLayer
-        desiredPlan={radar.radarPlan}
-        prefetchPlans={radar.radarPrefetchPlans}
+      <RadarOpenLayersMap
+        manifest={radar.manifest}
+        frame={radar.selectedFrame}
+        center={radar.center}
+        zoom={radar.zoom}
+        minimumZoom={radar.minimumZoom}
         opacity={radar.opacity}
-        dragOffset={radar.dragOffset}
-        onCommitted={radar.acceptRadarPlan}
-        onFailure={radar.rejectRadarFrame}
+        onViewChange={(center, zoom) => radar.syncMapView(center, zoom)}
+        onFrameVisible={radar.acceptRadarFrame}
+        onFrameError={radar.rejectRadarFrame}
       />
 
-      <div className="pointer-events-none absolute inset-0" style={layerTransform} aria-hidden="true">
-        {radar.labelTiles.map((tile) => (
-          <img
-            key={`labels-${tile.key}`}
-            src={tile.url}
-            alt=""
-            draggable={false}
-            decoding="async"
-            referrerPolicy="strict-origin-when-cross-origin"
-            style={{
-              position: "absolute",
-              left: tile.left,
-              top: tile.top,
-              width: TILE_SIZE,
-              height: TILE_SIZE,
-              maxWidth: "none",
-              userSelect: "none",
-            }}
-          />
-        ))}
-      </div>
-
-      <div
-        className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2"
-        style={{ left: radar.voruPoint.x + radar.dragOffset.x, top: radar.voruPoint.y + radar.dragOffset.y }}
-        aria-hidden="true"
-      >
-        <span className="block h-3 w-3 rounded-full border-2 border-white bg-[#ef3340] shadow-[0_0_0_2px_rgba(16,26,36,0.75)]" />
-        <span className="absolute left-1/2 top-4 -translate-x-1/2 whitespace-nowrap bg-[#101a24]/90 px-1.5 py-0.5 text-[10px] font-extrabold text-white shadow-sm">
-          VÕRU
-        </span>
-      </div>
-
       <div className="absolute right-2 top-2 z-20 flex flex-col gap-px shadow-sm">
-        <button type="button" aria-label="Suurenda kaarti" onPointerDown={(event) => event.stopPropagation()} onClick={() => radar.zoomBy(1)} disabled={radar.zoom >= MAX_ZOOM} className="h-9 w-9 border border-[#758a99] bg-[#f8fafb] text-xl font-bold text-[#1b2b38] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f8cff] disabled:opacity-40 dark:border-[#4a6275] dark:bg-[#102332] dark:text-[#edf4f8]">
+        <button type="button" aria-label="Suurenda kaarti" onClick={() => radar.zoomBy(1)} disabled={radar.zoom >= MAX_ZOOM} className="h-9 w-9 border border-[#758a99] bg-[#f8fafb] text-xl font-bold text-[#1b2b38] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f8cff] disabled:opacity-40 dark:border-[#4a6275] dark:bg-[#102332] dark:text-[#edf4f8]">
           +
         </button>
-        <button type="button" aria-label="Vähenda kaarti" onPointerDown={(event) => event.stopPropagation()} onClick={() => radar.zoomBy(-1)} disabled={radar.zoom <= radar.minimumZoom} className="h-9 w-9 border border-[#758a99] bg-[#f8fafb] text-xl font-bold text-[#1b2b38] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f8cff] disabled:opacity-40 dark:border-[#4a6275] dark:bg-[#102332] dark:text-[#edf4f8]">
+        <button type="button" aria-label="Vähenda kaarti" onClick={() => radar.zoomBy(-1)} disabled={radar.zoom <= radar.minimumZoom} className="h-9 w-9 border border-[#758a99] bg-[#f8fafb] text-xl font-bold text-[#1b2b38] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f8cff] disabled:opacity-40 dark:border-[#4a6275] dark:bg-[#102332] dark:text-[#edf4f8]">
           −
         </button>
-        <button type="button" aria-label="Keskenda kaart Võrule" onPointerDown={(event) => event.stopPropagation()} onClick={radar.resetMap} className="mt-1 h-9 w-9 border border-[#758a99] bg-[#f8fafb] text-[10px] font-extrabold text-[#1b2b38] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f8cff] dark:border-[#4a6275] dark:bg-[#102332] dark:text-[#edf4f8]">
+        <button type="button" aria-label="Keskenda kaart Võrule" onClick={radar.resetMap} className="mt-1 h-9 w-9 border border-[#758a99] bg-[#f8fafb] text-[10px] font-extrabold text-[#1b2b38] hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f8cff] dark:border-[#4a6275] dark:bg-[#102332] dark:text-[#edf4f8]">
           VÕRU
         </button>
       </div>
