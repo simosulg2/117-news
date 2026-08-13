@@ -8,6 +8,13 @@ import {
   parseOfficialRadarPage,
   parseWmsLayerTimes,
 } from "../lib/radar.ts";
+import {
+  pointInViewport,
+  project,
+  unproject,
+  visibleTiles,
+  VORU_COORDINATES,
+} from "../features/weather/radar/model/radar-map-model.ts";
 
 test("parses and safely caps the official radar page configuration", () => {
   const page = `
@@ -116,4 +123,24 @@ test("marks radar stale only after the freshness window", () => {
   assert.equal(isRadarStale(observation, Date.parse("2026-08-11T21:29:59.000Z")), false);
   assert.equal(isRadarStale(observation, Date.parse("2026-08-11T21:30:01.000Z")), true);
   assert.equal(isRadarStale("bad value", Date.now()), true);
+});
+
+test("keeps radar map projection, viewport marker, and tiles geometrically stable", () => {
+  const zoom = 7;
+  const size = { width: 800, height: 400 };
+  const projected = project(VORU_COORDINATES, zoom);
+  const restored = unproject(projected, zoom);
+
+  assert.ok(Math.abs(restored.latitude - VORU_COORDINATES.latitude) < 1e-9);
+  assert.ok(Math.abs(restored.longitude - VORU_COORDINATES.longitude) < 1e-9);
+  assert.deepEqual(pointInViewport(VORU_COORDINATES, VORU_COORDINATES, zoom, size), {
+    x: 400,
+    y: 200,
+  });
+
+  const tiles = visibleTiles(VORU_COORDINATES, zoom, size);
+  assert.ok(tiles.length > 0);
+  assert.equal(new Set(tiles.map((tile) => tile.key)).size, tiles.length);
+  assert.ok(tiles.every((tile) => tile.url.startsWith("https://tile.openstreetmap.org/7/")));
+  assert.deepEqual(visibleTiles(VORU_COORDINATES, zoom, { width: 0, height: 400 }), []);
 });

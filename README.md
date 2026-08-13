@@ -52,34 +52,10 @@ Andmete juures kuvatakse Keskkonnaagentuuri, Ilmateenistuse, Open-Meteo ja OpenS
 
 ### Valikuline mõõteajaloo kogumine
 
-Kui `DATABASE_URL` puudub, kasutab ilmavaade ametlikku tunniarhiivi ja mudelajalugu ning töötab tavaliselt edasi. Värskete 10 minuti vaatluste talletamiseks lisa rakenduse runtime-keskkonda PostgreSQL ühendus:
-
-```env
-DATABASE_URL=postgresql://kasutaja:parool@host:5432/andmebaas
-WEATHER_COLLECTOR_TOKEN=vähemalt-32-baidine-juhuslik-saladus
-```
-
-64-märgilise juhusliku võtme saab luua näiteks käsuga
-`node -e "console.log(require('node:crypto').randomBytes(32).toString('hex'))"`.
-Käsu väljund läheb ainult Coolify runtime-saladuseks, mitte faili ega GitHubi.
-
-Mõlemad väärtused peavad Coolifys olema ainult runtime-keskkonnas, `Literal` ja salajased; build-keskkonda neid ei lisata. Rakendus loob esimesel ühendumisel ise tabeli `weather_observations`. Avalik `GET /api/weather` ainult loeb andmeid ning talletamine toimub autentitud `POST /api/weather` kaudu. Katkematu kogumise jaoks lisa Coolifys rakenduse Scheduled Task:
-
-```text
-Nimi: collect-voru-weather
-Kava: */10 * * * *
-Käsk: node -e "fetch('http://127.0.0.1:'+(process.env.PORT||3000)+'/api/weather',{method:'POST',headers:{Authorization:'Bearer '+process.env.WEATHER_COLLECTOR_TOKEN},signal:AbortSignal.timeout(45000)}).then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"
-```
-
-Scheduled Task loeb võtme konteineri runtime-keskkonnast ja pöördub rakenduse poole
-sama konteineri loopback-aadressil. Võti saadetakse ainult `Authorization` päises;
-saladus ei jõua URL-i, käsu teksti ega avaliku pöördproksi kaudu võrku. Päringul on
-45-sekundiline ülempiir. Koguja vastused on `no-store` ning puuduv mõõtmine või
-ebaõnnestunud PostgreSQL kirjutus tagastab veakoodi, et Coolify ei märgiks katkist
-kogumist õnnestunuks.
-
-`DATABASE_URL` ja `WEATHER_COLLECTOR_TOKEN` on salajased runtime-väärtused: neid ei
-lisata GitHubi, brauserikoodi, URL-i ega logidesse.
+Kui `DATABASE_URL` puudub, töötab ilmavaade ametliku tunniarhiivi ja
+mudelajalooga edasi. Värskete 10 minuti vaatluste PostgreSQL-i kogumise,
+runtime-saladuste ja Coolify Scheduled Taski seadistus on dokumendis
+[`docs/weather-collector.md`](docs/weather-collector.md).
 
 ## Erakondade reitingud
 
@@ -96,6 +72,7 @@ Reitingute juures kuvatakse küsitlusperiood, valim, eelistuseta vastajate osaka
 
 ```bash
 npm test
+npm run check:context
 npm run typecheck
 npm run build
 ```

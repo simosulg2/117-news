@@ -1,6 +1,16 @@
-import { Pool, type PoolConfig, type QueryResultRow } from "pg";
+import { Pool, type PoolConfig } from "pg";
 
 import type { WeatherPoint } from "./weather-types";
+import {
+  storedWeatherRowToPoint,
+  weatherObservationRowsForPersistence,
+  type StoredWeatherRow,
+} from "../features/weather/model/weather-persistence.ts";
+
+export {
+  storedWeatherRowToPoint,
+  weatherObservationRowsForPersistence,
+} from "../features/weather/model/weather-persistence.ts";
 
 const STATION_WMO_CODE = "26249";
 const MAX_HISTORY_RANGE_MS = 31 * 24 * 60 * 60 * 1_000;
@@ -9,30 +19,10 @@ const MAX_EXTENDED_HISTORY_RANGE_MS = 90 * 24 * 60 * 60 * 1_000 + 60 * 60 * 1_00
 // roughly 15,120 rows across a full 90-day window. Keep a little headroom so
 // a complete collector history is not truncated at the advertised limit.
 const MAX_EXTENDED_HISTORY_ROWS = 20_000;
-// The XML feed publishes the previous full hour's precipitation ten minutes
-// after the hour. Requests in the short update window are deliberately not
-// persisted as rainfall; a later request safely fills the canonical row.
-const PRECIPITATION_UPDATE_MINUTE = 10;
-const PRECIPITATION_SETTLE_MINUTES = 5;
 const DATABASE_TIMEOUT_MS = 5_000;
 
 type WeatherStoreGlobal = typeof globalThis & {
   __weatherPool117?: Pool;
-};
-
-type StoredWeatherRow = QueryResultRow & {
-  observed_at: Date | string;
-  temperature_c: number | string | null;
-  apparent_temperature_c: number | string | null;
-  relative_humidity_pct: number | string | null;
-  cloud_cover_pct: number | string | null;
-  precipitation_mm: number | string | null;
-  pressure_hpa: number | string | null;
-  wind_speed_ms: number | string | null;
-  wind_gust_ms: number | string | null;
-  wind_direction_deg: number | string | null;
-  weather_code: number | string | null;
-  phenomenon: string | null;
 };
 
 let schemaPromise: Promise<void> | null = null;
@@ -121,101 +111,8 @@ function finiteOrNull(value: number | null): number | null {
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
 
-function databaseNumber(value: number | string | null): number | null {
-  if (value === null) return null;
-  const number = typeof value === "number" ? value : Number(value);
-  return Number.isFinite(number) ? number : null;
-}
-
-export function storedWeatherRowToPoint(row: StoredWeatherRow): WeatherPoint | null {
-  const date = row.observed_at instanceof Date ? row.observed_at : new Date(row.observed_at);
-  if (Number.isNaN(date.getTime())) return null;
-  const isHourlyIntervalEnd = date.getUTCMinutes() === 0
-    && date.getUTCSeconds() === 0
-    && date.getUTCMilliseconds() === 0;
-
-  return {
-    time: date.toISOString(),
-    kind: "observed",
-    source: "environment_agency_current",
-    temperatureC: databaseNumber(row.temperature_c),
-    apparentTemperatureC: databaseNumber(row.apparent_temperature_c),
-    relativeHumidityPct: databaseNumber(row.relative_humidity_pct),
-    cloudCoverPct: databaseNumber(row.cloud_cover_pct),
-    // Additive precipitation is valid only on the canonical interval-end rows
-    // produced below. This also prevents pre-normalization snapshot rows from
-    // being summed repeatedly if a deployment already collected any of them.
-    precipitationMm: isHourlyIntervalEnd ? databaseNumber(row.precipitation_mm) : null,
-    pressureHpa: databaseNumber(row.pressure_hpa),
-    windSpeedMs: databaseNumber(row.wind_speed_ms),
-    windGustMs: databaseNumber(row.wind_gust_ms),
-    windDirectionDeg: databaseNumber(row.wind_direction_deg),
-    weatherCode: databaseNumber(row.weather_code),
-    phenomenon: typeof row.phenomenon === "string" && row.phenomenon.trim()
-      ? row.phenomenon.trim().slice(0, 120)
-      : null,
-  };
-}
-
 export function weatherStoreConfigured(): boolean {
   return databaseUrl() !== null;
-}
-
-/**
- * Converts one mixed-cadence XML observation into database rows with explicit
- * interval semantics. Instantaneous fields keep the feed timestamp. The XML
- * precipitation value is a rolling value for the preceding full hour, so it
- * is removed from the 10-minute snapshot and placed on one canonical hourly
- * interval-end row. Repeated requests then upsert the same row instead of
- * making an additive value appear several times.
- */
-export function weatherObservationRowsForPersistence(point: WeatherPoint): WeatherPoint[] {
-  if (point.kind !== "observed") return [];
-
-  const observedAt = new Date(point.time);
-  if (Number.isNaN(observedAt.getTime())) return [];
-
-  const snapshot: WeatherPoint = { ...point, precipitationMm: null };
-  if (point.precipitationMm === null || !Number.isFinite(point.precipitationMm)) {
-    return [snapshot];
-  }
-
-  const minute = observedAt.getUTCMinutes();
-  if (
-    minute >= PRECIPITATION_UPDATE_MINUTE
-    && minute < PRECIPITATION_UPDATE_MINUTE + PRECIPITATION_SETTLE_MINUTES
-  ) {
-    return [snapshot];
-  }
-
-  let intervalEndMs = Date.UTC(
-    observedAt.getUTCFullYear(),
-    observedAt.getUTCMonth(),
-    observedAt.getUTCDate(),
-    observedAt.getUTCHours(),
-  );
-  if (minute < PRECIPITATION_UPDATE_MINUTE) {
-    intervalEndMs -= 60 * 60 * 1_000;
-  }
-
-  const hourlyPrecipitation: WeatherPoint = {
-    time: new Date(intervalEndMs).toISOString(),
-    kind: "observed",
-    source: point.source,
-    temperatureC: null,
-    apparentTemperatureC: null,
-    relativeHumidityPct: null,
-    cloudCoverPct: null,
-    precipitationMm: point.precipitationMm,
-    pressureHpa: null,
-    windSpeedMs: null,
-    windGustMs: null,
-    windDirectionDeg: null,
-    weatherCode: null,
-    phenomenon: null,
-  };
-
-  return [snapshot, hourlyPrecipitation];
 }
 
 async function upsertWeatherObservation(pool: Pool, point: WeatherPoint): Promise<void> {
