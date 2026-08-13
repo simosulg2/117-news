@@ -15,6 +15,11 @@ import {
   visibleTiles,
   VORU_COORDINATES,
 } from "../features/weather/radar/model/radar-map-model.ts";
+import {
+  preferredFrameIndex,
+  radarPrefetchFrameIndices,
+} from "../features/weather/radar/model/radar-manifest-model.ts";
+import type { RadarManifest } from "../features/weather/radar/model/radar-types.ts";
 
 test("parses and safely caps the official radar page configuration", () => {
   const page = `
@@ -123,6 +128,35 @@ test("marks radar stale only after the freshness window", () => {
   assert.equal(isRadarStale(observation, Date.parse("2026-08-11T21:29:59.000Z")), false);
   assert.equal(isRadarStale(observation, Date.parse("2026-08-11T21:30:01.000Z")), true);
   assert.equal(isRadarStale("bad value", Date.now()), true);
+});
+
+test("follows a refreshed live frame while preserving an intentional historical selection", () => {
+  const previous = {
+    latestObservation: "2026-08-11T21:00:00.000Z",
+    frames: [
+      { time: "2026-08-11T20:55:00.000Z", kind: "observed" },
+      { time: "2026-08-11T21:00:00.000Z", kind: "observed" },
+    ],
+  } as RadarManifest;
+  const refreshed = {
+    latestObservation: "2026-08-11T21:05:00.000Z",
+    frames: [
+      ...previous.frames,
+      { time: "2026-08-11T21:05:00.000Z", kind: "observed" },
+      { time: "2026-08-11T21:10:00.000Z", kind: "forecast" },
+    ],
+  } as RadarManifest;
+
+  assert.equal(preferredFrameIndex(refreshed), 2);
+  assert.equal(preferredFrameIndex(refreshed, previous, 1), 2);
+  assert.equal(preferredFrameIndex(refreshed, previous, 0), 0);
+});
+
+test("bounds radar image warming to the immediately adjacent frames", () => {
+  assert.deepEqual(radarPrefetchFrameIndices(54, 0), [1]);
+  assert.deepEqual(radarPrefetchFrameIndices(54, 20), [19, 21]);
+  assert.deepEqual(radarPrefetchFrameIndices(54, 53), [52]);
+  assert.deepEqual(radarPrefetchFrameIndices(0, 0), []);
 });
 
 test("keeps radar map projection, viewport marker, and tiles geometrically stable", () => {

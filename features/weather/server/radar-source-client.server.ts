@@ -28,7 +28,7 @@ async function fetchRadarText(url: string): Promise<string> {
         Accept: "text/html,application/xml;q=0.9,*/*;q=0.8",
         "User-Agent": "117.ee weather radar (+https://117.ee/ilm)",
       },
-      next: { revalidate: RADAR_REVALIDATE_SECONDS },
+      cache: "no-store",
       redirect: "error",
       signal: controller.signal,
     });

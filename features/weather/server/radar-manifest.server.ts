@@ -1,67 +1,60 @@
 import { NextResponse } from "next/server";
 
 import { OFFICIAL_RADAR_PAGE_URL } from "@/lib/radar";
+import { InProcessSnapshotCache } from "@/lib/snapshot-cache";
 
 import {
   createRadarResponse,
   staleRadarResponse,
-  type RadarLoadResult,
   type RadarResponse,
 } from "./radar-response";
 import { loadRadarData, RADAR_REVALIDATE_SECONDS } from "./radar-source-client.server";
 
 export const dynamic = "force-dynamic";
-export const revalidate = RADAR_REVALIDATE_SECONDS;
+export const revalidate = 0;
 
-const RESPONSE_CACHE_CONTROL = "public, s-maxage=240, stale-while-revalidate=900";
-const MANIFEST_CACHE_MS = revalidate * 1_000;
+const MANIFEST_CACHE_MS = RADAR_REVALIDATE_SECONDS * 1_000;
+const STALE_RETRY_DELAY_MS = 30_000;
 
-let lastSuccessfulResponse: RadarResponse | null = null;
-let inFlightRadarLoad: Promise<RadarLoadResult> | null = null;
+const radarSnapshotCache = new InProcessSnapshotCache<RadarResponse>(
+  MANIFEST_CACHE_MS,
+  STALE_RETRY_DELAY_MS,
+);
 
-function loadRadarDataOnce(): Promise<RadarLoadResult> {
-  if (!inFlightRadarLoad) {
-    inFlightRadarLoad = loadRadarData().finally(() => {
-      inFlightRadarLoad = null;
-    });
+async function refreshRadarResponse(): Promise<RadarResponse> {
+  try {
+    return createRadarResponse(await loadRadarData());
+  } catch (error) {
+    console.error("Radar timeline fetch failed", error);
+    throw error;
   }
-  return inFlightRadarLoad;
 }
 
 export async function handleRadarGet() {
-  const cachedAt = lastSuccessfulResponse
-    ? Date.parse(lastSuccessfulResponse.generatedAt)
-    : Number.NaN;
-  if (
-    lastSuccessfulResponse &&
-    Number.isFinite(cachedAt) &&
-    Date.now() - cachedAt < MANIFEST_CACHE_MS
-  ) {
-    return NextResponse.json(lastSuccessfulResponse, {
-      headers: { "Cache-Control": RESPONSE_CACHE_CONTROL },
-    });
-  }
-
   try {
-    const response = createRadarResponse(await loadRadarDataOnce());
-    lastSuccessfulResponse = response;
-    return NextResponse.json(response, { headers: { "Cache-Control": RESPONSE_CACHE_CONTROL } });
-  } catch (error) {
-    console.error("Radar timeline fetch failed", error);
-
-    if (lastSuccessfulResponse) {
-      return NextResponse.json(staleRadarResponse(lastSuccessfulResponse), {
-        headers: { "Cache-Control": "public, s-maxage=60, stale-while-revalidate=900" },
-        status: 200,
-      });
-    }
-
+    const snapshot = await radarSnapshotCache.get(refreshRadarResponse);
+    const response = snapshot.status === "stale-if-error"
+      ? staleRadarResponse(snapshot.value)
+      : snapshot.value;
+    return NextResponse.json(response, {
+      headers: {
+        "Cache-Control": "no-store",
+        "X-Radar-Snapshot": snapshot.status,
+      },
+    });
+  } catch {
     return NextResponse.json(
       {
         error: "Radariandmeid ei õnnestunud praegu laadida.",
         source: { pageUrl: OFFICIAL_RADAR_PAGE_URL },
       },
-      { headers: { "Cache-Control": "no-store" }, status: 502 },
+      {
+        headers: {
+          "Cache-Control": "no-store",
+          "X-Radar-Snapshot": "unavailable",
+        },
+        status: 502,
+      },
     );
   }
 }

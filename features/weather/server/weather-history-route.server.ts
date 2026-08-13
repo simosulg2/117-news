@@ -128,9 +128,7 @@ export async function handleWeatherHistoryGet(request: Request): Promise<Respons
         "Content-Type": "text/csv; charset=utf-8",
         "Content-Disposition": `attachment; filename="${filename}"`,
         "X-Weather-History-Partial": String(partial),
-        "Cache-Control": partial
-          ? "no-store"
-          : "public, s-maxage=300, stale-while-revalidate=900",
+        "Cache-Control": "no-store",
       },
     });
   }
@@ -160,9 +158,7 @@ export async function handleWeatherHistoryGet(request: Request): Promise<Respons
   return Response.json(payload, {
     status,
     headers: {
-      "Cache-Control": status === 200 && !partial
-        ? "public, s-maxage=300, stale-while-revalidate=900"
-        : "no-store",
+      "Cache-Control": "no-store",
     },
   });
 }

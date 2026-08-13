@@ -8,6 +8,14 @@ export const WEATHER_STALE_AFTER_MS = 20 * 60 * 1_000;
 export const CURRENT_OBSERVATION_STALE_AFTER_MS = 30 * 60 * 1_000;
 export const WEATHER_PREFERENCES_KEY = "117-weather-preferences";
 
+export function shouldRefreshWeather(lastSnapshotAtMs: number, nowMs: number): boolean {
+  if (!Number.isFinite(lastSnapshotAtMs) || lastSnapshotAtMs <= 0 || !Number.isFinite(nowMs)) {
+    return true;
+  }
+  const elapsed = nowMs - lastSnapshotAtMs;
+  return elapsed < 0 || elapsed >= WEATHER_REFRESH_MS;
+}
+
 export type WeatherView = "history" | "now" | "forecast";
 export type WeatherRange = "24h" | "3d" | "7d" | "30d" | "90d" | "date";
 export type MetricField =

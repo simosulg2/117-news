@@ -3,9 +3,11 @@ import test from "node:test";
 
 import {
   DAY_MS,
+  WEATHER_REFRESH_MS,
   deduplicatePoints,
   pointsForField,
   rangeWindow,
+  shouldRefreshWeather,
   summarizePeriodPoints,
 } from "../features/weather/model/weather-client-model.ts";
 import type { WeatherPoint } from "../lib/weather-types.ts";
@@ -34,6 +36,15 @@ function point(
     ...values,
   };
 }
+
+test("weather refresh policy handles first load, expiry, and clock rollback", () => {
+  const snapshotAt = Date.parse("2026-08-13T12:00:00Z");
+  assert.equal(shouldRefreshWeather(0, snapshotAt), true);
+  assert.equal(shouldRefreshWeather(snapshotAt, snapshotAt + WEATHER_REFRESH_MS - 1), false);
+  assert.equal(shouldRefreshWeather(snapshotAt, snapshotAt + WEATHER_REFRESH_MS), true);
+  assert.equal(shouldRefreshWeather(snapshotAt, snapshotAt - 1), true);
+  assert.equal(shouldRefreshWeather(Number.NaN, snapshotAt), true);
+});
 
 test("range windows preserve history, current, and forecast semantics", () => {
   const now = Date.parse("2026-08-13T12:00:00Z");

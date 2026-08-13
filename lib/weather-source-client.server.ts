@@ -121,11 +121,11 @@ function officialHistoryUrls(from: Date, to: Date, limit?: number): string[] {
   });
 }
 
-async function loadOfficialHistoryMonth(url: string) {
+async function loadOfficialHistoryMonth(url: string, noStore: boolean) {
   const body = await fetchWeatherText(url, {
     accept: "application/json",
     maximumBytes: MAX_JSON_BYTES,
-    revalidateSeconds: 3_600,
+    ...(noStore ? { noStore: true } : { revalidateSeconds: 3_600 }),
     headers: { "Accept-Profile": "apijahiala" },
   });
   const rows = parseJson(body);
@@ -162,11 +162,11 @@ export async function loadCurrentWeatherObservation(noStore = false) {
   return parseCurrentObservationXml(xml);
 }
 
-export async function loadOpenMeteoWeather(fetchedAt: Date) {
+export async function loadOpenMeteoWeather(fetchedAt: Date, noStore = false) {
   const body = await fetchWeatherText(OPEN_METEO_URL, {
     accept: "application/json",
     maximumBytes: MAX_JSON_BYTES,
-    revalidateSeconds: 900,
+    ...(noStore ? { noStore: true } : { revalidateSeconds: 900 }),
   });
   return parseOpenMeteoResponse(parseJson(body), fetchedAt);
 }
@@ -181,9 +181,10 @@ export type OfficialWeatherHistory = {
 export async function loadOfficialWeatherHistory(
   from: Date,
   to: Date,
-  options: { allowPartial?: boolean; limit?: number } = {},
+  options: { allowPartial?: boolean; limit?: number; noStore?: boolean } = {},
 ): Promise<OfficialWeatherHistory> {
-  const loaders = officialHistoryUrls(from, to, options.limit).map(loadOfficialHistoryMonth);
+  const loaders = officialHistoryUrls(from, to, options.limit)
+    .map((url) => loadOfficialHistoryMonth(url, options.noStore === true));
   if (!options.allowPartial) {
     const combined = combineOfficialHistory(await Promise.all(loaders), from, to);
     if (combined.points.length === 0) {

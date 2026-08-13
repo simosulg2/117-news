@@ -30,11 +30,34 @@ export function radarLoadError(value: unknown): string {
 
 export function preferredFrameIndex(
   manifest: RadarManifest,
-  previousTime?: string,
+  previousManifest?: RadarManifest,
+  previousIndex = -1,
 ): number {
-  if (previousTime) {
-    const preservedIndex = manifest.frames.findIndex((frame) => frame.time === previousTime);
+  const latestObservedIndex = Math.max(
+    0,
+    manifest.frames.findLastIndex((frame) => frame.kind === "observed"),
+  );
+  const previousFrame = previousManifest?.frames[previousIndex];
+
+  if (previousFrame?.time === previousManifest?.latestObservation) {
+    const nextLatestIndex = manifest.frames.findIndex(
+      (frame) => frame.time === manifest.latestObservation,
+    );
+    return nextLatestIndex >= 0 ? nextLatestIndex : latestObservedIndex;
+  }
+
+  if (previousFrame) {
+    const preservedIndex = manifest.frames.findIndex(
+      (frame) => frame.time === previousFrame.time,
+    );
     if (preservedIndex >= 0) return preservedIndex;
   }
-  return Math.max(0, manifest.frames.findLastIndex((frame) => frame.kind === "observed"));
+
+  return latestObservedIndex;
+}
+
+export function radarPrefetchFrameIndices(frameCount: number, selectedIndex: number): number[] {
+  return [selectedIndex - 1, selectedIndex + 1].filter(
+    (index) => index >= 0 && index < frameCount,
+  );
 }

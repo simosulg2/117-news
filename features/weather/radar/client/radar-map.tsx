@@ -91,6 +91,24 @@ export function RadarMap({ radar }: { radar: ReadyRadarController }) {
         />
       )}
 
+      {radar.radarPrefetchUrls.map((url) => (
+        <img
+          key={`prefetch-adjacent-${url}`}
+          src={url}
+          alt=""
+          aria-hidden="true"
+          draggable={false}
+          decoding="async"
+          style={{
+            position: "absolute",
+            width: 1,
+            height: 1,
+            opacity: 0,
+            pointerEvents: "none",
+          }}
+        />
+      ))}
+
       <div
         className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-1/2"
         style={{ left: radar.voruPoint.x + radar.dragOffset.x, top: radar.voruPoint.y + radar.dragOffset.y }}

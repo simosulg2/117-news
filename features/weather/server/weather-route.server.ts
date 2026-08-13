@@ -18,6 +18,7 @@ import {
   saveWeatherObservation,
   weatherStoreConfigured,
 } from "@/lib/weather-store";
+import { InProcessSnapshotCache } from "@/lib/snapshot-cache";
 import type {
   WeatherAttribution,
   WeatherResponse,
@@ -26,6 +27,8 @@ import type {
 } from "@/lib/weather-types";
 
 const DAY_MS = 24 * 60 * 60 * 1_000;
+const WEATHER_SNAPSHOT_TTL_MS = 5 * 60 * 1_000;
+const WEATHER_STALE_RETRY_DELAY_MS = 60 * 1_000;
 const SOURCE_LABELS: Record<WeatherSourceId, string> = {
   environment_agency_current: "Keskkonnaagentuur: Võru hetkevaatlus",
   environment_agency_history: "Keskkonnaagentuur: Võru tunniandmed",
@@ -52,11 +55,26 @@ const ATTRIBUTIONS: WeatherAttribution[] = [
   },
 ];
 
+const weatherSnapshotCache = new InProcessSnapshotCache<WeatherResponse>(
+  WEATHER_SNAPSHOT_TTL_MS,
+  WEATHER_STALE_RETRY_DELAY_MS,
+);
+
+class WeatherSnapshotRefreshError extends Error {
+  constructor(
+    readonly payload: WeatherResponse,
+    readonly status: 200 | 502,
+  ) {
+    super("No external weather source returned usable data");
+    this.name = "WeatherSnapshotRefreshError";
+  }
+}
+
 async function loadRecentOfficialHistory(now: Date) {
   const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
   const end = new Date(today - DAY_MS);
   const start = new Date(end.getTime() - 6 * DAY_MS);
-  return loadOfficialWeatherHistory(start, new Date(end.getTime() + DAY_MS));
+  return loadOfficialWeatherHistory(start, new Date(end.getTime() + DAY_MS), { noStore: true });
 }
 
 function sourceStatus(
@@ -116,21 +134,14 @@ export async function handleWeatherPost(request: Request): Promise<Response> {
     : collectorResponse(result.outcome);
 }
 
-export async function handleWeatherGet(request: Request): Promise<Response> {
-  if (new URL(request.url).searchParams.has("collect")) {
-    return Response.json(
-      { ok: false, code: "collector_requires_post" },
-      { status: 405, headers: { Allow: "POST", "Cache-Control": "no-store" } },
-    );
-  }
-
+async function refreshWeatherSnapshot(): Promise<WeatherResponse> {
   const generatedAt = new Date();
   const historyStart = new Date(generatedAt.getTime() - 7 * DAY_MS);
   const persistenceEnabled = weatherStoreConfigured();
   const [currentResult, historyResult, modelResult, storedResult] = await Promise.allSettled([
-    loadCurrentWeatherObservation(),
+    loadCurrentWeatherObservation(true),
     loadRecentOfficialHistory(generatedAt),
-    loadOpenMeteoWeather(generatedAt),
+    loadOpenMeteoWeather(generatedAt, true),
     persistenceEnabled
       ? loadStoredWeatherObservations(historyStart, generatedAt)
       : Promise.resolve([]),
@@ -179,13 +190,51 @@ export async function handleWeatherGet(request: Request): Promise<Response> {
   };
 
   const everySourceFailed = sources.every((source) => source.status === "error");
-  const status = publicWeatherStatus(everySourceFailed, storedObservations.length);
-  return Response.json(payload, {
-    status,
-    headers: {
-      "Cache-Control": everySourceFailed || status === 502
-        ? "no-store"
-        : "public, s-maxage=300, stale-while-revalidate=900",
-    },
-  });
+  if (everySourceFailed) {
+    throw new WeatherSnapshotRefreshError(
+      payload,
+      publicWeatherStatus(true, storedObservations.length),
+    );
+  }
+  return payload;
+}
+
+export async function handleWeatherGet(request: Request): Promise<Response> {
+  if (new URL(request.url).searchParams.has("collect")) {
+    return Response.json(
+      { ok: false, code: "collector_requires_post" },
+      { status: 405, headers: { Allow: "POST", "Cache-Control": "no-store" } },
+    );
+  }
+
+  try {
+    const snapshot = await weatherSnapshotCache.get(refreshWeatherSnapshot);
+    return Response.json(snapshot.value, {
+      headers: {
+        "Cache-Control": "no-store",
+        "X-Weather-Snapshot": snapshot.status,
+      },
+    });
+  } catch (error) {
+    if (error instanceof WeatherSnapshotRefreshError) {
+      return Response.json(error.payload, {
+        status: error.status,
+        headers: {
+          "Cache-Control": "no-store",
+          "X-Weather-Snapshot": error.status === 200 ? "degraded" : "unavailable",
+        },
+      });
+    }
+    console.error("Weather snapshot refresh failed", safeWeatherErrorDetails(error));
+    return Response.json(
+      { error: "Ilmaandmete laadimine ebaõnnestus. Palun proovi mõne hetke pärast uuesti." },
+      {
+        status: 502,
+        headers: {
+          "Cache-Control": "no-store",
+          "X-Weather-Snapshot": "unavailable",
+        },
+      },
+    );
+  }
 }

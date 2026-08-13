@@ -25,10 +25,8 @@ import {
   ZERO_POINT,
 } from "../model/radar-map-model";
 import {
-  isRadarManifest,
-  normalizeRadarManifest,
   preferredFrameIndex,
-  radarLoadError,
+  radarPrefetchFrameIndices,
 } from "../model/radar-manifest-model";
 import type {
   ActiveRadarImage,
@@ -37,23 +35,20 @@ import type {
   Point,
   RadarManifest,
 } from "../model/radar-types";
+import { useRadarManifest } from "./use-radar-manifest";
 
-const RADAR_REFRESH_MS = 5 * 60_000;
 const RADAR_FRESHNESS_CLOCK_MS = 30_000;
 const ANIMATION_FRAME_HOLD_MS = 850;
+const FRAME_SELECTION_DEBOUNCE_MS = 100;
 const WHEEL_ZOOM_DEBOUNCE_MS = 140;
 
 export function useRadarController() {
   const mapElementRef = useRef<HTMLDivElement | null>(null);
   const dragStartRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
-  const manifestRef = useRef<RadarManifest | null>(null);
-  const requestedRadarUrlRef = useRef("");
   const wheelDeltaRef = useRef(0);
   const wheelZoomTimeoutRef = useRef<number | null>(null);
-  const [manifest, setManifest] = useState<RadarManifest | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
   const [frameIndex, setFrameIndex] = useState(0);
+  const [renderFrame, setRenderFrame] = useState<RadarFrame | null>(null);
   const [playing, setPlaying] = useState(false);
   const [opacity, setOpacity] = useState(78);
   const [mapSize, setMapSize] = useState<MapSize>({ width: 0, height: 0 });
@@ -64,35 +59,19 @@ export function useRadarController() {
   const [activeRadarImage, setActiveRadarImage] = useState<ActiveRadarImage | null>(null);
   const [clockMs, setClockMs] = useState(() => Date.now());
 
-  const loadRadar = useCallback(async () => {
-    try {
-      const response = await fetch("/api/weather/radar", { cache: "no-store" });
-      const value: unknown = await response.json();
-      if (!response.ok || !isRadarManifest(value)) throw new Error(radarLoadError(value));
-
-      const nextManifest = normalizeRadarManifest(value);
-      const previousManifest = manifestRef.current;
-      manifestRef.current = nextManifest;
-      setManifest(nextManifest);
-      setCenter((current) => previousManifest ? current : nextManifest.map.center);
-      setZoom((current) => previousManifest ? current : nextManifest.map.initialZoom);
-      setFrameIndex((current) => preferredFrameIndex(
-        nextManifest,
-        previousManifest?.frames[current]?.time,
-      ));
-      setLoadError(null);
-    } catch (error) {
-      setLoadError(error instanceof Error ? error.message : "Radari ajajoont ei õnnestunud laadida.");
-    } finally {
-      setLoading(false);
-    }
+  const handleManifestLoaded = useCallback((
+    nextManifest: RadarManifest,
+    previousManifest: RadarManifest | null,
+  ) => {
+    setCenter((current) => previousManifest ? current : nextManifest.map.center);
+    setZoom((current) => previousManifest ? current : nextManifest.map.initialZoom);
+    setFrameIndex((current) => preferredFrameIndex(
+      nextManifest,
+      previousManifest ?? undefined,
+      current,
+    ));
   }, []);
-
-  useEffect(() => {
-    void loadRadar();
-    const refresh = window.setInterval(() => void loadRadar(), RADAR_REFRESH_MS);
-    return () => window.clearInterval(refresh);
-  }, [loadRadar]);
+  const { manifest, loadError, loading, retry } = useRadarManifest(handleManifestLoaded);
 
   useEffect(() => {
     const freshnessClock = window.setInterval(() => setClockMs(Date.now()), RADAR_FRESHNESS_CLOCK_MS);
@@ -117,18 +96,31 @@ export function useRadarController() {
   }, [manifest]);
 
   const selectedFrame = manifest?.frames[frameIndex] ?? null;
+
+  useEffect(() => {
+    if (!selectedFrame) {
+      setRenderFrame(null);
+      return;
+    }
+    const timeout = window.setTimeout(
+      () => setRenderFrame(selectedFrame),
+      FRAME_SELECTION_DEBOUNCE_MS,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [selectedFrame]);
+
   const mapTiles = useMemo(() => visibleTiles(center, zoom, mapSize), [center, mapSize, zoom]);
   const mapViewKey = useMemo(
     () => `${center.latitude.toFixed(7)}:${center.longitude.toFixed(7)}:${zoom}:${mapSize.width}:${mapSize.height}`,
     [center, mapSize, zoom],
   );
   const radarUrl = useMemo(
-    () => manifest && selectedFrame ? wmsImageUrl(manifest, selectedFrame, center, zoom, mapSize) : "",
-    [center, manifest, mapSize, selectedFrame, zoom],
+    () => manifest && renderFrame ? wmsImageUrl(manifest, renderFrame, center, zoom, mapSize) : "",
+    [center, manifest, mapSize, renderFrame, zoom],
   );
   const radarRequest = useMemo<ActiveRadarImage | null>(
-    () => selectedFrame && radarUrl ? { frame: selectedFrame, url: radarUrl, viewKey: mapViewKey } : null,
-    [mapViewKey, radarUrl, selectedFrame],
+    () => renderFrame && radarUrl ? { frame: renderFrame, url: radarUrl, viewKey: mapViewKey } : null,
+    [mapViewKey, radarUrl, renderFrame],
   );
   const voruPoint = useMemo(
     () => pointInViewport(VORU_COORDINATES, center, zoom, mapSize),
@@ -136,11 +128,19 @@ export function useRadarController() {
   );
   const visibleRadarImage = activeRadarImage?.viewKey === mapViewKey ? activeRadarImage : null;
   const visibleFrame = visibleRadarImage?.frame ?? selectedFrame;
-  const layerLoading = Boolean(radarRequest && activeRadarImage?.url !== radarRequest.url && !layerError);
+  const layerLoading = Boolean(selectedFrame && !layerError && (
+    radarRequest?.frame.time !== selectedFrame.time
+    || visibleRadarImage?.url !== radarRequest?.url
+  ));
+  const radarPrefetchUrls = useMemo(() => {
+    if (!manifest || !radarRequest || visibleRadarImage?.url !== radarRequest.url) return [];
+    return radarPrefetchFrameIndices(manifest.frames.length, frameIndex)
+      .map((index) => wmsImageUrl(manifest, manifest.frames[index], center, zoom, mapSize))
+      .filter((url) => url && url !== radarRequest.url);
+  }, [center, frameIndex, manifest, mapSize, radarRequest, visibleRadarImage?.url, zoom]);
   const radarIsStale = Boolean(manifest && (manifest.stale || isRadarStale(manifest.latestObservation, clockMs)));
 
   useEffect(() => {
-    requestedRadarUrlRef.current = radarUrl;
     setLayerError(false);
   }, [radarUrl]);
 
@@ -218,15 +218,10 @@ export function useRadarController() {
     setCenter(VORU_COORDINATES);
     setZoom(manifest?.map.initialZoom ?? 7);
   };
-  const retry = () => {
-    setLoading(true);
-    void loadRadar();
-  };
-
   return {
     manifest, loadError, loading, retry, frameIndex, selectedFrame, visibleFrame, playing,
     opacity, zoom, dragOffset, layerError, layerLoading, radarIsStale, mapTiles, mapElementRef,
-    radarRequest, activeRadarImage, visibleRadarImage, voruPoint, handleMapKey, handleMapWheel,
+    radarRequest, radarPrefetchUrls, activeRadarImage, visibleRadarImage, voruPoint, handleMapKey, handleMapWheel,
     startDrag, moveDrag, finishDrag, cancelDrag, zoomBy, resetMap,
     previousFrame: () => { setPlaying(false); setFrameIndex((current) => Math.max(0, current - 1)); },
     nextFrame: () => { setPlaying(false); setFrameIndex((current) => Math.min((manifest?.frames.length ?? 1) - 1, current + 1)); },
@@ -234,12 +229,12 @@ export function useRadarController() {
     selectFrame: (index: number) => { setPlaying(false); setFrameIndex(index); },
     setOpacity,
     acceptRadarImage: (request: ActiveRadarImage) => {
-      if (requestedRadarUrlRef.current !== request.url) return;
+      if (radarRequest?.url !== request.url) return;
       setActiveRadarImage(request);
       setLayerError(false);
     },
     rejectRadarImage: (request?: ActiveRadarImage) => {
-      if (request && requestedRadarUrlRef.current !== request.url) return;
+      if (request && radarRequest?.url !== request.url) return;
       setLayerError(true);
       setPlaying(false);
       if (!request) setActiveRadarImage(null);
