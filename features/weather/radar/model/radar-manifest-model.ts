@@ -1,3 +1,9 @@
+import {
+  OFFICIAL_RADAR_BASE_TILE_URL,
+  OFFICIAL_RADAR_LABEL_TILE_URL,
+  OFFICIAL_RADAR_OBSERVED_TILE_URL,
+  OFFICIAL_RADAR_WMS_URL,
+} from "../../../../lib/radar.ts";
 import type { RadarManifest } from "./radar-types.ts";
 
 export function isRadarManifest(value: unknown): value is RadarManifest {
@@ -6,7 +12,11 @@ export function isRadarManifest(value: unknown): value is RadarManifest {
   return (
     Array.isArray(candidate.frames) &&
     candidate.frames.length > 0 &&
-    Boolean(candidate.map?.wmsUrl) &&
+    candidate.map?.projection === "EPSG:3301" &&
+    candidate.map?.wmsUrl === OFFICIAL_RADAR_WMS_URL &&
+    candidate.map?.baseTileUrlTemplate === OFFICIAL_RADAR_BASE_TILE_URL &&
+    candidate.map?.labelTileUrlTemplate === OFFICIAL_RADAR_LABEL_TILE_URL &&
+    candidate.map?.observedTileUrlTemplate === OFFICIAL_RADAR_OBSERVED_TILE_URL &&
     Boolean(candidate.source?.pageUrl)
   );
 }
@@ -56,8 +66,16 @@ export function preferredFrameIndex(
   return latestObservedIndex;
 }
 
-export function radarPrefetchFrameIndices(frameCount: number, selectedIndex: number): number[] {
-  return [selectedIndex - 1, selectedIndex + 1].filter(
-    (index) => index >= 0 && index < frameCount,
+export function radarPrefetchFrameIndices(
+  frameCount: number,
+  selectedIndex: number,
+  playing = false,
+): number[] {
+  if (frameCount <= 1 || selectedIndex < 0 || selectedIndex >= frameCount) return [];
+  const candidates = playing
+    ? [(selectedIndex + 1) % frameCount, (selectedIndex + 2) % frameCount]
+    : [(selectedIndex + 1) % frameCount, (selectedIndex - 1 + frameCount) % frameCount];
+  return candidates.filter(
+    (index, position) => index !== selectedIndex && candidates.indexOf(index) === position,
   );
 }

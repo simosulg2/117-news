@@ -63,8 +63,10 @@ coverage must stay explicit in `partial`, `coverage`, and per-source status.
 - Focused radar modules: `features/weather/radar/`; source/cache modules:
   `features/weather/server/radar-*.ts`.
 
-Frames distinguish observed from forecast data. Preserve official notices,
-attribution, bounded upstream requests, stale fallback, and the WMS allowlist.
+Frames distinguish observed from forecast data. Observations use the official
+EPSG:3301 static tile grid; forecasts use aligned, tiled WMS requests. Preserve
+official notices, attribution, bounded upstream requests, stale fallback, and
+the official tile/WMS host allowlists.
 
 Validate all weather contracts with `npm run test:weather`.
 

@@ -1,6 +1,9 @@
 import {
   isRadarStale,
   OFFICIAL_RADAR_CAPABILITIES_URL,
+  OFFICIAL_RADAR_BASE_TILE_URL,
+  OFFICIAL_RADAR_LABEL_TILE_URL,
+  OFFICIAL_RADAR_OBSERVED_TILE_URL,
   OFFICIAL_RADAR_PAGE_URL,
   OFFICIAL_RADAR_WMS_URL,
   type RadarTimeline,
@@ -23,6 +26,10 @@ export type RadarResponse = {
   map: {
     center: { latitude: number; longitude: number };
     initialZoom: number;
+    projection: "EPSG:3301";
+    baseTileUrlTemplate: string;
+    labelTileUrlTemplate: string;
+    observedTileUrlTemplate: string;
     wmsUrl: string;
     observed: { layer: string; style: string };
     forecast: { layer: string; style: string };
@@ -54,7 +61,11 @@ export function createRadarResponse({ timeline, notices }: RadarLoadResult): Rad
     intervalMinutes: timeline.intervalMinutes,
     map: {
       center: { latitude: 57.8463, longitude: 27.0195 },
-      initialZoom: 7,
+      initialZoom: 2,
+      projection: "EPSG:3301",
+      baseTileUrlTemplate: OFFICIAL_RADAR_BASE_TILE_URL,
+      labelTileUrlTemplate: OFFICIAL_RADAR_LABEL_TILE_URL,
+      observedTileUrlTemplate: OFFICIAL_RADAR_OBSERVED_TILE_URL,
       wmsUrl: OFFICIAL_RADAR_WMS_URL,
       observed: { layer: "ilm:cmp_cap", style: "ilm:opera_radar_talv" },
       forecast: { layer: "ilm:nowcasting", style: "ilm:opera_radar" },

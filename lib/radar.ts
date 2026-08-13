@@ -1,5 +1,11 @@
 export const OFFICIAL_RADAR_PAGE_URL = "https://www.ilmateenistus.ee/ilm/ilmavaatlused/radar/";
 export const OFFICIAL_RADAR_WMS_URL = "https://ilmgs.envir.ee/geoserver/ilm/wms";
+export const OFFICIAL_RADAR_OBSERVED_TILE_URL =
+  "https://ilmtiles.envir.ee/tiles/ilm/cmp_cap/{TIME}/{z}/{x}/{-y}.png";
+export const OFFICIAL_RADAR_BASE_TILE_URL =
+  "https://tiles.envir.ee/tm/tms/1.0.0/ilmateenistus-radar@LEST/{z}/{x}/{-y}.png";
+export const OFFICIAL_RADAR_LABEL_TILE_URL =
+  "https://tiles.envir.ee/tm/tms/1.0.0/ilmateenistus-kohanimed@LEST/{z}/{x}/{-y}.png";
 export const OFFICIAL_RADAR_CAPABILITIES_URL =
   `${OFFICIAL_RADAR_WMS_URL}?service=WMS&version=1.1.1&request=GetCapabilities`;
 

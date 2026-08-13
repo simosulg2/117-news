@@ -43,12 +43,12 @@ Artiklid avanevad alati algallika lehel. Postimehe tellijasisu kasutab seal brau
 - Mõõdetud ja mudelandmeid ei esitata ühe allikana: graafikud, ajavahemiku kokkuvõte ja allikate olek eristavad need selgelt.
 - Graafikul hõljutamine või puudutamine kuvab täpse Eesti aja ja väärtuse kõigil graafikutel sama ajapunkti juures; valikut saab juhtida ka nooleklahvidega.
 - Ametlikus tunniarhiivis puudub Võru numbriline pilvisus. Varasema pilvisuse protsent on seetõttu mudelhinnang; hetkevaatluse kirjeldav pilvisus on mõõdetud vaatlus.
-- `/api/weather/radar` koostab ametliku radariteenuse ajajoone. Brauser kuvab Keskkonnaagentuuri mõõdetud ja lühiprognoosi WMS-kihte 117.ee enda interaktiivsel kaardil.
+- `/api/weather/radar` koostab ametliku radariteenuse ajajoone. Brauser kuvab mõõdetud kaadreid Keskkonnaagentuuri eelloodud L-EST97 rasterpaanidena ning lühiprognoosi sama ruudustiku paanitud WMS-kihina 117.ee interaktiivsel kaardil.
 - Ilma ja radari vead on teineteisest ning uudiste API-st isoleeritud. Iga töötav osa jääb teise allika vea korral kasutatavaks.
 - Kui kõik välised ilmaallikad ajutiselt ebaõnnestuvad, jääb PostgreSQL-i salvestatud mõõteajalugu kasutatavaks; seda ei esitata ekslikult värske hetkevaatlusena.
 - Vaate, ajavahemiku, valitud näitajate ja kokkuvõtte aja eelistused säilivad ainult kasutaja brauseris.
 
-Andmete juures kuvatakse Keskkonnaagentuuri, Ilmateenistuse, Open-Meteo ja OpenStreetMapi viited ning litsentsid.
+Andmete juures kuvatakse Keskkonnaagentuuri, Ilmateenistuse, Open-Meteo ning Maa- ja Ruumiameti viited ja litsentsid.
 
 ### Valikuline mõõteajaloo kogumine
 
