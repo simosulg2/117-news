@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 
 const repositoryRoot = dirname(dirname(fileURLToPath(import.meta.url)));
 const sourceRoots = ["app", "components", "features", "lib"];
+const tailwindUiRoots = ["app", "components", "features"];
 const sourceExtensions = new Set([".ts", ".tsx"]);
 
 const DEFAULT_LIMIT = 300;
@@ -70,7 +71,18 @@ const files = (await Promise.all(
 )).flat();
 
 const failures = [];
+const configurationFailures = [];
 const activeLegacy = [];
+
+const tailwindConfig = await readFile(join(repositoryRoot, "tailwind.config.ts"), "utf8");
+for (const root of tailwindUiRoots) {
+  const requiredPrefix = `./${root}/**/*`;
+  if (!tailwindConfig.includes(requiredPrefix)) {
+    configurationFailures.push(
+      `tailwind.config.ts must scan ${requiredPrefix} so production CSS keeps ${root} classes`,
+    );
+  }
+}
 
 for (const file of files) {
   const path = portablePath(relative(repositoryRoot, file));
@@ -106,6 +118,11 @@ if (activeLegacy.length > 0) {
   }
 }
 
+if (configurationFailures.length > 0) {
+  console.error(`Context check failed for ${configurationFailures.length} configuration issue(s):`);
+  for (const message of configurationFailures) console.error(`  ${message}`);
+}
+
 if (failures.length > 0) {
   console.error(`Context check failed for ${failures.length} file(s):`);
   for (const item of failures.sort((left, right) => left.path.localeCompare(right.path))) {
@@ -115,6 +132,9 @@ if (failures.length > 0) {
         (item.legacy ? ` (target ${item.target}; ${item.legacy.reason})` : ""),
     );
   }
+}
+
+if (configurationFailures.length > 0 || failures.length > 0) {
   process.exitCode = 1;
 } else {
   console.log(`Context check passed: ${files.length} source modules inspected.`);
