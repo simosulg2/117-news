@@ -90,7 +90,7 @@ test("same-name donors remain separate and exact duplicate records get unique ID
   )[0];
   assert.equal(party.largestDonors.length, 2);
   assert.equal(party.largestDonors.some((donor) => ["person-one", "person-two"].includes(donor.id)), false);
-  assert.equal(party.largestDonors.every((donor) => donor.watchable === false), true);
+  assert.equal(party.largestDonors.every((donor) => donor.ambiguousIdentity), true);
 
   const duplicate = sameNameRows[0];
   const records = buildPoliticalFinanceRecords({
@@ -103,7 +103,7 @@ test("same-name donors remain separate and exact duplicate records get unique ID
   assert.match(recordsRevisionId(records[0].filingId, records), /^erjk:158:2026-Q2:/);
 });
 
-test("public donor watch IDs are scoped to the reporting party", () => {
+test("public donor IDs are scoped to the reporting party", () => {
   const sharedDonor: ErjkReceiptRow[] = [{
     date: "2026-06-30", categoryName: "Rahaline annetus", reportedName: "Sama Avalik Nimi",
     counterpartyKey: "private-source-key", amount: 100,
@@ -121,11 +121,11 @@ test("public donor watch IDs are scoped to the reporting party", () => {
   )[0];
   assert.notEqual(reform.largestDonors[0].id, centre.largestDonors[0].id);
   assert.equal(JSON.stringify([reform, centre]).includes("private-source-key"), false);
-  assert.equal(reform.largestDonors[0].watchable, true);
-  assert.equal(centre.largestDonors[0].watchable, true);
+  assert.equal(reform.largestDonors[0].ambiguousIdentity, false);
+  assert.equal(centre.largestDonors[0].ambiguousIdentity, false);
 });
 
-test("ambiguous same-name donor rows never become watchable when corrections reorder them", () => {
+test("ambiguous same-name donor rows remain marked when corrections reorder them", () => {
   const first: ErjkReceiptRow[] = [
     { date: "2026-06-30", categoryName: "Rahaline annetus", reportedName: "Sama Nimi", counterpartyKey: "one", amount: 100 },
     { date: "2026-06-29", categoryName: "Rahaline annetus", reportedName: "Sama Nimi", counterpartyKey: "two", amount: 200 },
@@ -136,8 +136,8 @@ test("ambiguous same-name donor rows never become watchable when corrections reo
     [{ sourcePartyId: "158", period: "2026-Q2", reportId: 1, receipts: rows }],
     "2026-Q2", coverage(["2026-Q2", "income"]),
   )[0].largestDonors;
-  assert.equal(make(first).every((donor) => !donor.watchable), true);
-  assert.equal(make(corrected).every((donor) => !donor.watchable), true);
+  assert.equal(make(first).every((donor) => donor.ambiguousIdentity), true);
+  assert.equal(make(corrected).every((donor) => donor.ambiguousIdentity), true);
 });
 
 test("unknown ERJK parties stay visible without a fabricated registry match", () => {

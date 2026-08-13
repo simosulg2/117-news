@@ -103,11 +103,11 @@ function donationViews(rows: readonly ErjkReceiptRow[], partyScope: string): {
   const publicDonors = donors.map(({ privateKey: _privateKey, ...donor }) => {
     const occurrence = (publicNameOccurrences.get(donor.donorName) ?? 0) + 1;
     publicNameOccurrences.set(donor.donorName, occurrence);
-    const watchable = publicNameTotals.get(donor.donorName) === 1;
-    const publicIdentity = watchable
+    const ambiguousIdentity = publicNameTotals.get(donor.donorName) !== 1;
+    const publicIdentity = !ambiguousIdentity
       ? `${partyScope}|${donor.donorName}`
       : `${partyScope}|ambiguous|${donor.donorName}|${donor.amount}|${donor.donationCount}|${occurrence}`;
-    return { id: `donor-${hash(publicIdentity)}`, watchable, ...donor };
+    return { id: `donor-${hash(publicIdentity)}`, ambiguousIdentity, ...donor };
   });
   const total = sum(donations.map((row) => row.amount));
   const signatures = new Map<string, number>();
@@ -188,8 +188,6 @@ export function buildPoliticalFinanceSummaries(
       donations,
       donationSharePct: donations !== null && income !== null ? pct(donations, income) : null,
       donorConcentrationTop5Pct: donationDetail?.concentration ?? null,
-      // ERJK aggregates expose cents while each detail row is rounded to whole
-      // euros. The maximum rounding drift is 50 cents per included row.
       detailReconciles: donationDetail
         && donations !== null
         ? Math.abs(donationDetail.total - donations) <= donationDetail.roundingTolerance

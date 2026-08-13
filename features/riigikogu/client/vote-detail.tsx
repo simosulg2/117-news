@@ -1,6 +1,5 @@
 import type { RiigikoguVoteChoice, RiigikoguVoteDetail as VoteDetail } from "@/lib/riigikogu-types";
 import { choiceLabels } from "./riigikogu-formatters";
-import { WatchToggle } from "@/features/watchlist/client/watch-toggle";
 
 const choices: RiigikoguVoteChoice[] = ["in-favor", "against", "neutral", "did-not-vote", "absent", "unknown"];
 
@@ -32,7 +31,7 @@ export function VoteDetailPanel({ data, loading, error }: { data: VoteDetail | n
       <summary className="cursor-pointer px-3 py-2 text-xs font-bold outline-none focus-visible:ring-1 focus-visible:ring-signal">Kõik 101 liikme valikud</summary>
       <ul className="grid border-t border-[#d5dfe6] sm:grid-cols-2 lg:grid-cols-3 dark:border-[#263d50]">
         {data.voters.map((voter) => <li key={voter.memberId} className="flex justify-between gap-2 border-b border-[#edf1f4] px-3 py-2 text-xs dark:border-[#172b3b]">
-          <span>{voter.fullName}</span><span className="flex items-center gap-2"><span className="font-semibold">{choiceLabels[voter.choice]}</span><WatchToggle kind="riigikogu-member" targetId={voter.memberId} label={voter.fullName} idleLabel="Jälgi" watchedLabel="✓" compact /></span>
+          <span>{voter.fullName}</span><span className="font-semibold">{choiceLabels[voter.choice]}</span>
         </li>)}
       </ul>
     </details>

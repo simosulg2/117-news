@@ -94,13 +94,9 @@ async function refreshRatingsSnapshot(): Promise<RatingsResponse> {
   };
 }
 
-export function getRatingsSnapshot() {
-  return ratingsSnapshotCache.get(refreshRatingsSnapshot);
-}
-
 export async function handleRatingsGet(): Promise<Response> {
   try {
-    const snapshot = await getRatingsSnapshot();
+    const snapshot = await ratingsSnapshotCache.get(refreshRatingsSnapshot);
     return Response.json(snapshot.value, {
       headers: {
         "Cache-Control": "no-store",

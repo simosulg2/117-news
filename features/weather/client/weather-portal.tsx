@@ -16,7 +16,6 @@ import { WeatherRadarSection } from "@/features/weather/client/weather-radar-sec
 import { WeatherRangeControls } from "@/features/weather/client/weather-range-controls";
 import { WeatherSources } from "@/features/weather/client/weather-sources";
 import { WeatherStatus } from "@/features/weather/client/weather-status";
-import { WeatherWarningPanel } from "@/features/weather/client/weather-warning-panel";
 import {
   CURRENT_OBSERVATION_STALE_AFTER_MS,
   HOUR_MS,
@@ -111,7 +110,6 @@ export function WeatherPortal() {
       <main id="weather-main" tabIndex={-1} className="mx-auto max-w-[96rem] px-3 pb-12 pt-4 outline-none sm:px-5 lg:px-7">
         <WeatherStatus data={data} refreshing={feed.refreshing} stale={weatherIsStale} failedSources={failedSources} error={feed.error} refreshError={feed.refreshError} onRetry={feed.retry} />
         {!data && feed.loading && <WeatherLoadingState />}
-        <div className="mb-4"><WeatherWarningPanel /></div>
         {data && (
           <div className="space-y-4">
             <CurrentConditions data={data} stale={weatherIsStale} />

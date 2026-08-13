@@ -1,8 +1,3 @@
-import {
-  partyIdentity,
-  resolvePartyAlias,
-  validatePartyAliases,
-} from "../../../lib/party-registry.ts";
 import type { RatingsPartyKind, RatingsSource } from "../../../lib/ratings-types.ts";
 
 export const NORSTAT_RATINGS_DATA_URL =
@@ -29,35 +24,91 @@ export type PartyPresentation = {
   kind?: RatingsPartyKind;
 };
 
-const NORSTAT_PARTY_ALIASES: Readonly<Record<string, string>> = {
-  "Sotsiaaldemokraatlik Erakond": "sde",
-  "Eesti Reformierakond": "reform",
-  "Erakond Eestimaa Rohelised": "rohelised",
-  "Eesti Vabaduspartei - Põllumeeste kogu": "vabaduspartei-pollumeeste-kogu",
-  "Eestimaa Ühendatud Vasakpartei": "vasakpartei",
-  "Eesti Konservatiivne Rahvaerakond": "ekre",
-  "Eesti Keskerakond": "kesk",
-  Isamaa: "isamaa",
-  "Elurikkuse erakond": "elurikkus",
-  "Eesti 200": "eesti200",
-  "Eesti Vabaerakond": "vabaerakond",
-  "Eesti Iseseisvuspartei": "iseseisvuspartei",
-  "Erakond Parempoolsed": "parempoolsed",
-  "Eesti Rahvuslased ja Konservatiivid (ERK)": "erk",
-  "Erakond KOOS": "koos",
-  "Vabaerakond Aru Pähe": "aru-pahe",
-  "Eesti Rahvusliberaalid - Vabaerakond": "rahvusliberaalid-vabaerakond",
-};
-
-validatePartyAliases(NORSTAT_PARTY_ALIASES);
-
-const SPECIAL_PRESENTATION: Readonly<Record<string, PartyPresentation>> = {
+const PARTY_PRESENTATION: Readonly<Record<string, PartyPresentation>> = {
+  "Sotsiaaldemokraatlik Erakond": {
+    id: "sde",
+    name: "Sotsiaaldemokraatlik Erakond",
+    shortName: "SDE",
+    color: "#E30613",
+  },
+  "Eesti Reformierakond": {
+    id: "reform",
+    name: "Eesti Reformierakond",
+    shortName: "Reform",
+    color: "#F2D321",
+  },
+  "Erakond Eestimaa Rohelised": {
+    id: "rohelised",
+    name: "Erakond Eestimaa Rohelised",
+    shortName: "Rohelised",
+    color: "#52A447",
+  },
+  "Eesti Vabaduspartei - Põllumeeste kogu": {
+    id: "vabaduspartei-pollumeeste-kogu",
+    name: "Eesti Vabaduspartei – Põllumeeste Kogu",
+    shortName: "EVP-PK",
+    color: "#64748B",
+  },
+  "Eestimaa Ühendatud Vasakpartei": {
+    id: "vasakpartei",
+    name: "Eestimaa Ühendatud Vasakpartei",
+    shortName: "Vasakpartei",
+    color: "#B91C1C",
+  },
+  "Eesti Konservatiivne Rahvaerakond": {
+    id: "ekre",
+    name: "Eesti Konservatiivne Rahvaerakond",
+    shortName: "EKRE",
+    color: "#1D4E89",
+  },
+  "Eesti Keskerakond": {
+    id: "kesk",
+    name: "Eesti Keskerakond",
+    shortName: "Keskerakond",
+    color: "#008A4B",
+  },
+  Isamaa: {
+    id: "isamaa",
+    name: "Isamaa",
+    shortName: "Isamaa",
+    color: "#009FE3",
+  },
   "Muu erakond": {
     id: "other",
     name: "Muu erakond",
     shortName: "Muu",
     color: "#64748B",
     kind: "other",
+  },
+  "Elurikkuse erakond": {
+    id: "elurikkus",
+    name: "Elurikkuse Erakond",
+    shortName: "Elurikkus",
+    color: "#65A30D",
+  },
+  "Eesti 200": {
+    id: "eesti200",
+    name: "Eesti 200",
+    shortName: "Eesti 200",
+    color: "#00AEEF",
+  },
+  "Eesti Vabaerakond": {
+    id: "vabaerakond",
+    name: "Eesti Vabaerakond",
+    shortName: "Vabaerakond",
+    color: "#475569",
+  },
+  "Eesti Iseseisvuspartei": {
+    id: "iseseisvuspartei",
+    name: "Eesti Iseseisvuspartei",
+    shortName: "EIP",
+    color: "#334155",
+  },
+  "Erakond Parempoolsed": {
+    id: "parempoolsed",
+    name: "Erakond Parempoolsed",
+    shortName: "Parempoolsed",
+    color: "#7C3AED",
   },
   "Üksikkandidaadi poolt": {
     id: "independent",
@@ -72,6 +123,30 @@ const SPECIAL_PRESENTATION: Readonly<Record<string, PartyPresentation>> = {
     shortName: "Stalnuhhin",
     color: "#78716C",
     kind: "independent",
+  },
+  "Eesti Rahvuslased ja Konservatiivid (ERK)": {
+    id: "erk",
+    name: "Eesti Rahvuslased ja Konservatiivid",
+    shortName: "ERK",
+    color: "#1E3A5F",
+  },
+  "Erakond KOOS": {
+    id: "koos",
+    name: "Erakond KOOS",
+    shortName: "KOOS",
+    color: "#7F1D1D",
+  },
+  "Vabaerakond Aru Pähe": {
+    id: "aru-pahe",
+    name: "Vabaerakond Aru Pähe",
+    shortName: "Aru Pähe",
+    color: "#57534E",
+  },
+  "Eesti Rahvusliberaalid - Vabaerakond": {
+    id: "rahvusliberaalid-vabaerakond",
+    name: "Eesti Rahvusliberaalid – Vabaerakond",
+    shortName: "ERL-Vabaerakond",
+    color: "#52525B",
   },
 };
 
@@ -88,9 +163,7 @@ function slug(value: string): string {
 }
 
 export function partyPresentation(sourceName: string, sourceIndex: number): PartyPresentation {
-  const special = SPECIAL_PRESENTATION[sourceName];
-  if (special) return special;
-  const known = resolvePartyAlias(sourceName, NORSTAT_PARTY_ALIASES);
+  const known = PARTY_PRESENTATION[sourceName];
   if (known) return known;
   const sourceSlug = slug(sourceName) || `party-${sourceIndex}`;
   return {
@@ -99,9 +172,4 @@ export function partyPresentation(sourceName: string, sourceIndex: number): Part
     shortName: sourceName,
     color: FALLBACK_PARTY_COLOR,
   };
-}
-
-// Keep this explicit check close to the adapter so registry drift fails at startup.
-for (const id of Object.values(NORSTAT_PARTY_ALIASES)) {
-  if (!partyIdentity(id)) throw new Error(`Norstat party alias points to unknown ID: ${id}`);
 }

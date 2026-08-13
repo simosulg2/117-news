@@ -1,5 +1,4 @@
 import type { PoliticalFinancePartySummary } from "../../../lib/political-finance-types";
-import { WatchToggle } from "../../watchlist/client/watch-toggle";
 import { dateLabel, money, percentage } from "./political-finance-formatters";
 
 export function PoliticalFinancePartyDetail({ party }: { party: PoliticalFinancePartySummary }) {
@@ -9,10 +8,7 @@ export function PoliticalFinancePartyDetail({ party }: { party: PoliticalFinance
       <div className="border border-[#9fb2c0] bg-[#f4f7f9] dark:border-[#35536a] dark:bg-[#0a1926]">
         <div className="flex items-center justify-between gap-3 border-b border-[#b7c5ce] px-3 py-2 dark:border-[#29455a]">
           <div><h2 id="party-finance-title" className="text-sm font-bold text-[#193b56] dark:text-[#d7e3eb]">{party.name}</h2><p className="mt-0.5 text-[10px] text-[#617786] dark:text-[#7890a2]">ERJK nimetus: {party.sourceName}</p></div>
-          <div className="flex shrink-0 items-center gap-2">
-            <WatchToggle kind="political-finance-party" targetId={party.canonicalPartyId ?? party.id} label={party.name} compact />
-            <a href={party.filing.sourceUrl} target="_blank" rel="noreferrer" className="text-[11px] font-semibold text-[#245fae] underline underline-offset-2 outline-none hover:text-[#173f76] focus-visible:ring-1 focus-visible:ring-signal dark:text-[#7db0ff]">Ametlik aruanne ↗</a>
-          </div>
+          <a href={party.filing.sourceUrl} target="_blank" rel="noreferrer" className="shrink-0 text-[11px] font-semibold text-[#245fae] underline underline-offset-2 outline-none hover:text-[#173f76] focus-visible:ring-1 focus-visible:ring-signal dark:text-[#7db0ff]">Ametlik aruanne ↗</a>
         </div>
         <div className="grid gap-4 p-3 md:grid-cols-2">
           <div>
@@ -57,7 +53,7 @@ export function PoliticalFinancePartyDetail({ party }: { party: PoliticalFinance
 
       <div className="grid gap-3 md:grid-cols-2">
         <RankedList title="Suurimad annetajad" empty="Annetajate detail pole saadaval.">
-          {party.largestDonors.map((donor) => <li key={donor.id} className="flex justify-between gap-3 border-t border-[#c5d0d7] px-3 py-2 text-xs first:border-t-0 dark:border-[#203d52]"><span className="min-w-0 truncate">{donor.donorName}<small className="ml-1 text-[#617786] dark:text-[#7890a2]">({donor.donationCount})</small>{!donor.watchable && <small className="ml-1 text-[#805818] dark:text-[#efb860]">sama nimega kirjed</small>}</span><span className="flex shrink-0 items-center gap-2"><b className="tabular-nums">{money(donor.amount)}</b>{donor.watchable && <WatchToggle kind="political-finance-donor" targetId={donor.id} label={donor.donorName} idleLabel="Jälgi" watchedLabel="✓" compact />}</span></li>)}
+          {party.largestDonors.map((donor) => <li key={donor.id} className="flex justify-between gap-3 border-t border-[#c5d0d7] px-3 py-2 text-xs first:border-t-0 dark:border-[#203d52]"><span className="min-w-0 truncate">{donor.donorName}<small className="ml-1 text-[#617786] dark:text-[#7890a2]">({donor.donationCount})</small>{donor.ambiguousIdentity && <small className="ml-1 text-[#805818] dark:text-[#efb860]">sama nimega kirjed</small>}</span><b className="shrink-0 tabular-nums">{money(donor.amount)}</b></li>)}
         </RankedList>
         <RankedList title="Suurimad annetused" empty="Annetuste detail pole saadaval.">
           {party.largestDonations.map((donation) => <li key={donation.id} className="border-t border-[#c5d0d7] px-3 py-2 text-xs first:border-t-0 dark:border-[#203d52]"><div className="flex justify-between gap-3"><span className="min-w-0 truncate">{donation.donorName}</span><b className="shrink-0 tabular-nums">{money(donation.amount, true)}</b></div><div className="mt-0.5 text-[10px] text-[#617786] dark:text-[#7890a2]">{dateLabel(donation.date)} · {donation.category}</div></li>)}

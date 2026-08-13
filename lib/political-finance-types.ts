@@ -40,8 +40,8 @@ export type PoliticalFinanceDonor = {
   donorName: string;
   amount: number;
   donationCount: number;
-  /** False when the same published name identifies multiple source counterparties. */
-  watchable: boolean;
+  /** True when the same published name identifies multiple source counterparties. */
+  ambiguousIdentity: boolean;
 };
 
 export type PoliticalFinanceFilingReference = {

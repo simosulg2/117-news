@@ -1,8 +1,8 @@
 import { projectRiigikoguSeats, type SeatProjectionResult } from "../../../lib/seat-projection.ts";
 import type { RatingsParty } from "../../../lib/ratings-types.ts";
-import { isCurrentGovernmentParty } from "../../../lib/political-context.ts";
 
 const EXCLUDED_FROM_PROJECTION_KINDS = new Set(["independent", "other"]);
+const GOVERNMENT_PARTY_IDS = new Set(["reform", "eesti200"]);
 
 export type ProjectionParty = {
   id: string;
@@ -30,7 +30,7 @@ export type RatingsViewModel = {
 };
 
 export function isGovernmentParty(id: string): boolean {
-  return isCurrentGovernmentParty(id);
+  return GOVERNMENT_PARTY_IDS.has(id);
 }
 
 export function calculateRatingsProjection(parties: readonly RatingsParty[]): SeatProjectionResult | null {

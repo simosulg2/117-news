@@ -5,9 +5,9 @@ export const READ_RETENTION_MS = 30 * 24 * 60 * 60 * 1_000;
 
 export type ReadTimestamps = Record<string, number>;
 
-export function readKeyForLink(linkValue: string, fallbackId: string): string {
-  const link = linkValue.trim();
-  if (!link) return `id:${fallbackId}`;
+export function readKeyForItem(item: NewsArticle): string {
+  const link = item.link.trim();
+  if (!link) return `id:${item.id}`;
 
   try {
     const url = new URL(link);
@@ -16,10 +16,6 @@ export function readKeyForLink(linkValue: string, fallbackId: string): string {
   } catch {
     return `url:${link}`;
   }
-}
-
-export function readKeyForItem(item: NewsArticle): string {
-  return readKeyForLink(item.link, item.id);
 }
 
 export function pruneReadTimestamps(value: unknown, nowMs = Date.now()): ReadTimestamps {

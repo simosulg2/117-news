@@ -6,11 +6,10 @@ follow their direct imports. Do not preload whole feature trees.
 ## Start here
 
 - Runtime: Next.js App Router, React, strict TypeScript, Tailwind.
-- Pages: `/praegu` overview, `/` news, `/ilm` weather, `/reitingud` ratings,
-  `/riigikogu` parliament, `/erakonnaraha` political money, and `/majandus`
-  economy.
+- Pages: `/` news, `/ilm` weather, `/reitingud` ratings, `/riigikogu`
+  parliament, and `/erakonnaraha` political financing.
 - Canonical API/type map: `docs/ai-data-contracts.md`.
-- Product scope and remaining expansion: `docs/personal-terminal-roadmap.md`.
+- Current political product scope: `docs/personal-terminal-roadmap.md`.
 - Weather collector operations: `docs/weather-collector.md`.
 - Human setup and product behavior: `README.md`.
 - Use direct imports. Do not add barrel (`index.ts`) modules.
@@ -25,10 +24,8 @@ follow their direct imports. Do not preload whole feature trees.
 - Start at `app/layout.tsx` and the affected page in `app/`.
 - Follow the page's direct component imports only.
 - Shared clock/theme/footer helpers live in `features/shell/client/`.
-- Primary navigation definitions live in `features/shell/model/navigation.ts`;
-  politics sub-navigation lives in `features/politics/client/politics-nav.tsx`.
-- Preserve all five full desktop and mobile navigation labels and all three
-  politics destinations.
+- Preserve all three primary destinations and all three politics destinations.
+- Politics sub-navigation lives in `features/politics/client/politics-nav.tsx`.
 
 ### News UI or behavior
 
@@ -73,52 +70,28 @@ follow their direct imports. Do not preload whole feature trees.
   `tests/ratings-response.test.ts`, `tests/ratings-view-model.test.ts`,
   `tests/seat-projection.test.ts`, and `tests/riigikogu-layout.test.ts`.
 
-### Praegu overview or local watchlists
-
-- Entry: `components/now-portal.tsx`; contract: `lib/now-types.ts`; server
-  composition: `features/now/server/now-route.server.ts`.
-- Deterministic cards and per-stream seen state: `features/now/model/`.
-- Watch storage/matching: `features/watchlist/model/watchlist.ts`; provider and
-  controls: `features/watchlist/client/`.
-- Weather-warning contract: `lib/weather-warning-types.ts`; official adapter:
-  `features/weather/server/weather-warning.server.ts`.
-- Storage keys are `117-now-seen-v1` and `117-watchlists-v1`; neither preference
-  document may be uploaded or added to URLs/logs.
-- Tests: `tests/now.test.ts`, `tests/watchlist.test.ts`, and
-  `tests/weather-warning.test.ts`.
-
-### Economy dashboard
-
-- Entry: `components/economy-portal.tsx`; contract: `lib/economy-types.ts`.
-- Statistics Estonia source registry/adapters: `features/economy/server/`;
-  comparisons and classification: `features/economy/model/`.
-- Server entry: `app/api/economy/route.ts`.
-- Keep table IDs, dimensions, units, geography, frequency, price basis,
-  adjustment, release status, attribution, and derivations explicit.
-- Tests: `tests/economy-*.test.ts`.
-
 ### Riigikogu Live
 
 - Entry: `components/riigikogu-portal.tsx`; contract:
   `lib/riigikogu-types.ts`; source/parser/cache modules:
-  `features/riigikogu/server/`; faction calculations in
-  `features/riigikogu/model/`.
+  `features/riigikogu/server/`; client and pure model code live beside them.
 - API entries: `app/api/riigikogu/route.ts` plus lazy `votes/[id]` and
   `bills/[id]` routes.
-- Preserve official UUIDs and distinct vote states. Obey the shared upstream
-  scheduler; do not bypass the published Riigikogu rate limits.
-- Tests: `tests/riigikogu-*.test.ts`.
+- Preserve official UUIDs and distinct vote states. Obey the centralized
+  upstream scheduler and published Riigikogu rate limits.
+- Tests: `tests/riigikogu-*.test.ts` and `tests/party-registry.test.ts`.
 
 ### Political financing
 
 - Entry: `components/political-finance-portal.tsx`; contract:
   `lib/political-finance-types.ts`; ERJK adapters/parsers:
-  `features/political-finance/server/`; pure aggregation in
+  `features/political-finance/server/`; pure aggregation:
   `features/political-finance/model/`.
-- API entries: `app/api/political-finance/route.ts` and capped filtered records.
-- Keep filings/revisions, source party labels, categories, public donor fields,
-  attribution, and neutral descriptive wording intact. Never enrich identities.
-- Tests: `tests/political-finance-*.test.ts`.
+- API entries: `app/api/political-finance/route.ts` and capped records route.
+- Preserve filing revisions, official source identities, public donor fields,
+  attribution, and neutral wording. Never enrich donor identities.
+- Tests: `tests/political-finance-*.test.ts` and
+  `tests/party-registry.test.ts`.
 
 ## Non-negotiable invariants
 
@@ -128,10 +101,8 @@ follow their direct imports. Do not preload whole feature trees.
   attribution, Tallinn-time, range, and collector-auth semantics intact.
 - Ratings: validate the documented source schema; keep the 5% inclusive
   threshold, 101 seats, modified D'Hondt exponent `0.9`, and deterministic ties.
-- Political identities come from `lib/party-registry.ts`; dated coalition state
-  comes from `lib/political-context.ts`. Source aliases remain in adapters.
-- Overview: one failed area must not erase other cards; server output stays
-  non-personal and browser seen/watch state updates only after usable data loads.
+- Political identities used by Riigikogu and ERJK come from
+  `lib/party-registry.ts`; source aliases stay in their adapters.
 - API work must preserve timeouts, size limits, cache/stale behavior, safe error
   details, and `no-store` on authenticated or failure responses.
 - Do not expose `DATABASE_URL`, `WEATHER_COLLECTOR_TOKEN`, upstream payloads, or
@@ -143,8 +114,8 @@ follow their direct imports. Do not preload whole feature trees.
 
 - One test file: `npm run test:file -- tests/<name>.test.ts`.
 - Feature suites: `npm run test:news`, `npm run test:weather`,
-  `npm run test:ratings`, `npm run test:economy`, `npm run test:riigikogu`,
-  `npm run test:now`, or `npm run test:political-finance`.
+  `npm run test:ratings`, `npm run test:riigikogu`, or
+  `npm run test:political-finance`.
 - Context guard: `npm run check:context`.
 - Before handoff: run the affected suite, `npm test`, `npm run typecheck`, and
   `npm run build`; report any command not run.

@@ -1,6 +1,5 @@
 import { partyIdentity } from "@/lib/party-registry";
 import type { RiigikoguFactionSummary } from "@/lib/riigikogu-types";
-import { WatchToggle } from "@/features/watchlist/client/watch-toggle";
 
 export function FactionStrip({ factions }: { factions: RiigikoguFactionSummary[] }) {
   if (!factions.length) return null;
@@ -11,7 +10,6 @@ export function FactionStrip({ factions }: { factions: RiigikoguFactionSummary[]
         <span aria-hidden="true" className="size-2" style={{ backgroundColor: party?.color ?? "#8295a4" }} />
         <span className="font-semibold">{party?.shortName ?? "Fraktsioonita"}</span>
         <b className="font-mono text-xs">{faction.memberCount}</b>
-        <WatchToggle kind="riigikogu-faction" targetId={faction.id} label={faction.name} idleLabel="Jälgi" watchedLabel="✓" compact />
       </div>;
     })}
   </div>;

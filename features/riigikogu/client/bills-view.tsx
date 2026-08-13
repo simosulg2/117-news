@@ -1,5 +1,4 @@
 import type { RiigikoguBillDetail, RiigikoguBillSummary } from "@/lib/riigikogu-types";
-import { WatchToggle } from "@/features/watchlist/client/watch-toggle";
 import { codeLabel, safeDate } from "./riigikogu-formatters";
 import { BillDetailPanel } from "./bill-detail";
 
@@ -15,7 +14,7 @@ export function BillsView({ bills, selectedId, detail, detailLoading, detailErro
         <button type="button" aria-expanded={open} onClick={() => onSelect(open ? null : bill.id)} className="text-left outline-none focus-visible:ring-2 focus-visible:ring-signal">
           <h2 className="text-sm font-bold leading-5">{bill.title}</h2><p className="mt-1 text-xs text-[#657b8c]">{bill.leadingCommittee ?? "Juhtivkomisjon puudub"}</p>
         </button>
-        <div className="flex items-center gap-3 text-xs"><span className="font-semibold">{codeLabel(bill.stageCode)}</span><WatchToggle kind="riigikogu-bill" targetId={bill.id} label={bill.title} compact /><button type="button" aria-label={open ? "Sulge eelnõu detail" : "Ava eelnõu detail"} aria-expanded={open} onClick={() => onSelect(open ? null : bill.id)} className="min-h-7 min-w-7 border border-[#91a5b3] font-bold outline-none focus-visible:ring-2 focus-visible:ring-signal">{open ? "−" : "+"}</button></div>
+        <div className="flex items-center gap-3 text-xs"><span className="font-semibold">{codeLabel(bill.stageCode)}</span><button type="button" aria-label={open ? "Sulge eelnõu detail" : "Ava eelnõu detail"} aria-expanded={open} onClick={() => onSelect(open ? null : bill.id)} className="min-h-7 min-w-7 border border-[#91a5b3] font-bold outline-none focus-visible:ring-2 focus-visible:ring-signal">{open ? "−" : "+"}</button></div>
       </div>
       {open && <BillDetailPanel data={detail} loading={detailLoading} error={detailError} />}
     </article>;

@@ -2,7 +2,6 @@ import type { RefObject } from "react";
 
 import { deskClockFormatter } from "@/features/news/client/news-formatters";
 import { PrimaryHeader } from "@/features/shell/client/primary-header";
-import { WatchToggle } from "@/features/watchlist/client/watch-toggle";
 import { CATEGORIES, type Category, type NewsResponse } from "@/lib/types";
 
 type NewsHeaderProps = {
@@ -82,17 +81,14 @@ export function NewsHeader({
               className="min-w-0 flex-1 bg-transparent px-3 text-sm text-white outline-none placeholder:text-[#8da1b0] focus:bg-[#06101a]"
             />
             {query ? (
-              <div className="flex shrink-0 items-center gap-2 border-l border-[#263d50] px-2">
-                <WatchToggle kind="news-query" targetId={query.trim().toLocaleLowerCase("et-EE")} label={`Otsing: ${query.trim()}`} compact />
-                <button
-                  type="button"
-                  onClick={onClearSearch}
-                  className="min-h-8 px-2 text-xs font-semibold text-[#8da1b0] outline-none hover:text-signal focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal"
-                  aria-label="Tühjenda otsing"
-                >
-                  Tühjenda
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={onClearSearch}
+                className="min-w-[5.5rem] border-l border-[#263d50] px-3 text-xs font-semibold text-[#8da1b0] outline-none hover:text-signal focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-signal"
+                aria-label="Tühjenda otsing"
+              >
+                Tühjenda
+              </button>
             ) : null}
           </div>
         </div>

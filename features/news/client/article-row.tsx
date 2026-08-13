@@ -4,7 +4,6 @@ import { useId, useState } from "react";
 
 import { exactDateFormatter, formatNewsItemTime } from "@/features/news/client/news-formatters";
 import { relatedNewsItems, relativeNewsTime } from "@/features/news/model/news-items";
-import { WatchToggle } from "@/features/watchlist/client/watch-toggle";
 import type { NewsArticle, NewsItem } from "@/lib/types";
 
 function categoryColor(category: NewsItem["category"]): string {
@@ -58,7 +57,6 @@ export function ArticleRow({ item, nowMs, isRead, onOpen, registerHeadline }: Ar
           >
             {item.source}
           </span>
-          <WatchToggle kind="news-source" targetId={item.source} label={`${item.source} uudised`} compact watchedLabel="✓" />
           {item.publishedAt && (
             <time
               dateTime={item.publishedAt}
@@ -149,7 +147,6 @@ export function ArticleRow({ item, nowMs, isRead, onOpen, registerHeadline }: Ar
           >
             {item.source}
           </span>
-          <WatchToggle kind="news-source" targetId={item.source} label={`${item.source} uudised`} compact watchedLabel="✓" />
           {related.length > 0 && (
             <button
               type="button"

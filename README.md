@@ -1,13 +1,11 @@
 # 117.ee
 
-117.ee on isiklik Eesti infopult: uudised, Võru ilm ja ametlikud hoiatused,
-erakondade reitingud, Riigikogu töö, poliitiline raha ning majandusnäitajad ühes
-kiires vaates. `/praegu` koondab neist ainult värske või tähendusliku seisu;
-olemasolevad detailvaated ja järjehoidjad jäävad samadele aadressidele. Vaikimisi
-avaneb hele teema, kuid brauserisse salvestatud valikut austatakse.
-
-Põhinavigatsioon on `Praegu · Uudised · Ilm · Poliitika · Majandus`. Poliitika
-all liiguvad `Reitingud · Riigikogu · Raha` eraldi töölaudadena.
+117.ee koondab ühte kiiresse töölauda Eesti uudised, Võru ilma ja poliitika.
+Uudiste üldvaates kuvatakse kuni 117 kõige värskemat lugu ning sama sündmust
+kajastavad eri allikad koondatakse ühe rea alla. `/ilm` sisaldab hetkeilma,
+mõõdetud ajalugu, mudelprognoosi ja radarit. Poliitika all on eraldi
+`Reitingud · Riigikogu · Raha` töölauad. Vaikimisi avaneb hele teema, kuid
+kasutaja salvestatud valikut austatakse.
 
 ## Käivitamine
 
@@ -51,9 +49,6 @@ Artiklid avanevad alati algallika lehel. Postimehe tellijasisu kasutab seal brau
 - Graafikul hõljutamine või puudutamine kuvab täpse Eesti aja ja väärtuse kõigil graafikutel sama ajapunkti juures; valikut saab juhtida ka nooleklahvidega.
 - Ametlikus tunniarhiivis puudub Võru numbriline pilvisus. Varasema pilvisuse protsent on seetõttu mudelhinnang; hetkevaatluse kirjeldav pilvisus on mõõdetud vaatlus.
 - `/api/weather/radar` koostab ametliku radariteenuse ajajoone. Brauser kuvab mõõdetud kaadreid Keskkonnaagentuuri eelloodud L-EST97 rasterpaanidena ning lühiprognoosi sama ruudustiku paanitud WMS-kihina 117.ee interaktiivsel kaardil.
-- `/api/weather/warnings` kontrollib eraldi puhvris Keskkonnaagentuuri ametlikku
-  hoiatusvoogu. Võrumaa ja üleriigilised aktiivsed hoiatused kuvatakse nii
-  ilmavaates kui ka `/praegu` lehel; tühi ametlik voog tähendab, et hoiatusi pole.
 - Ilma ja radari vead on teineteisest ning uudiste API-st isoleeritud. Iga töötav osa jääb teise allika vea korral kasutatavaks.
 - Kui kõik välised ilmaallikad ajutiselt ebaõnnestuvad, jääb PostgreSQL-i salvestatud mõõteajalugu kasutatavaks; seda ei esitata ekslikult värske hetkevaatlusena.
 - Vaate, ajavahemiku, valitud näitajate ja kokkuvõtte aja eelistused säilivad ainult kasutaja brauseris.
@@ -78,57 +73,31 @@ runtime-saladuste ja Coolify Scheduled Taski seadistus on dokumendis
 
 Reitingute juures kuvatakse küsitlusperiood, valim, eelistuseta vastajate osakaal, muutus eelmise võrreldava koondi suhtes, andmete laadimise aeg ning allika- ja metoodikaviited.
 
-## Praegu ja kohalikud jälgimised
-
-- `/api/now` küsib serveris olemasolevate vahemäludega teenustelt ainult kompaktse
-  kokkuvõtte. Ühe valdkonna rike ei eemalda teisi kaarte.
-- Brauser võrdleb stabiilseid sündmuse- ja revisjoni-ID-sid per valdkond ning
-  märgib uue seisu alles pärast edukat kuvamist.
-- `Jälgi` nupud toetavad uudise otsingut/allikat, erakonna reitingut ja 5% piiri,
-  koalitsiooni enamust, eelnõu, majandusnäitajat, Võrumaa hoiatusi ning erakonna
-  rahastamist.
-- Jälgimised saab JSON-failina eksportida, turvaliselt importida või täielikult
-  kustutada. Need püsivad ainult `localStorage`-is: kontot, küpsist, andmebaasi ega
-  taustteavitust ei kasutata. Sama brauseriprofiili kasutajad võivad neid näha,
-  sest `localStorage` ei ole krüpteeritud.
-
-## Eesti majandus
-
-`/majandus` ja `/api/economy` kuvavad Statistikaameti kontrollitud PxWeb tabelitest
-kuus sõltumatut rühma: hinnad, sissetulek, tööturg, majanduse maht,
-väliskaubandus ja Võrumaa võrdlus. Iga näitaja juures säilivad üksus, geograafia,
-kuu või kvartal, hinnabaas, sesoonne korrigeerimine, eelmise perioodi ja aasta
-muutus, allikatabel, uuendamise aeg ning klassifitseerimise reegel. Praegune tuum
-sisaldab 14 näitajat tabelitest IA002, PA113, TT3300, RAA0012, VKK12 ja PA117.
-Rühmi puhverdatakse eraldi ning ühe tabeli ajutine viga jätab teised nähtavaks.
-Allikas ja atribuut: Statistikaamet, CC BY-SA 4.0.
-
 ## Riigikogu töölaud
 
 `/riigikogu` ühendab XV Riigikogu ametliku päevakorra, viimased hääletused,
 menetluses eelnõud ja praeguse fraktsioonikoosseisu. Hääletuse ja eelnõu mahukas
-detail laaditakse alles avamisel. Poolt-, vastu-, erapooletu-, mittehääletanud-
-ja puudunud olekuid ei liideta kokku. Fraktsiooni enamusest erinev hääl on
-läbipaistev 117.ee kirjeldav arvutus, mitte hinnang lojaalsusele. Allikas:
-Riigikogu Kantselei avaandmed, CC BY-SA 3.0.
+detail laaditakse alles avamisel. Poolt-, vastu-, erapooletu-,
+mittehääletanud- ja puudunud olekuid ei liideta kokku. Fraktsiooni enamusest
+erinev hääl on läbipaistev kirjeldav arvutus, mitte hinnang lojaalsusele.
+Allikas: Riigikogu Kantselei avaandmed, CC BY-SA 3.0.
 
 ## Erakondade raha
 
-`/erakonnaraha` ja `/api/political-finance` koondavad ERJK avalikud kvartaalsed
-aruanded: erakondade tulud, kulud, annetuste osakaal, kategooriad, suurimad
-avaldatud annetused/annetajad, kontsentratsioon ja ajalugu. Filingu parandused
-muudavad sama aruande revisjoni ega teki duplikaadina. Kirjete detail-API on
-filtritud, lehekülgedeks jaotatud ja piiratud; sünnikuupäevi ega muud ebavajalikku
-isikuinfot normaliseeritud vastuses ei säilitata. Andmed kirjeldavad deklareeritud
-raha ega tõenda mõju, seost või rikkumist. Allikas: ERJK, CC BY-SA 3.0.
+`/erakonnaraha` ja `/api/political-finance` koondavad ERJK avalikud
+kvartaalsed aruanded: erakondade tulud, kulud, annetuste osakaal, kategooriad,
+suurimad avaldatud annetused ja annetajad, kontsentratsioon ning ajalugu.
+Aruande parandused muudavad sama aruande revisjoni ega teki duplikaadina.
+Detail-API on filtreeritud, lehekülgedeks jaotatud ja piiratud;
+sünnikuupäevi ega muud ebavajalikku isikuinfot vastuses ei säilitata. Andmed
+kirjeldavad deklareeritud raha ega tõenda mõju, seost või rikkumist. Allikas:
+ERJK, CC BY-SA 3.0.
 
 ## Kontrollid
 
 ```bash
 npm test
-npm run test:economy
 npm run test:riigikogu
-npm run test:now
 npm run test:political-finance
 npm run check:context
 npm run typecheck
