@@ -68,18 +68,20 @@ runtime-saladuste ja Coolify Scheduled Taski seadistus on dokumendis
 - Vastus puhverdatakse tunniks. Allika ajutise vea korral jääb viimati õnnestunud seis kasutatavaks ning kasutajale näidatakse, et värskendus hilineb.
 - Riigikogu projektsioon jätab alla 5% toetusega erakonnad välja ja jaotab 101 kohta Eesti modifitseeritud D’Hondti jagajatega `1, 2^0,9, 3^0,9 …`. Täpselt 5% läheb arvesse.
 - Projektsioon on üleriigiline küsitlusmudel, mitte ametlik valimistulemus ega ennustus. Tegelik jaotus sõltub 12 valimisringkonnast ning isiku-, ringkonna- ja kompensatsioonimandaatidest.
-- Koalitsioonilabor lubab valida projektsioonis kohti saanud erakondi ja kontrollida 51 koha enamust. Valitsuse võrdlus kasutab praegust Reformierakonna ja Eesti 200 valitsusliitu.
+- Koalitsioonilabor lubab valida projektsioonis kohti saanud erakondi ja kontrollida 51 koha enamust ilma ajas muutuvaid valitsusrolle eeldamata.
 - Kantar Emori kuureitingule viidatakse Emori ametliku lehe kaudu. Selle väärtusi ei kraabita kohtade kalkulaatorisse ega keskmistata Norstatiga, sest Emor ei paku reitingutele dokumenteeritud avalikku andme-API-t ning uuringute metoodika ja avaldamisrütm erinevad.
 
 Reitingute juures kuvatakse küsitlusperiood, valim, eelistuseta vastajate osakaal, muutus eelmise võrreldava koondi suhtes, andmete laadimise aeg ning allika- ja metoodikaviited.
 
 ## Riigikogu töölaud
 
-`/riigikogu` ühendab XV Riigikogu ametliku päevakorra, viimased hääletused,
+`/riigikogu` ühendab Riigikogu ametliku päevakorra, viimased hääletused,
 menetluses eelnõud ja praeguse fraktsioonikoosseisu. Hääletuse ja eelnõu mahukas
 detail laaditakse alles avamisel. Poolt-, vastu-, erapooletu-,
 mittehääletanud- ja puudunud olekuid ei liideta kokku. Fraktsiooni enamusest
 erinev hääl on läbipaistev kirjeldav arvutus, mitte hinnang lojaalsusele.
+Praegune Riigikogu koosseisu number loetakse ametlikust API-st ning sama numbrit
+kasutatakse liikmete ja eelnõude päringutes.
 Allikas: Riigikogu Kantselei avaandmed, CC BY-SA 3.0.
 
 ## Erakondade raha

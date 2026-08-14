@@ -1,9 +1,6 @@
 import type { RatingsParty, RatingsWave } from "@/lib/ratings-types";
 
-import {
-  isGovernmentParty,
-  type ProjectionParty,
-} from "../model/ratings-view-model";
+import type { ProjectionParty } from "../model/ratings-view-model";
 import { dateFormatter, percentage, signedChange } from "./ratings-formatters";
 
 type PartyStandingsProps = {
@@ -22,8 +19,7 @@ type PartyRowProps = {
 
 function PartyRow({ party, projectedSeats }: PartyRowProps) {
   const passes = (party.supportPct ?? 0) >= 5;
-  const currentRole = isGovernmentParty(party.id) ? "Valitsus · " : "";
-  const status = `${currentRole}${passes ? "saaks kohti" : "alla 5%"}`;
+  const status = passes ? "saaks kohti" : "alla 5%";
 
   return (
     <tr className="border-t border-[#d0dbe2] text-[#304654] dark:border-[#24394a] dark:text-[#c2d0d9]">
@@ -61,7 +57,7 @@ export function PartyStandings({
         <div>
           <h2 id="party-table-heading" className="text-sm font-bold text-[#192630] dark:text-[#e5eef4]">Erakondade seis</h2>
           <p className="mt-0.5 text-[11px] text-[#526878] dark:text-[#8da1b0]">
-            Põhivaates on künnise ületajad ja valitsuserakonnad. Muutus eelmise nädala 4 nädala koondiga
+            Põhivaates on künnise ületajad. Muutus eelmise nädala 4 nädala koondiga
             {previousWave ? ` (${dateFormatter.format(new Date(`${previousWave.startDate}T12:00:00Z`))}–${dateFormatter.format(new Date(`${previousWave.endDate}T12:00:00Z`))})` : ""} · pp
           </p>
         </div>

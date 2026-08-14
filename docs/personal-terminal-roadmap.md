@@ -54,7 +54,8 @@ Implemented files:
 
 Required behavior:
 
-- Scope the overview to the current XV Riigikogu.
+- Discover the current Riigikogu membership from the official API and use it
+  consistently for active bills, members, and presentation labels.
 - Keep agenda, latest votes, active bills, and faction composition independently
   recoverable and explicitly stale/partial when appropriate.
 - Refresh on a five-minute interval and when the page becomes active, retaining

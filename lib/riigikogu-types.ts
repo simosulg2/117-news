@@ -84,7 +84,7 @@ export type RiigikoguFactionSummary = {
 };
 
 export type RiigikoguOverviewResponse = {
-  membership: 15;
+  membership: number | null;
   state: RiigikoguSourceState;
   generatedAt: string;
   agenda: RiigikoguAgenda | null;

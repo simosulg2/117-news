@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildFactionMatrix, factionPlurality } from "../features/riigikogu/model/faction-matrix.ts";
 import { selectAgendaSittings } from "../features/riigikogu/model/agenda-selection.ts";
+import { riigikoguMembershipLabel } from "../features/riigikogu/model/membership-label.ts";
 import type { RiigikoguAgenda, RiigikoguSitting, RiigikoguVoter } from "../lib/riigikogu-types.ts";
 
 function voter(name: string, choice: RiigikoguVoter["choice"]): RiigikoguVoter {
@@ -53,4 +54,10 @@ test("agenda reports empty when the official window contains no current or futur
     new Date("2026-06-16T09:00:00.000Z"),
   );
   assert.deepEqual(selection, { mode: "empty", sittings: [] });
+});
+
+test("formats the current membership without a term-specific label", () => {
+  assert.equal(riigikoguMembershipLabel(15), "XV Riigikogu");
+  assert.equal(riigikoguMembershipLabel(16), "XVI Riigikogu");
+  assert.equal(riigikoguMembershipLabel(null), "Riigikogu");
 });

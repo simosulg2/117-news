@@ -87,7 +87,7 @@ test("orders the chamber by seats and groups selected coalition parties on the l
   assert.equal(view.selectedCoalitionCount, 2);
 });
 
-test("derives government totals, table groups, and the displayed threshold waste", () => {
+test("derives threshold-based table groups and the displayed threshold waste", () => {
   const parties = [
     party("isamaa", 30),
     party("reform", 20),
@@ -100,13 +100,10 @@ test("derives government totals, table groups, and the displayed threshold waste
   ];
   const view = buildRatingsViewModel(parties, projection, new Set());
 
-  assert.equal(view.governmentSeats, 30);
-  assert.equal(view.oppositionSeats, 71);
-  assert.equal(view.eesti200Support, 4);
   assert.deepEqual(view.primaryTableParties.map((entry) => entry.id), [
-    "isamaa", "reform", "sde", "ekre", "eesti200",
+    "isamaa", "reform", "sde", "ekre",
   ]);
-  assert.deepEqual(view.minorTableParties.map((entry) => entry.id), ["small"]);
+  assert.deepEqual(view.minorTableParties.map((entry) => entry.id), ["eesti200", "small"]);
   assert.equal(view.thresholdWaste, 9);
 });
 

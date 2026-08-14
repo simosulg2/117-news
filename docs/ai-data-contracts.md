@@ -109,7 +109,8 @@ Validate with `npm run test:ratings`.
   `GET /api/riigikogu/bills/[id]`.
 - Consumer: `components/riigikogu-portal.tsx`.
 
-The overview is scoped to the XV Riigikogu. Official UUIDs remain stable;
+The overview discovers the current membership from the official API and uses
+that membership consistently for bills, members, and UI labels. Official UUIDs remain stable;
 `in-favor`, `against`, `neutral`, `did-not-vote`, `absent`, and unknown choices
 stay distinct. Faction plurality/deviation is a labeled deterministic
 derivation, not an official judgment. Preserve CC BY-SA 3.0 attribution and the

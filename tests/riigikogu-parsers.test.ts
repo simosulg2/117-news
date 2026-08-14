@@ -4,6 +4,7 @@ import test from "node:test";
 import { parseRiigikoguAgenda } from "../features/riigikogu/server/agenda-parser.ts";
 import { parseBillList } from "../features/riigikogu/server/bill-parser.ts";
 import { parseCurrentFactions } from "../features/riigikogu/server/member-parser.ts";
+import { parseCurrentMembership } from "../features/riigikogu/server/membership-parser.ts";
 import { parseVoteDetail } from "../features/riigikogu/server/vote-detail-parser.ts";
 
 const IDs = {
@@ -86,10 +87,15 @@ test("parses paginated active bills and tolerates missing optional fields", () =
   assert.equal(bills[0].statusDate, "2026-06-19");
 });
 
-test("current faction counts use open XV membership intervals, not historical membership", () => {
+test("parses the official current membership number", () => {
+  assert.equal(parseCurrentMembership({ number: 16, startDate: "2027-03-20" }), 16);
+  assert.throws(() => parseCurrentMembership({ number: 0 }), /positive/);
+});
+
+test("current faction counts use the requested open membership interval, not a hardcoded term", () => {
   const factions = parseCurrentFactions([{ active: true, factions: [
-    { uuid: IDs.faction2, name: "Sotsiaaldemokraatliku Erakonna fraktsioon", membership: { membershipNumber: 15, startDate: "2023-04-10", endDate: "2024-01-01" } },
-    { uuid: IDs.faction1, name: "Eesti Reformierakonna fraktsioon", membership: { membershipNumber: 15, startDate: "2024-01-01", endDate: null } },
-  ] }]);
+    { uuid: IDs.faction2, name: "Sotsiaaldemokraatliku Erakonna fraktsioon", membership: { membershipNumber: 15, startDate: "2023-04-10", endDate: null } },
+    { uuid: IDs.faction1, name: "Eesti Reformierakonna fraktsioon", membership: { membershipNumber: 16, startDate: "2027-03-20", endDate: null } },
+  ] }], 16);
   assert.deepEqual(factions.map(({ partyId, memberCount }) => ({ partyId, memberCount })), [{ partyId: "reform", memberCount: 1 }]);
 });

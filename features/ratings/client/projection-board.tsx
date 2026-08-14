@@ -3,7 +3,6 @@ import type { RatingsPoll } from "@/lib/ratings-types";
 
 import type { RatingsViewModel } from "../model/ratings-view-model";
 import { CoalitionLab } from "./coalition-lab";
-import { GovernmentPanel } from "./government-panel";
 import { PollInfo } from "./poll-info";
 
 type ProjectionBoardProps = {
@@ -31,11 +30,6 @@ export function ProjectionBoard({
       />
 
       <div className="grid content-start gap-3">
-        <GovernmentPanel
-          governmentSeats={viewModel.governmentSeats}
-          oppositionSeats={viewModel.oppositionSeats}
-          eesti200Support={viewModel.eesti200Support}
-        />
         <CoalitionLab
           parties={viewModel.hemicycleParties}
           selectedPartyIds={selectedPartyIds}

@@ -10,6 +10,7 @@ import { useRiigikoguDetail, useRiigikoguFeed } from "./use-riigikogu-feed";
 import { VotesView } from "./votes-view";
 import { useClock } from "@/features/shell/client/use-clock";
 import { usePageTheme } from "@/features/shell/client/use-page-theme";
+import { riigikoguMembershipLabel } from "@/features/riigikogu/model/membership-label";
 import type { RiigikoguBillDetail, RiigikoguVoteDetail } from "@/lib/riigikogu-types";
 
 type View = "today" | "votes" | "bills";
@@ -27,13 +28,14 @@ export function RiigikoguPortalClient() {
   const vote = useRiigikoguDetail<RiigikoguVoteDetail>("votes", voteId);
   const bill = useRiigikoguDetail<RiigikoguBillDetail>("bills", billId);
   const healthy = feed.data?.state === "ok";
+  const membershipLabel = riigikoguMembershipLabel(feed.data?.membership ?? null);
   const sourceText = feed.data ? (feed.data.state === "ok" ? "4/4 allikat" : `${4 - feed.data.unavailable.length}/4 allikat`) : "—/4 allikat";
 
   return <RiigikoguPageFrame theme={theme} now={now} sourceHealthy={healthy} sourceText={sourceText} onToggleTheme={toggleTheme}>
     <main id="riigikogu-main" tabIndex={-1} className="mx-auto max-w-[96rem] px-3 pb-12 pt-4 outline-none sm:px-5 lg:px-7">
       <section className="mb-4 border border-[#b7c5cf] bg-white dark:border-[#263d50] dark:bg-[#0b1926]">
         <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[#d5dfe6] px-4 py-3 dark:border-[#263d50]">
-          <div><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-signal">XV Riigikogu · ametlikud andmed</p><h1 className="mt-1 text-2xl font-black tracking-tight">Riigikogu töölaud</h1><p className="mt-1 text-sm text-[#657b8c] dark:text-[#9bb0bf]">Päevakord, hiljutised hääletused ja menetluses eelnõud ühes vaates.</p></div>
+          <div><p className="text-[10px] font-bold uppercase tracking-[0.12em] text-signal">{membershipLabel} · ametlikud andmed</p><h1 className="mt-1 text-2xl font-black tracking-tight">Riigikogu töölaud</h1><p className="mt-1 text-sm text-[#657b8c] dark:text-[#9bb0bf]">Päevakord, hiljutised hääletused ja menetluses eelnõud ühes vaates.</p></div>
           <div className="flex shrink-0 flex-col items-end gap-2 text-right text-[10px] text-[#718696]">
             {feed.data && <div><p>{feed.data.factions.reduce((sum, faction) => sum + faction.memberCount, 0)} aktiivset liiget</p><p>Allikas loetud {dateTimeFormatter.format(new Date(feed.data.attribution.retrievedAt))}</p></div>}
             <button type="button" onClick={feed.refresh} disabled={feed.refreshing} className="min-h-8 border border-[#718896] px-3 text-xs font-bold text-[#405767] outline-none hover:border-[#245fae] focus-visible:ring-2 focus-visible:ring-signal disabled:cursor-wait disabled:opacity-60 dark:border-[#58768b] dark:text-[#a9b7c2]">
@@ -41,7 +43,7 @@ export function RiigikoguPortalClient() {
             </button>
           </div>
         </div>
-        {feed.data && <FactionStrip factions={feed.data.factions} />}
+        {feed.data && <FactionStrip factions={feed.data.factions} membership={feed.data.membership} />}
         <div aria-label="Riigikogu vaated" className="flex overflow-x-auto">
           {views.map((item) => <button key={item.id} type="button" aria-pressed={view === item.id} onClick={() => setView(item.id)} className={`min-h-10 border-r border-[#d5dfe6] px-5 text-xs font-bold outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal dark:border-[#263d50] ${view === item.id ? "bg-[#102538] text-signal" : "hover:bg-[#f1f5f7] dark:hover:bg-[#102538]"}`}>{item.label}</button>)}
         </div>

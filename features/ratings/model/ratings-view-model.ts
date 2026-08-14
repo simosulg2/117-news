@@ -2,7 +2,6 @@ import { projectRiigikoguSeats, type SeatProjectionResult } from "../../../lib/s
 import type { RatingsParty } from "../../../lib/ratings-types.ts";
 
 const EXCLUDED_FROM_PROJECTION_KINDS = new Set(["independent", "other"]);
-const GOVERNMENT_PARTY_IDS = new Set(["reform", "eesti200"]);
 
 export type ProjectionParty = {
   id: string;
@@ -19,19 +18,12 @@ export type RatingsViewModel = {
   projectedParties: ProjectionParty[];
   hemicycleParties: ProjectionParty[];
   chamberParties: ProjectionParty[];
-  governmentSeats: number;
-  oppositionSeats: number;
-  eesti200Support: number | null;
   selectedCoalitionSeats: number;
   selectedCoalitionCount: number;
   primaryTableParties: RatingsParty[];
   minorTableParties: RatingsParty[];
   thresholdWaste: number;
 };
-
-export function isGovernmentParty(id: string): boolean {
-  return GOVERNMENT_PARTY_IDS.has(id);
-}
 
 export function calculateRatingsProjection(parties: readonly RatingsParty[]): SeatProjectionResult | null {
   const electionParties = parties
@@ -82,19 +74,10 @@ export function buildRatingsViewModel(
     projectedParties,
     hemicycleParties,
     chamberParties,
-    governmentSeats: projectedParties
-      .filter((party) => isGovernmentParty(party.id))
-      .reduce((total, party) => total + party.seats, 0),
-    oppositionSeats: projectedParties
-      .filter((party) => !isGovernmentParty(party.id))
-      .reduce((total, party) => total + party.seats, 0),
-    eesti200Support: parties.find((party) => party.id === "eesti200")?.supportPct ?? null,
     selectedCoalitionSeats: selected.reduce((total, party) => total + party.seats, 0),
     selectedCoalitionCount: selected.length,
-    primaryTableParties: tableParties.filter((party) =>
-      (party.supportPct ?? 0) >= 5 || isGovernmentParty(party.id)),
-    minorTableParties: tableParties.filter((party) =>
-      (party.supportPct ?? 0) < 5 && !isGovernmentParty(party.id)),
+    primaryTableParties: tableParties.filter((party) => (party.supportPct ?? 0) >= 5),
+    minorTableParties: tableParties.filter((party) => (party.supportPct ?? 0) < 5),
     thresholdWaste: parties
       .filter((party) => party.kind !== "independent" && party.supportPct !== null && party.supportPct < 5)
       .reduce((total, party) => total + (party.supportPct ?? 0), 0),

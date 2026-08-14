@@ -13,7 +13,7 @@ const FACTION_PARTY_ALIASES = {
 
 validatePartyAliases(FACTION_PARTY_ALIASES);
 
-export function parseCurrentFactions(value: unknown): RiigikoguFactionSummary[] {
+export function parseCurrentFactions(value: unknown, membershipNumber: number): RiigikoguFactionSummary[] {
   const counts = new Map<string, RiigikoguFactionSummary>();
   for (const memberValue of array(value)) {
     const member = record(memberValue, "member");
@@ -21,7 +21,9 @@ export function parseCurrentFactions(value: unknown): RiigikoguFactionSummary[] 
     const faction = array(member.factions).map((entry) => record(entry, "member faction"))
       .find((entry) => {
         const membership = entry.membership ? record(entry.membership, "faction membership") : null;
-        return membership?.membershipNumber === 15 && dateOnly(membership.startDate) !== null && membership.endDate == null;
+        return membership?.membershipNumber === membershipNumber
+          && dateOnly(membership.startDate) !== null
+          && membership.endDate == null;
       });
     if (!faction) continue;
     const id = uuid(faction.uuid, "faction UUID");

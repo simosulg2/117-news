@@ -1,9 +1,10 @@
 import { partyIdentity } from "@/lib/party-registry";
 import type { RiigikoguFactionSummary } from "@/lib/riigikogu-types";
+import { riigikoguMembershipLabel } from "@/features/riigikogu/model/membership-label";
 
-export function FactionStrip({ factions }: { factions: RiigikoguFactionSummary[] }) {
+export function FactionStrip({ factions, membership }: { factions: RiigikoguFactionSummary[]; membership: number | null }) {
   if (!factions.length) return null;
-  return <div aria-label="XV Riigikogu praegune fraktsiooniline koosseis" className="flex gap-px overflow-x-auto border-b border-[#d5dfe6] bg-[#d5dfe6] dark:border-[#263d50] dark:bg-[#263d50]">
+  return <div aria-label={`${riigikoguMembershipLabel(membership)} praegune fraktsiooniline koosseis`} className="flex gap-px overflow-x-auto border-b border-[#d5dfe6] bg-[#d5dfe6] dark:border-[#263d50] dark:bg-[#263d50]">
     {factions.map((faction) => {
       const party = faction.partyId ? partyIdentity(faction.partyId) : null;
       return <div key={faction.id} className="flex min-w-max items-center gap-2 bg-[#f5f8fa] px-3 py-2 text-[10px] dark:bg-[#0a1723]">
