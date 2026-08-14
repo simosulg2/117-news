@@ -6,22 +6,25 @@ import type {
 } from "../../../lib/political-finance-types";
 import {
   aggregateCoverageKey,
-  buildPoliticalFinanceSummaries,
   periodSort,
-  type ErjkAggregateCoverage,
-  type ErjkDetailBundle,
+  type PoliticalFinanceAggregateCoverage,
+  type PoliticalFinanceAggregateRow,
+  type PoliticalFinanceDetailBundle,
+  type PoliticalFinanceSourceAdapter,
 } from "../model/political-finance-model.ts";
+import { buildPoliticalFinanceSummaries } from "../model/political-finance-summary.ts";
 import { fetchErjkJson } from "./erjk-client.server.ts";
 import {
   ERJK_API_DOCUMENTATION_URL,
+  ERJK_API_ORIGIN,
   ERJK_LICENCE_URL,
   ERJK_OPEN_DATA_URL,
+  erjkPartyPresentation,
 } from "./erjk-config.ts";
 import {
   parseErjkAggregateRows,
   parseErjkReceiptRows,
   parseErjkReportReferences,
-  type ErjkAggregateRow,
 } from "./erjk-parser.ts";
 
 const SNAPSHOT_TTL_MS = 6 * 60 * 60 * 1_000;
@@ -31,6 +34,13 @@ const overviewCache = new InProcessSnapshotCache<PoliticalFinanceResponse>(
   STALE_RETRY_DELAY_MS,
 );
 
+const erjkSourceAdapter: PoliticalFinanceSourceAdapter = {
+  partyPresentation: erjkPartyPresentation,
+  filingSourceUrl: (sourcePartyId, reportId) => reportId
+    ? `${ERJK_API_ORIGIN}/quarterly-reports/${reportId}?report_type=receipts`
+    : `${ERJK_API_ORIGIN}/quarterly-reports/quarters/${sourcePartyId}`,
+};
+
 type AggregateTask = {
   kind: "income" | "expense";
   period: PoliticalFinancePeriod;
@@ -39,8 +49,12 @@ type AggregateTask = {
 
 export function collectAggregateResults(
   tasks: readonly AggregateTask[],
-  results: readonly PromiseSettledResult<ErjkAggregateRow[]>[],
-): { rows: ErjkAggregateRow[]; coverage: ErjkAggregateCoverage; failures: number } {
+  results: readonly PromiseSettledResult<PoliticalFinanceAggregateRow[]>[],
+): {
+  rows: PoliticalFinanceAggregateRow[];
+  coverage: PoliticalFinanceAggregateCoverage;
+  failures: number;
+} {
   if (tasks.length !== results.length) throw new Error("ERJK aggregate task/result count mismatch");
   return {
     rows: results.flatMap((result) => result.status === "fulfilled" ? result.value : []),
@@ -103,30 +117,34 @@ function aggregateTasks(now: Date): AggregateTask[] {
 }
 
 async function loadDetails(
-  partyRows: readonly ErjkAggregateRow[],
+  partyRows: readonly PoliticalFinanceAggregateRow[],
   latestPeriod: PoliticalFinancePeriod,
-): Promise<{ details: ErjkDetailBundle[]; failures: number }> {
+): Promise<{ details: PoliticalFinanceDetailBundle[]; failures: number }> {
   const parties = [...new Map(
     partyRows
       .filter((row) => row.period === latestPeriod)
       .map((row) => [row.sourcePartyId, row]),
   ).values()];
-  const results = await mapConcurrent(parties, 8, async (party): Promise<ErjkDetailBundle> => {
-    const reportList = parseErjkReportReferences(
-      await fetchErjkJson(`/quarterly-reports/quarters/${encodeURIComponent(party.sourcePartyId)}`),
-    );
-    const report = reportList.find((item) => item.period === latestPeriod);
-    if (!report) throw new Error("ERJK filing reference was not found");
-    const receipts = parseErjkReceiptRows(
-      await fetchErjkJson(`/quarterly-reports/${report.reportId}?report_type=receipts`),
-    );
-    return {
-      sourcePartyId: party.sourcePartyId,
-      period: latestPeriod,
-      reportId: report.reportId,
-      receipts,
-    };
-  });
+  const results = await mapConcurrent(
+    parties,
+    8,
+    async (party): Promise<PoliticalFinanceDetailBundle> => {
+      const reportList = parseErjkReportReferences(
+        await fetchErjkJson(`/quarterly-reports/quarters/${encodeURIComponent(party.sourcePartyId)}`),
+      );
+      const report = reportList.find((item) => item.period === latestPeriod);
+      if (!report) throw new Error("ERJK filing reference was not found");
+      const receipts = parseErjkReceiptRows(
+        await fetchErjkJson(`/quarterly-reports/${report.reportId}?report_type=receipts`),
+      );
+      return {
+        sourcePartyId: party.sourcePartyId,
+        period: latestPeriod,
+        reportId: report.reportId,
+        receipts,
+      };
+    },
+  );
   return {
     details: results.flatMap((result) => result.status === "fulfilled" ? [result.value] : []),
     failures: results.filter((result) => result.status === "rejected").length,
@@ -160,7 +178,13 @@ export async function refreshPoliticalFinanceOverview(now = new Date()): Promise
   const availablePeriods = [...new Set(rows.map((row) => row.period))].sort(periodSort).reverse();
   const latestPeriod = availablePeriods[0];
   const detailResult = await loadDetails(rows, latestPeriod);
-  const parties = buildPoliticalFinanceSummaries(rows, detailResult.details, latestPeriod, coverage);
+  const parties = buildPoliticalFinanceSummaries(
+    rows,
+    detailResult.details,
+    latestPeriod,
+    coverage,
+    erjkSourceAdapter,
+  );
   const reconciliationFailures = parties.filter((party) => party.detailReconciles === false).length;
   const failures = aggregateFailures + detailResult.failures + reconciliationFailures;
   const retrievedAt = new Date().toISOString();

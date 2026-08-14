@@ -66,6 +66,27 @@ function lineCount(contents) {
   return /\r?\n$/.test(contents) ? lines - 1 : lines;
 }
 
+function importSpecifiers(contents) {
+  const specifiers = new Set();
+  const patterns = [
+    /\bfrom\s+["']([^"']+)["']/g,
+    /\bimport\s*\(\s*["']([^"']+)["']/g,
+    /\bimport\s+["']([^"']+)["']/g,
+  ];
+  for (const pattern of patterns) {
+    for (const match of contents.matchAll(pattern)) specifiers.add(match[1]);
+  }
+  return specifiers;
+}
+
+function importsServerModule(specifier) {
+  const segments = specifier.replaceAll("\\", "/").split("/");
+  const fileName = segments.at(-1) ?? "";
+  return segments.includes("server")
+    || fileName.endsWith(".server")
+    || /\.server\.[cm]?[jt]sx?$/.test(fileName);
+}
+
 const files = (await Promise.all(
   sourceRoots.map((root) => sourceFiles(join(repositoryRoot, root))),
 )).flat();
@@ -87,6 +108,18 @@ for (const root of tailwindUiRoots) {
 for (const file of files) {
   const path = portablePath(relative(repositoryRoot, file));
   const contents = await readFile(file, "utf8");
+  const isolatedLayer = path.includes("/model/")
+    ? "model"
+    : path.includes("/client/") ? "client" : null;
+  if (isolatedLayer) {
+    for (const specifier of importSpecifiers(contents)) {
+      if (importsServerModule(specifier)) {
+        configurationFailures.push(
+          `${path}: ${isolatedLayer} modules must not import server module ${specifier}`,
+        );
+      }
+    }
+  }
   const lines = lineCount(contents);
   const characters = contents.length;
   const target = normalLimit(path);

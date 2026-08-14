@@ -2,17 +2,41 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
-  buildPoliticalFinanceRecords,
-  buildPoliticalFinanceSummaries,
   aggregateCoverageKey,
-  type ErjkAggregateCoverage,
   recordsRevisionId,
+  type PoliticalFinanceAggregateCoverage,
+  type PoliticalFinanceAggregateRow,
+  type PoliticalFinanceDetailBundle,
+  type PoliticalFinanceReceiptRow,
+  type PoliticalFinanceSourceAdapter,
 } from "../features/political-finance/model/political-finance-model.ts";
-import type { ErjkAggregateRow, ErjkReceiptRow } from "../features/political-finance/server/erjk-parser.ts";
+import { buildPoliticalFinanceRecords } from "../features/political-finance/model/political-finance-records.ts";
+import { buildPoliticalFinanceSummaries as buildPoliticalFinanceSummariesFromRows } from "../features/political-finance/model/political-finance-summary.ts";
 import { erjkPartyPresentation } from "../features/political-finance/server/erjk-config.ts";
 import { collectAggregateResults } from "../features/political-finance/server/political-finance-overview.server.ts";
 
-function aggregate(period: "2026-Q1" | "2026-Q2", categoryId: string, categoryName: string, amount: number, kind: "income" | "expense" = "income"): ErjkAggregateRow {
+const erjkTestAdapter: PoliticalFinanceSourceAdapter = {
+  partyPresentation: erjkPartyPresentation,
+  filingSourceUrl: (sourcePartyId, reportId) =>
+    `https://example.test/${sourcePartyId}/${reportId ?? "filings"}`,
+};
+
+function buildPoliticalFinanceSummaries(
+  rows: readonly PoliticalFinanceAggregateRow[],
+  details: readonly PoliticalFinanceDetailBundle[],
+  latestPeriod: "2026-Q1" | "2026-Q2",
+  aggregateCoverage: PoliticalFinanceAggregateCoverage,
+) {
+  return buildPoliticalFinanceSummariesFromRows(
+    rows,
+    details,
+    latestPeriod,
+    aggregateCoverage,
+    erjkTestAdapter,
+  );
+}
+
+function aggregate(period: "2026-Q1" | "2026-Q2", categoryId: string, categoryName: string, amount: number, kind: "income" | "expense" = "income"): PoliticalFinanceAggregateRow {
   return {
     kind,
     period,
@@ -24,13 +48,13 @@ function aggregate(period: "2026-Q1" | "2026-Q2", categoryId: string, categoryNa
   };
 }
 
-const receipts: ErjkReceiptRow[] = [
+const receipts: PoliticalFinanceReceiptRow[] = [
   { date: "2026-06-30", categoryName: "Rahaline annetus", reportedName: "Anu A", counterpartyKey: "person-a", amount: 600 },
   { date: "2026-06-20", categoryName: "Rahaline annetus", reportedName: "Bert B", counterpartyKey: "person-b", amount: 300 },
   { date: "2026-06-10", categoryName: "Rahaline annetus", reportedName: "Cris C", counterpartyKey: "person-c", amount: 100 },
 ];
 
-function coverage(...entries: Array<["2026-Q1" | "2026-Q2", "income" | "expense"]>): ErjkAggregateCoverage {
+function coverage(...entries: Array<["2026-Q1" | "2026-Q2", "income" | "expense"]>): PoliticalFinanceAggregateCoverage {
   return new Set(entries.map(([period, kind]) => aggregateCoverageKey(period, kind)));
 }
 
@@ -78,7 +102,7 @@ test("a corrected report replaces the same filing and changes its revision", () 
 });
 
 test("same-name donors remain separate and exact duplicate records get unique IDs", () => {
-  const sameNameRows: ErjkReceiptRow[] = [
+  const sameNameRows: PoliticalFinanceReceiptRow[] = [
     { date: "2026-06-30", categoryName: "Rahaline annetus", reportedName: "Sama Nimi", counterpartyKey: "person-one", amount: 100 },
     { date: "2026-06-30", categoryName: "Rahaline annetus", reportedName: "Sama Nimi", counterpartyKey: "person-two", amount: 200 },
   ];
@@ -95,7 +119,8 @@ test("same-name donors remain separate and exact duplicate records get unique ID
   const duplicate = sameNameRows[0];
   const records = buildPoliticalFinanceRecords({
     partyId: "reform", sourcePartyId: "158", period: "2026-Q2", reportId: 1,
-    recordType: "donations", receipts: [duplicate, duplicate],
+    recordType: "donations", sourceUrl: "https://example.test/report/1",
+    receipts: [duplicate, duplicate],
   });
   assert.equal(records.length, 2);
   assert.notEqual(records[0].id, records[1].id);
@@ -104,7 +129,7 @@ test("same-name donors remain separate and exact duplicate records get unique ID
 });
 
 test("public donor IDs are scoped to the reporting party", () => {
-  const sharedDonor: ErjkReceiptRow[] = [{
+  const sharedDonor: PoliticalFinanceReceiptRow[] = [{
     date: "2026-06-30", categoryName: "Rahaline annetus", reportedName: "Sama Avalik Nimi",
     counterpartyKey: "private-source-key", amount: 100,
   }];
@@ -126,12 +151,12 @@ test("public donor IDs are scoped to the reporting party", () => {
 });
 
 test("ambiguous same-name donor rows remain marked when corrections reorder them", () => {
-  const first: ErjkReceiptRow[] = [
+  const first: PoliticalFinanceReceiptRow[] = [
     { date: "2026-06-30", categoryName: "Rahaline annetus", reportedName: "Sama Nimi", counterpartyKey: "one", amount: 100 },
     { date: "2026-06-29", categoryName: "Rahaline annetus", reportedName: "Sama Nimi", counterpartyKey: "two", amount: 200 },
   ];
   const corrected = first.map((row) => ({ ...row, amount: row.amount === 100 ? 300 : 50 }));
-  const make = (rows: ErjkReceiptRow[]) => buildPoliticalFinanceSummaries(
+  const make = (rows: PoliticalFinanceReceiptRow[]) => buildPoliticalFinanceSummaries(
     [aggregate("2026-Q2", "111", "Rahaline annetus", rows.reduce((sum, row) => sum + row.amount, 0))],
     [{ sourcePartyId: "158", period: "2026-Q2", reportId: 1, receipts: rows }],
     "2026-Q2", coverage(["2026-Q2", "income"]),

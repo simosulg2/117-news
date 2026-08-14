@@ -13,6 +13,8 @@ follow their direct imports. Do not preload whole feature trees.
 - Weather collector operations: `docs/weather-collector.md`.
 - Human setup and product behavior: `README.md`.
 - Use direct imports. Do not add barrel (`index.ts`) modules.
+- Keep dependencies flowing from server adapters into pure model modules;
+  client and model modules must not import server modules.
 - Ignore `.next/`, `node_modules/`, `*.tsbuildinfo`, lockfiles, and binary assets
   unless the task specifically concerns dependencies, builds, or assets.
 - Search with `rg`; read a narrow range before opening a large file in full.

@@ -7,7 +7,8 @@ import type {
   PoliticalFinanceRecordType,
   PoliticalFinanceSource,
 } from "../../../lib/political-finance-types";
-import { buildPoliticalFinanceRecords, recordsRevisionId } from "../model/political-finance-model.ts";
+import { recordsRevisionId } from "../model/political-finance-model.ts";
+import { buildPoliticalFinanceRecords } from "../model/political-finance-records.ts";
 import { fetchErjkJson } from "./erjk-client.server.ts";
 import {
   ERJK_API_DOCUMENTATION_URL,
@@ -88,12 +89,14 @@ async function loadDetail(query: PoliticalFinanceRecordsQuery, sourcePartyId: st
   if (!report) throw new PoliticalFinanceRecordsNotFoundError();
   const reportType = query.recordType === "expenses" ? "expenses" : "receipts";
   const input = await fetchErjkJson(`/quarterly-reports/${report.reportId}?report_type=${reportType}`);
+  const sourceUrl = `${ERJK_API_ORIGIN}/quarterly-reports/${report.reportId}?report_type=${reportType}`;
   const records = buildPoliticalFinanceRecords({
     partyId: query.partyId,
     sourcePartyId,
     period: query.period,
     reportId: report.reportId,
     recordType: query.recordType,
+    sourceUrl,
     receipts: reportType === "receipts" ? parseErjkReceiptRows(input) : undefined,
     expenses: reportType === "expenses" ? parseErjkExpenseRows(input) : undefined,
   });

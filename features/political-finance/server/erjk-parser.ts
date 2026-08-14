@@ -1,4 +1,9 @@
 import type { PoliticalFinancePeriod } from "../../../lib/political-finance-types";
+import type {
+  PoliticalFinanceAggregateRow,
+  PoliticalFinanceExpenseRow,
+  PoliticalFinanceReceiptRow,
+} from "../model/political-finance-model.ts";
 
 export class ErjkParseError extends Error {
   constructor(message: string) {
@@ -7,32 +12,9 @@ export class ErjkParseError extends Error {
   }
 }
 
-export type ErjkAggregateRow = {
-  kind: "income" | "expense";
-  period: PoliticalFinancePeriod;
-  sourcePartyId: string;
-  sourcePartyName: string;
-  categoryId: string;
-  categoryName: string;
-  amount: number;
-};
-
 export type ErjkReportReference = {
   reportId: number;
   period: PoliticalFinancePeriod;
-};
-
-export type ErjkReceiptRow = {
-  date: string | null;
-  categoryName: string;
-  reportedName: string;
-  counterpartyKey: string;
-  amount: number;
-};
-
-export type ErjkExpenseRow = {
-  categoryName: string;
-  amount: number;
 };
 
 function record(value: unknown, context: string): Record<string, unknown> {
@@ -90,7 +72,7 @@ export function parseErjkAggregateRows(
   input: unknown,
   kind: "income" | "expense",
   period: PoliticalFinancePeriod,
-): ErjkAggregateRow[] {
+): PoliticalFinanceAggregateRow[] {
   return array(input, "ERJK aggregate response").map((item, index) => {
     const row = record(item, `ERJK aggregate row ${index}`);
     return {
@@ -118,7 +100,7 @@ export function parseErjkReportReferences(input: unknown): ErjkReportReference[]
   });
 }
 
-export function parseErjkReceiptRows(input: unknown): ErjkReceiptRow[] {
+export function parseErjkReceiptRows(input: unknown): PoliticalFinanceReceiptRow[] {
   return array(input, "ERJK receipt report").map((item, index) => {
     const row = record(item, `ERJK receipt row ${index}`);
     const reportedName = text(row.name, `receipt ${index} name`);
@@ -132,7 +114,7 @@ export function parseErjkReceiptRows(input: unknown): ErjkReceiptRow[] {
   });
 }
 
-export function parseErjkExpenseRows(input: unknown): ErjkExpenseRow[] {
+export function parseErjkExpenseRows(input: unknown): PoliticalFinanceExpenseRow[] {
   return array(input, "ERJK expense report").map((item, index) => {
     const row = record(item, `ERJK expense row ${index}`);
     return {
