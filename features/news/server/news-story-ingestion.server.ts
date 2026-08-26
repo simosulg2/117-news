@@ -23,6 +23,7 @@ import {
   createNewsStory,
   insertStoryArticle,
   insertStoryEvent,
+  reconcileSingletonNewsStory,
   updateKnownArticle,
 } from "./news-story-write.server.ts";
 
@@ -68,19 +69,48 @@ export async function ingestNewsStoryBatch(
 
   for (const value of values) {
     const known = await updateKnownArticle(client, value, collectedAt, affectedStories);
-    if (known !== "new") {
-      if (known === "handled") storedArticles += 1;
-      continue;
-    }
-
-    const coverage = chooseCoverage(value.article, states, collectedAt);
+    if (known.status === "collision") continue;
+    const candidateStates = known.status === "handled"
+      ? states.filter(({ candidate }) => candidate.storyId !== known.storyId)
+      : states;
+    const coverage = chooseCoverage(value.article, candidateStates, collectedAt);
     const evolution = coverage ? null : selectStoryEvolutionMatch(
       value.article,
-      states.map(({ candidate }) => candidate),
+      candidateStates.map(({ candidate }) => candidate),
       collectedAt,
     );
     let state = coverage?.state
       ?? (evolution ? states.find(({ candidate }) => candidate.storyId === evolution.storyId) : undefined);
+
+    if (known.status === "handled") {
+      storedArticles += 1;
+      if (!state) continue;
+      const kind = coverage ? "coverage" : "evolution";
+      const reconciled = await reconcileSingletonNewsStory(client, value, {
+        sourceStoryId: known.storyId,
+        targetStoryId: state.candidate.storyId,
+        targetEventId: coverage?.event.eventId ?? null,
+        kind,
+        score: coverage?.score ?? evolution!.score,
+        reasons: coverage
+          ? ["strict_title", "time_proximity"]
+          : evolution!.reasons,
+        matchedArticleId: coverage?.event.article.id ?? evolution!.matchedArticleId,
+      }, collectedAt);
+      if (!reconciled) continue;
+      const sourceIndex = states.findIndex(({ candidate }) => candidate.storyId === known.storyId);
+      if (sourceIndex >= 0) states.splice(sourceIndex, 1);
+      advanceStoryState(
+        state,
+        value.article,
+        value.activityAt,
+        kind === "evolution" ? reconciled.eventId : undefined,
+      );
+      affectedStories.delete(known.storyId);
+      affectedStories.add(state.candidate.storyId);
+      continue;
+    }
+
     let storyId: string;
     let eventId: string;
     let version: number;

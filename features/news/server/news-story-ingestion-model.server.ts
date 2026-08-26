@@ -1,7 +1,12 @@
 import { createHash } from "node:crypto";
 
-import { groupNewsItems, storyTitleSimilarity } from "../../../lib/group-stories.ts";
+import {
+  groupNewsItems,
+  normalizeStoryTitle,
+  storyTitleSimilarity,
+} from "../../../lib/group-stories.ts";
 import type { NewsArticle } from "../../../lib/types.ts";
+import { NEWS_STORY_ACTIVE_WINDOW_MS } from "../model/story-evolution.ts";
 
 const MAX_FUTURE_SKEW_MS = 5 * 60 * 1_000;
 const MAX_ARTICLE_ID_LENGTH = 128;
@@ -55,12 +60,30 @@ function asNewsArticle(anchor: CoverageAnchor): NewsArticle {
   return { ...anchor, link: `https://invalid.local/${encodeURIComponent(anchor.id)}` };
 }
 
+function isWithinActiveStoryWindow(publishedAt: string | null, now: Date): boolean {
+  if (!publishedAt) return false;
+  const timestamp = Date.parse(publishedAt);
+  return Number.isFinite(timestamp)
+    && timestamp <= now.getTime()
+    && timestamp >= now.getTime() - NEWS_STORY_ACTIVE_WINDOW_MS;
+}
+
 export function strictCoverageScore(
   article: NewsArticle,
   anchor: CoverageAnchor,
   now: Date,
 ): number | null {
-  if (article.source === anchor.source || article.category !== anchor.category) return null;
+  if (article.source === anchor.source) {
+    const normalizedTitle = normalizeStoryTitle(article.title);
+    if (
+      normalizedTitle.length === 0
+      || normalizedTitle !== normalizeStoryTitle(anchor.title)
+      || !isWithinActiveStoryWindow(article.publishedAt, now)
+      || !isWithinActiveStoryWindow(anchor.publishedAt, now)
+    ) return null;
+    return 1;
+  }
+  if (article.category !== anchor.category) return null;
   const grouped = groupNewsItems([article, asNewsArticle(anchor)], now);
   if (grouped.length !== 1 || grouped[0].related.length !== 1) return null;
   return Math.round(storyTitleSimilarity(article.title, anchor.title) * 1_000) / 1_000;

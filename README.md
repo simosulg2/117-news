@@ -28,7 +28,9 @@ võimaldab uudislugude ajaloo ja värskete Võru mõõtmiste püsivat kogumist.
 - Täpselt korduvad lingid eemaldatakse. Ilma andmebaasita koondatakse viimase
   24 tunni sarnased eri allikate pealkirjad ajutiseks hetkepildiks; PostgreSQL-i
   korral seob viieminutiline koguja kajastused 72 tunni jooksul püsiva loo ja
-  selle ajajoonega.
+  selle ajajoonega. Koguja seob ka sama allika täpsed korduspealkirjad ning
+  tugeva nime-, teema- ja kirjelduskattega artikli- või klipivariandid; varem
+  eraldi loodud ühe artikli lood parandatakse järgmise kogumise ajal.
 - Eesti, majanduse ja spordi teemavaated koostatakse kogu saadaolevast uudiste hulgast eraldi, mitte ainult üldvaate 117 loo seast.
 - Kategooriafiltrid, otsing, loetud uudiste kohalik ajalugu, lugude uuenemise
   märgid, kiirklahvid ja tumeda teema valik töötavad brauseris kohe.

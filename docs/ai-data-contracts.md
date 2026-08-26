@@ -32,6 +32,10 @@ PostgreSQL, and returns `no-store`. Matching only considers active stories from
 the preceding 72 hours; retained story history is deleted after 30 days. Keep
 credentials, raw upstream bodies, and authorization details out of client code,
 URLs, errors, and logs. Operational setup lives in `docs/news-collector.md`.
+Matching normally stays within one category. An exact same-source title may
+bridge a source-category disagreement, and high-confidence context evidence may
+reconcile a previously split singleton story. Reconciliation must never rewrite
+or delete a story that contains more than one stored article.
 
 Story details load only when requested through `GET /api/news/stories/[id]`.
 The response is capped at 40 coverage events and 117 articles and exposes

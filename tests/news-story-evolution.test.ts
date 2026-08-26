@@ -95,6 +95,70 @@ test("uses a strong RSS-summary overlap when headlines evolve", () => {
   assert.ok(!result.reasons.includes("strict_title"));
 });
 
+test("recognizes same-source article and clip variants with shared title anchors", () => {
+  const result = scoreStoryEvolutionPair(
+    article("article", "Tartu linn ja paadiomanikud otsivad uusi lahendusi sadamakohtade loomiseks", {
+      summary: "Tartus on Emajõel väikelaevu rohkem kui sildumiskohti ning sadamakohad on täitunud.",
+      hoursAgo: 2,
+    }),
+    article("clip", "Paadiomanikud: Tartu vajab uusi sadamakohti", {
+      summary: "Tartus on Emajõel paatidele üle 400 sadama- ja peatumiskoha.",
+    }),
+    NOW,
+  );
+
+  assert.equal(result.matches, true);
+  assert.ok(result.reasons.includes("strong_context"));
+});
+
+test("recognizes cross-source match reports despite a combined headline", () => {
+  const result = scoreStoryEvolutionPair(
+    article("postimees", "Premium liiga viimane kukutas Kalju karikasarjast", {
+      source: "Postimees",
+      summary: "Narva Trans alistas täna õhtul Eesti jalgpalli karikavõistluste kaheksandikfinaalis Nõmme Kalju 2:0 ja edenes veerandfinaali ning Premium liigas suutis kaotusseisust välja tulnud Tammeka võita Florat 3:1.",
+      hoursAgo: 2,
+    }),
+    article("err", "Trans lülitas karikasarjas Kalju konkurentsist, Levadia alistas Paide", {
+      summary: "Evald Tipneri nime kandvatel Eesti jalgpalli karikavõistlustel alistas Narva Trans kolmapäeval 2:0 Nõmme Kalju ja pääses veerandfinaali. FCI Levadia oli Paide Linnameeskonnast üle 4:1 ja tagas koha kaheksandikfinaalis.",
+    }),
+    NOW,
+  );
+
+  assert.equal(result.matches, true);
+  assert.ok(result.reasons.includes("strong_context"));
+});
+
+test("uses names carried between a headline and summary for report rewrites", () => {
+  const result = scoreStoryEvolutionPair(
+    article("later", "Tartu kooli seina varisemine toob linnale kaasa miljoneid eurosid lisakulu", {
+      summary: "Tartu Miina Härma gümnaasiumi remont kujuneb varisenud seina tõttu kallimaks ja teiste koolide remonti see ei mõjuta.",
+      hoursAgo: 4,
+    }),
+    article("earlier", "Miina Härma gümnaasiumi remondi kulud ei mõjuta teiste koolide renoveerimist", {
+      summary: "Tartu Miina Härma gümnaasiumi remont kujuneb juurdeehituse seina varisemise tõttu kallimaks.",
+    }),
+    NOW,
+  );
+
+  assert.equal(result.matches, true);
+  assert.ok(result.reasons.includes("strong_context"));
+});
+
+test("does not merge different interviews that share event boilerplate", () => {
+  const result = scoreStoryEvolutionPair(
+    article("doctor", "Korvpallikoondise arst: maskiga lihtne ei ole, aga Drell on professionaal", {
+      summary: "Koondise arst rääkis Ungari mängu eel vigastatud mängijatest ja Henri Drellist.",
+      hoursAgo: 2,
+    }),
+    article("player", "Nõmm: tahame hea ettevalmistuse võitudeks realiseerida", {
+      summary: "Korvpallikoondis valmistub Ungari mänguks ning Märt Rosenthal ja Matthias Tass treenisid koos koondisega.",
+    }),
+    NOW,
+  );
+
+  assert.equal(result.matches, false);
+});
+
 test("keeps similar openings with different event nouns separate", () => {
   const result = scoreStoryEvolutionPair(
     article("school", "Tallinn avab uue kooli Lasnamäel"),

@@ -160,7 +160,8 @@ export async function loadStoredNewsOverview(now: Date): Promise<StoredNewsOverv
 const MATCH_KINDS = new Set<NewsStoryMatchKind>(["seed", "coverage", "evolution"]);
 const MATCH_REASONS = new Set<NewsStoryMatchReason>([
   "new_story", "strict_title", "shared_name", "shared_anchors",
-  "title_similarity", "summary_similarity", "time_proximity", "numbers_changed",
+  "title_similarity", "summary_similarity", "strong_context", "time_proximity",
+  "numbers_changed",
 ]);
 
 function matchKind(value: string): NewsStoryMatchKind {

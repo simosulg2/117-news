@@ -51,7 +51,12 @@ kogumist ning osaline allikaolek jääb vastuses nähtavaks.
 
 ## Säilitamine ja varurežiim
 
-Sobitamisel arvestatakse sama kategooria lugusid viimase 72 tunni seest.
+Sobitamisel arvestatakse üldjuhul sama kategooria lugusid viimase 72 tunni
+seest. Sama allika täpselt korduv pealkiri võib parandada allika enda
+kategooriaerinevuse. Tugeva nime-, teema- ja kirjelduse kattuvusega uus vaste
+võib järgmise kogumise ajal ühendada varem eraldi loodud loo ainult siis, kui
+selles on täpselt üks talletatud artikkel; mitme artikliga loo seost ei kirjutata
+automaatselt ümber.
 Uudisloo ajalugu säilitatakse 30 päeva ning aegunud read eemaldatakse koguja
 töö käigus. Süsteem talletab RSS-i pealkirja, lühikirjelduse, lingi, allika ja
 avaldamisaja, mitte artikli täisteksti.

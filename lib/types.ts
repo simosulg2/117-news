@@ -46,6 +46,7 @@ export type NewsStoryMatchReason =
   | "shared_anchors"
   | "title_similarity"
   | "summary_similarity"
+  | "strong_context"
   | "time_proximity"
   | "numbers_changed";
 

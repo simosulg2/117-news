@@ -69,7 +69,23 @@ test("strict coverage preserves the existing cross-source duplicate rules", () =
   const matching = article("matching", "Postimees");
 
   assert.equal(strictCoverageScore(matching, anchor, collectedAt), 1);
-  assert.equal(strictCoverageScore(article("same", "ERR"), anchor, collectedAt), null);
+  assert.equal(strictCoverageScore(article("same-copy", "ERR"), anchor, collectedAt), 1);
+  assert.equal(strictCoverageScore({
+    ...article("same-copy-other-category", "ERR"),
+    category: "Majandus",
+  }, anchor, collectedAt), 1);
+  assert.equal(strictCoverageScore({
+    ...article("expired-copy", "ERR"),
+    publishedAt: "2026-08-23T11:59:59.999Z",
+  }, anchor, collectedAt), null);
+  assert.equal(strictCoverageScore({
+    ...article("same-source-update", "ERR"),
+    title: "Tallinna trammiliin alustas liiklust",
+  }, anchor, collectedAt), null);
+  assert.equal(strictCoverageScore({
+    ...article("cross-category", "Postimees"),
+    category: "Majandus",
+  }, anchor, collectedAt), null);
   assert.equal(strictCoverageScore({
     ...matching,
     title: "Tallinn avab tänavu 13 uut rattateed",
