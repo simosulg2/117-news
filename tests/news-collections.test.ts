@@ -2,7 +2,13 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import { groupNewsItems } from "../lib/group-stories.ts";
-import { buildNewsCollections, MAX_NEWS_ITEMS } from "../lib/news-collections.ts";
+import {
+  buildNewsCollections,
+  buildPersistentNewsCollections,
+  MAX_NEWS_ITEMS,
+  type NewsStoryAssociation,
+} from "../lib/news-collections.ts";
+import type { NewsStoryPreview } from "../lib/types.ts";
 import type { FeedCategory, NewsArticle, NewsSource } from "../lib/types.ts";
 
 const NOW = new Date("2026-08-12T12:00:00.000Z");
@@ -120,4 +126,66 @@ test("returns all category keys for an empty article pool", () => {
       Sport: [],
     },
   });
+});
+
+function story(id: string, articleCount: number, latestArticleId: string): NewsStoryPreview {
+  return {
+    id,
+    articleCount,
+    eventCount: 2,
+    firstPublishedAt: "2026-08-12T09:00:00.000Z",
+    latestPublishedAt: "2026-08-12T11:59:00.000Z",
+    latestArticleId,
+    version: articleCount,
+  };
+}
+
+test("persistent collections collapse current articles under a stable story", () => {
+  const first = article("first", "Eesti", 20, "ERR", "Tallinn avas uue trammiliini");
+  const duplicate = article("duplicate", "Eesti", 19, "Postimees", "Tallinn avas uue trammiliini");
+  const followUp = article("follow-up", "Eesti", 2, "ERR", "Tallinna uus trammiliin alustas liiklust");
+  const preview = story("11111111-1111-4111-8111-111111111111", 3, followUp.id);
+  const associations = new Map<string, NewsStoryAssociation>([
+    [first.id, { coverageId: "event-a", story: preview }],
+    [duplicate.id, { coverageId: "event-a", story: preview }],
+    [followUp.id, { coverageId: "event-b", story: preview }],
+  ]);
+
+  const collections = buildPersistentNewsCollections(
+    [first, duplicate, followUp],
+    associations,
+    NOW,
+  );
+
+  assert.equal(collections.items.length, 1);
+  assert.equal(collections.items[0].id, followUp.id);
+  assert.equal(collections.items[0].story?.id, preview.id);
+  assert.deepEqual(collections.items[0].related, []);
+});
+
+test("persistent collections keep strict current-event coverage as fallback", () => {
+  const primary = article("primary", "Eesti", 1, "ERR", "Tallinn avas uue trammiliini");
+  const related = article("related", "Eesti", 2, "Postimees", "Tallinn avas uue trammiliini");
+  const preview = story("22222222-2222-4222-8222-222222222222", 2, primary.id);
+  const associations = new Map<string, NewsStoryAssociation>([
+    [primary.id, { coverageId: "event", story: preview }],
+    [related.id, { coverageId: "event", story: preview }],
+  ]);
+
+  const [item] = buildPersistentNewsCollections([related, primary], associations, NOW).items;
+
+  assert.equal(item.id, primary.id);
+  assert.deepEqual(item.related.map(({ id }) => id), [related.id]);
+});
+
+test("persistent collections retain legacy grouping for uncollected articles", () => {
+  const articles = [
+    article("err", "Eesti", 1, "ERR", "Tallinn avas uue trammiliini"),
+    article("pm", "Eesti", 2, "Postimees", "Tallinn avas uue trammiliini"),
+  ];
+
+  const [item] = buildPersistentNewsCollections(articles, new Map(), NOW).items;
+
+  assert.equal(item.story, null);
+  assert.deepEqual(item.related.map(({ id }) => id), ["pm"]);
 });

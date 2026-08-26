@@ -37,8 +37,31 @@ export type NewsArticle = {
   source: NewsSource;
 };
 
+export type NewsStoryMatchKind = "seed" | "coverage" | "evolution";
+
+export type NewsStoryMatchReason =
+  | "new_story"
+  | "strict_title"
+  | "shared_name"
+  | "shared_anchors"
+  | "title_similarity"
+  | "summary_similarity"
+  | "time_proximity"
+  | "numbers_changed";
+
+export type NewsStoryPreview = {
+  id: string;
+  articleCount: number;
+  eventCount: number;
+  firstPublishedAt: string | null;
+  latestPublishedAt: string | null;
+  latestArticleId: string;
+  version: number;
+};
+
 export type NewsItem = NewsArticle & {
   related: NewsArticle[];
+  story: NewsStoryPreview | null;
 };
 
 export type NewsItemsByCategory = Record<FeedCategory, NewsItem[]>;
@@ -47,10 +70,41 @@ export type NewsResponse = {
   items: NewsItem[];
   itemsByCategory?: NewsItemsByCategory;
   updatedAt: string;
+  storyHistory: {
+    mode: "persistent" | "snapshot";
+    activeWindowHours: number;
+    retentionDays: number | null;
+    storedFallback: boolean;
+  };
   sources: {
     loaded: number;
     total: number;
     failed: FeedName[];
     failures: FeedFailure[];
   };
+};
+
+export type NewsStoryArticle = NewsArticle & {
+  coverageId: string;
+  addedVersion: number;
+  firstSeenAt: string;
+  revisionCount: number;
+  association: {
+    kind: NewsStoryMatchKind;
+    score: number;
+    reasons: NewsStoryMatchReason[];
+  };
+};
+
+export type NewsStoryEvent = {
+  id: string;
+  publishedAt: string | null;
+  articles: NewsStoryArticle[];
+};
+
+export type NewsStoryDetailResponse = {
+  story: NewsStoryPreview;
+  events: NewsStoryEvent[];
+  updatedAt: string;
+  truncated: boolean;
 };

@@ -9,7 +9,8 @@ import { NewsToolbar } from "@/features/news/client/news-toolbar";
 import { useNewsFeed } from "@/features/news/client/use-news-feed";
 import { useNewsKeyboardNavigation } from "@/features/news/client/use-news-keyboard-navigation";
 import { useReadHistory } from "@/features/news/client/use-read-history";
-import { filterNewsItems } from "@/features/news/model/news-items";
+import { useStoryVisits } from "@/features/news/client/use-story-visits";
+import { filterNewsItems, newsRowId } from "@/features/news/model/news-items";
 import { useClock } from "@/features/shell/client/use-clock";
 import { usePageTheme } from "@/features/shell/client/use-page-theme";
 import { PageFooter } from "@/features/shell/client/page-footer";
@@ -18,6 +19,7 @@ import type { Category } from "@/lib/types";
 export function NewsPortal() {
   const { data, error, refreshing, refreshError, refreshNews } = useNewsFeed();
   const { isItemRead, markItemRead, readCount, readStateLoaded, resetReadHistory } = useReadHistory();
+  const { isStoryArticleNew, isStoryNew, markStorySeen } = useStoryVisits(data);
   const [category, setCategory] = useState<Category>("Kõik");
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
@@ -29,7 +31,7 @@ export function NewsPortal() {
     () => filterNewsItems(data, category, deferredQuery),
     [category, data, deferredQuery],
   );
-  const visibleItemIds = useMemo(() => filteredItems.map((item) => item.id), [filteredItems]);
+  const visibleItemIds = useMemo(() => filteredItems.map(newsRowId), [filteredItems]);
   const registerHeadline = useNewsKeyboardNavigation(visibleItemIds, searchRef);
 
   const focusSearchAfterUpdate = useCallback(() => {
@@ -101,7 +103,10 @@ export function NewsPortal() {
             items={filteredItems}
             nowMs={now?.getTime() ?? Date.now()}
             isRead={isItemRead}
+            isStoryArticleNew={isStoryArticleNew}
+            isStoryNew={isStoryNew}
             onOpen={markItemRead}
+            onStorySeen={markStorySeen}
             registerHeadline={registerHeadline}
           />
         )}

@@ -3,22 +3,41 @@
 This is a routing aid, not a second schema definition. Treat the linked TypeScript
 types and tests as canonical. Follow direct imports; do not create barrel modules.
 
-## News (`GET /api/news`)
+## News (`GET/POST /api/news`)
 
-- Contract owner: `lib/types.ts` (`NewsResponse`, `NewsItem`, `FeedFailure`).
+- Contract owner: `lib/types.ts` (`NewsResponse`, `NewsItem`,
+  `NewsStoryDetailResponse`, `FeedFailure`).
 - Server entry: `app/api/news/route.ts`.
+- Lazy story detail: `GET /api/news/stories/[id]`.
 - Focused source modules: `features/news/server/`.
 - Pure policy: `lib/feed-links.ts`, `lib/feed-retry.ts`,
   `lib/feed-categories.ts`, `lib/group-stories.ts`, and
-  `lib/news-collections.ts`.
+  `lib/news-collections.ts`; durable matching belongs to
+  `features/news/model/story-evolution.ts`.
 - Consumer entry: `components/news-portal.tsx`; focused client/model code:
   `features/news/`.
 
-The response can be successful with failed feeds; `sources` must retain loaded,
-total, and public failure information. Each view is capped at 117 items. Related
-coverage is nested under one primary item and must remain inside the grouping
-window. Upstream redirects and article URLs stay host-restricted, bodies stay
-bounded, and cached snapshots may be served while a refresh fails.
+`GET /api/news` is read-only. Its response can be successful with failed feeds;
+`sources` must retain loaded, total, and public failure information. Each view
+is capped at 117 items. Upstream redirects and article URLs stay
+host-restricted, bodies stay bounded, and cached snapshots may be served while
+a refresh fails. `storyHistory` states whether the response uses durable
+PostgreSQL associations or the in-memory snapshot fallback. With persistence,
+an all-feeds-failed refresh may use retained active-story metadata without
+presenting it as a fresh feed result.
+
+`POST /api/news` is the server-only collector. It requires a constant-time
+checked Bearer token from `NEWS_COLLECTOR_TOKEN`, stores bounded feed metadata in
+PostgreSQL, and returns `no-store`. Matching only considers active stories from
+the preceding 72 hours; retained story history is deleted after 30 days. Keep
+credentials, raw upstream bodies, and authorization details out of client code,
+URLs, errors, and logs. Operational setup lives in `docs/news-collector.md`.
+
+Story details load only when requested through `GET /api/news/stories/[id]`.
+The response is capped at 40 coverage events and 117 articles and exposes
+`truncated` when the cap applies. Associations are deterministic metadata
+matches, not causal claims. Do not scrape article bodies or add AI-generated
+summaries, interpretation, or inferred relationships.
 
 Validate with `npm run test:news`.
 

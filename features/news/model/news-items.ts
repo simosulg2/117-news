@@ -1,4 +1,12 @@
-import type { Category, NewsArticle, NewsItem, NewsResponse } from "@/lib/types";
+import type {
+  Category,
+  NewsArticle,
+  NewsItem,
+  NewsResponse,
+  NewsStoryArticle,
+  NewsStoryEvent,
+  NewsStoryPreview,
+} from "@/lib/types";
 
 export function relativeNewsTime(value: string, nowMs = Date.now()): string {
   const elapsedMinutes = Math.max(0, Math.round((nowMs - Date.parse(value)) / 60_000));
@@ -15,6 +23,57 @@ export function normalizeNewsSearch(value: string): string {
 
 export function relatedNewsItems(item: NewsItem): NewsArticle[] {
   return item.related ?? [];
+}
+
+export function newsRowId(item: NewsItem): string {
+  return item.story?.id ? `story:${item.story.id}` : `article:${item.id}`;
+}
+
+export function newsStoryPreviews(data: NewsResponse | null): NewsStoryPreview[] {
+  if (!data) return [];
+  const previews = new Map<string, NewsStoryPreview>();
+  const collections = [data.items, ...Object.values(data.itemsByCategory ?? {})];
+
+  for (const item of collections.flat()) {
+    if (!item.story) continue;
+    const previous = previews.get(item.story.id);
+    if (!previous || item.story.version > previous.version) {
+      previews.set(item.story.id, item.story);
+    }
+  }
+  return [...previews.values()];
+}
+
+function validTimestamp(value: string | null): number | null {
+  if (!value) return null;
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
+
+function articleTimelineTimestamp(article: NewsStoryArticle): number {
+  return validTimestamp(article.publishedAt)
+    ?? validTimestamp(article.firstSeenAt)
+    ?? Number.POSITIVE_INFINITY;
+}
+
+function eventTimelineTimestamp(event: NewsStoryEvent): number {
+  const eventTimestamp = validTimestamp(event.publishedAt);
+  if (eventTimestamp !== null) return eventTimestamp;
+  return Math.min(...event.articles.map(articleTimelineTimestamp), Number.POSITIVE_INFINITY);
+}
+
+export function orderedNewsStoryArticles(
+  articles: readonly NewsStoryArticle[],
+): NewsStoryArticle[] {
+  return [...articles].sort((left, right) =>
+    articleTimelineTimestamp(left) - articleTimelineTimestamp(right)
+      || left.id.localeCompare(right.id));
+}
+
+export function orderedNewsStoryEvents(events: readonly NewsStoryEvent[]): NewsStoryEvent[] {
+  return [...events].sort((left, right) =>
+    eventTimelineTimestamp(left) - eventTimelineTimestamp(right)
+      || left.id.localeCompare(right.id));
 }
 
 export function filterNewsItems(

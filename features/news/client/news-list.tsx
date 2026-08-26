@@ -1,4 +1,5 @@
 import { ArticleRow, type ArticleRowProps } from "@/features/news/client/article-row";
+import { newsRowId } from "@/features/news/model/news-items";
 import type { NewsItem } from "@/lib/types";
 
 type NewsListProps = Omit<ArticleRowProps, "item"> & {
@@ -16,7 +17,7 @@ export function NewsList({ items, ...articleRowProps }: NewsListProps) {
       </div>
       <ul>
         {items.map((item) => (
-          <ArticleRow key={item.id} item={item} {...articleRowProps} />
+          <ArticleRow key={newsRowId(item)} item={item} {...articleRowProps} />
         ))}
       </ul>
     </section>

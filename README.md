@@ -16,16 +16,22 @@ npm run dev
 
 Ava `http://localhost:3000`.
 
-Ilmavaade töötab ilma keskkonnamuutujateta. PostgreSQL on valikuline ja seda kasutatakse ainult värskete Võru mõõtmiste püsivaks kogumiseks.
+Kõik vaated töötavad ilma keskkonnamuutujateta. PostgreSQL on valikuline ning
+võimaldab uudislugude ajaloo ja värskete Võru mõõtmiste püsivat kogumist.
 
 ## Kuidas andmed liiguvad
 
-- Brauser küsib uudiseid rakenduse enda `/api/news` otspunktist.
+- Brauser küsib uudiseid rakenduse enda kirjutuskaitstud `GET /api/news`
+  otspunktist.
 - API laadib serveris ERR-i Eesti, majanduse ja spordi ning Postimehe ja Lõuna-Eesti Postimehe RSS-vood ja töötleb need `rss-parser` abil.
 - Vastused puhverdatakse viieks minutiks; üksiku voo viga ei peata teisi vooge.
-- Täpselt korduvad lingid eemaldatakse ning viimase 24 tunni sarnased eri allikate pealkirjad koondatakse ilma tehisintellekti või mudelite väljakutseteta.
+- Täpselt korduvad lingid eemaldatakse. Ilma andmebaasita koondatakse viimase
+  24 tunni sarnased eri allikate pealkirjad ajutiseks hetkepildiks; PostgreSQL-i
+  korral seob viieminutiline koguja kajastused 72 tunni jooksul püsiva loo ja
+  selle ajajoonega.
 - Eesti, majanduse ja spordi teemavaated koostatakse kogu saadaolevast uudiste hulgast eraldi, mitte ainult üldvaate 117 loo seast.
-- Kategooriafiltrid, otsing, loetud uudiste kohalik ajalugu, kiirklahvid ja tumeda teema valik töötavad brauseris kohe.
+- Kategooriafiltrid, otsing, loetud uudiste kohalik ajalugu, lugude uuenemise
+  märgid, kiirklahvid ja tumeda teema valik töötavad brauseris kohe.
 
 Loetud artiklite ajalugu säilib selles brauseris 30 päeva ja seda saab uudislaua teaberibalt lähtestada. Kiirklahv `/` viib otsingusse ning `j` ja `k` liiguvad nähtavate uudiste vahel; fokuseeritud uudise avab tavapäraselt `Enter`.
 
@@ -38,6 +44,20 @@ Loetud artiklite ajalugu säilib selles brauseris 30 päeva ja seda saab uudisla
 - `https://lounapostimees.postimees.ee/rss`
 
 Artiklid avanevad alati algallika lehel. Postimehe tellijasisu kasutab seal brauseri olemasolevat sisselogimist; 117.ee ei töötle Postimehe kasutajaandmeid ega artiklite täistekste.
+
+### Valikuline lugude ajaloo kogumine
+
+Ilma `DATABASE_URL`-ita jääb uudisvaade täielikult kasutatavaks ja kuvab jooksva
+RSS-hetkepildi. PostgreSQL-i korral kirjutab eraldi autentitud
+`POST /api/news` koguja uudiste metaandmed püsivasse ajalukku iga viie minuti
+järel. Aktiivne sobitusaken on 72 tundi ja säilitusaeg 30 päeva. Loo detail
+laaditakse alles ajajoone avamisel otspunktist `GET /api/news/stories/[id]`.
+
+117.ee ei kraabi artiklite täistekste ega loo tehisintellektiga kokkuvõtteid,
+põhjuslikke seoseid või hinnanguid. Ajajoon näitab automaatselt seostatud
+pealkirju, lühikirjeldusi, allikaid ja avaldamisaegu; artiklid avanevad endiselt
+algallika juures. Runtime-saladuste ja ajastatud koguja seadistus on dokumendis
+[`docs/news-collector.md`](docs/news-collector.md).
 
 ## Võru ilm
 

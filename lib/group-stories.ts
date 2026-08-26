@@ -107,5 +107,6 @@ export function groupNewsItems(items: NewsArticle[], now: number | Date): NewsIt
   return groups.map(({ primary, related }) => ({
     ...primary.article,
     related: related.map(({ article }) => article),
+    story: null,
   }));
 }

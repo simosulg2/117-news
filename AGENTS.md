@@ -10,6 +10,7 @@ follow their direct imports. Do not preload whole feature trees.
   parliament, and `/erakonnaraha` political financing.
 - Canonical API/type map: `docs/ai-data-contracts.md`.
 - Current political product scope: `docs/personal-terminal-roadmap.md`.
+- News collector operations: `docs/news-collector.md`.
 - Weather collector operations: `docs/weather-collector.md`.
 - Human setup and product behavior: `README.md`.
 - Use direct imports. Do not add barrel (`index.ts`) modules.
@@ -38,9 +39,14 @@ follow their direct imports. Do not preload whole feature trees.
 - Domain contracts: `lib/types.ts`; collection cap: `lib/news-collections.ts`.
 - Grouping facade: `lib/group-stories.ts`; title scoring:
   `lib/story-title-similarity.ts`; feed labels/links: `lib/feed-*.ts`.
-- Server ingestion: `app/api/news/route.ts`.
+- Durable matching: `features/news/model/story-evolution.ts`; persistence,
+  collector policy, and bounded readers: `features/news/server/news-story-*.ts`
+  and `features/news/server/news-collector-policy.ts`.
+- Server entries: `app/api/news/route.ts` plus lazy
+  `app/api/news/stories/[id]/route.ts`.
 - Tests: `tests/feed-*.test.ts`, `tests/group-stories.test.ts`,
-  `tests/news-client-model.test.ts`, and `tests/news-collections.test.ts`.
+  `tests/news-client-model.test.ts`, `tests/news-collections.test.ts`, and
+  `tests/news-story-*.test.ts`.
 
 ### Weather UI, history, chart, or radar
 
@@ -107,8 +113,9 @@ follow their direct imports. Do not preload whole feature trees.
   `lib/party-registry.ts`; source aliases stay in their adapters.
 - API work must preserve timeouts, size limits, cache/stale behavior, safe error
   details, and `no-store` on authenticated or failure responses.
-- Do not expose `DATABASE_URL`, `WEATHER_COLLECTOR_TOKEN`, upstream payloads, or
-  sensitive headers to client code, URLs, logs, fixtures, or documentation.
+- Do not expose `DATABASE_URL`, `NEWS_COLLECTOR_TOKEN`,
+  `WEATHER_COLLECTOR_TOKEN`, upstream payloads, or sensitive headers to client
+  code, URLs, logs, fixtures, or documentation.
 - Keep browser storage keys and accessible keyboard/focus behavior compatible
   unless the task explicitly changes them.
 
