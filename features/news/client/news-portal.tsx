@@ -19,7 +19,7 @@ import type { Category } from "@/lib/types";
 export function NewsPortal() {
   const { data, error, refreshing, refreshError, refreshNews } = useNewsFeed();
   const { isItemRead, markItemRead, readCount, readStateLoaded, resetReadHistory } = useReadHistory();
-  const { isStoryArticleNew, isStoryNew, markStorySeen } = useStoryVisits(data);
+  const { markStorySeen } = useStoryVisits(data);
   const [category, setCategory] = useState<Category>("Kõik");
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
@@ -103,8 +103,6 @@ export function NewsPortal() {
             items={filteredItems}
             nowMs={now?.getTime() ?? Date.now()}
             isRead={isItemRead}
-            isStoryArticleNew={isStoryArticleNew}
-            isStoryNew={isStoryNew}
             onOpen={markItemRead}
             onStorySeen={markStorySeen}
             registerHeadline={registerHeadline}

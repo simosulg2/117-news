@@ -54,8 +54,6 @@ export type ArticleRowProps = {
   item: NewsItem;
   nowMs: number;
   isRead: (item: NewsArticle) => boolean;
-  isStoryArticleNew: (storyId: string, addedVersion: number) => boolean;
-  isStoryNew: (story: NewsStoryPreview) => boolean;
   onOpen: (item: NewsArticle) => void;
   onStorySeen: (story: NewsStoryPreview) => void;
   registerHeadline: (id: string, node: HTMLAnchorElement | null) => void;
@@ -65,8 +63,6 @@ export function ArticleRow({
   item,
   nowMs,
   isRead,
-  isStoryArticleNew,
-  isStoryNew,
   onOpen,
   onStorySeen,
   registerHeadline,
@@ -82,8 +78,6 @@ export function ArticleRow({
     ? `${persistentStory.articleCount} kajastust · ajajoon`
     : `+${related.length} seotud ${related.length === 1 ? "allikas" : "allikat"}`;
   const detail = useNewsStoryDetail(persistentStory, panelOpen);
-  const storyIsNew = Boolean(item.story && isStoryNew(item.story));
-
   useEffect(() => {
     if (panelOpen && detail.data) onStorySeen(detail.data.story);
   }, [detail.data, onStorySeen, panelOpen]);
@@ -154,7 +148,6 @@ export function ArticleRow({
                 {item.title}
               </a>
             </h2>
-            {storyIsNew && <span className="mt-0.5 border border-[#245fae] px-1 text-[9px] font-bold leading-4 text-[#245fae] dark:border-signal dark:text-signal"><span aria-hidden="true">UUS</span><span className="sr-only">Uus kajastus pärast eelmist külastust</span></span>}
           </div>
           {item.summary && <p className={`mt-1 line-clamp-2 max-w-5xl text-xs leading-[1.5] md:line-clamp-1 md:text-[13px] md:leading-[1.55] ${itemIsRead ? "text-[#5a6d79] dark:text-[#708390]" : "text-[#526878] dark:text-[#8da1b0]"}`}>{item.summary}</p>}
         </div>
@@ -174,7 +167,6 @@ export function ArticleRow({
             loading={detail.loading}
             nowMs={nowMs}
             isRead={isRead}
-            isArticleNew={(article) => isStoryArticleNew(persistentStory.id, article.addedVersion)}
             onOpen={handleArticleOpen}
             onRetry={detail.retry}
           />

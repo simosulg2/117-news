@@ -6,7 +6,6 @@ import {
 } from "@/features/news/model/news-items";
 import type {
   NewsArticle,
-  NewsStoryArticle,
   NewsStoryDetailResponse,
 } from "@/lib/types";
 
@@ -91,7 +90,6 @@ type StoryTimelineProps = ArticleActions & {
   error: string | null;
   fallback: readonly NewsArticle[];
   id: string;
-  isArticleNew: (article: NewsStoryArticle) => boolean;
   loading: boolean;
   nowMs: number;
   onRetry: () => void;
@@ -110,7 +108,6 @@ export function StoryTimeline({
   error,
   fallback,
   id,
-  isArticleNew,
   isRead,
   loading,
   nowMs,
@@ -171,14 +168,8 @@ export function StoryTimeline({
                     <span className="text-[11px] font-semibold text-[#526878] dark:text-[#8da1b0]">{article.source}</span>
                     <ArticleTime article={article} nowMs={nowMs} />
                     <div className="min-w-0">
-                      <div className="flex min-w-0 flex-wrap items-start gap-2">
+                      <div className="min-w-0">
                         <CoverageLink article={article} isRead={isRead} onOpen={onOpen} />
-                        {isArticleNew(article) && (
-                          <span className="border border-[#245fae] px-1 text-[9px] font-bold text-[#245fae] dark:border-signal dark:text-signal">
-                            <span aria-hidden="true">UUS</span>
-                            <span className="sr-only">Uus pärast eelmist külastust</span>
-                          </span>
-                        )}
                       </div>
                       {article.summary && <p className="mt-0.5 line-clamp-2 text-[11px] leading-4 text-[#526878] dark:text-[#8da1b0]">{article.summary}</p>}
                     </div>

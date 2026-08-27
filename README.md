@@ -32,8 +32,8 @@ võimaldab uudislugude ajaloo ja värskete Võru mõõtmiste püsivat kogumist.
   tugeva nime-, teema- ja kirjelduskattega artikli- või klipivariandid; varem
   eraldi loodud ühe artikli lood parandatakse järgmise kogumise ajal.
 - Eesti, majanduse ja spordi teemavaated koostatakse kogu saadaolevast uudiste hulgast eraldi, mitte ainult üldvaate 117 loo seast.
-- Kategooriafiltrid, otsing, loetud uudiste kohalik ajalugu, lugude uuenemise
-  märgid, kiirklahvid ja tumeda teema valik töötavad brauseris kohe.
+- Kategooriafiltrid, otsing, loetud uudiste kohalik ajalugu, kiirklahvid ja
+  tumeda teema valik töötavad brauseris kohe.
 
 Loetud artiklite ajalugu säilib selles brauseris 30 päeva ja seda saab uudislaua teaberibalt lähtestada. Kiirklahv `/` viib otsingusse ning `j` ja `k` liiguvad nähtavate uudiste vahel; fokuseeritud uudise avab tavapäraselt `Enter`.
 
