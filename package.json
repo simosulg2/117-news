@@ -14,12 +14,15 @@
     "test:ratings": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/bounded-response.test.ts tests/norstat-ratings.test.ts tests/ratings-response.test.ts tests/ratings-view-model.test.ts tests/riigikogu-layout.test.ts tests/seat-projection.test.ts tests/snapshot-cache.test.ts",
     "test:riigikogu": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/party-registry.test.ts tests/riigikogu-model.test.ts tests/riigikogu-parsers.test.ts tests/riigikogu-source-policy.test.ts",
     "test:political-finance": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/party-registry.test.ts tests/political-finance-model.test.ts tests/political-finance-parser.test.ts tests/political-finance-route.test.ts",
+    "test:schedule": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/schedule-*.test.ts",
     "check:context": "node scripts/check-context.mjs",
+    "schedule:encrypt": "node scripts/encrypt-schedule-data.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@fontsource-variable/cairo": "^5.3.0",
     "next": "^15.5.4",
+    "next-auth": "^5.0.0-beta.32",
     "ol": "^10.10.0",
     "pg": "^8.23.0",
     "react": "^19.1.1",

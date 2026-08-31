@@ -7,7 +7,8 @@ follow their direct imports. Do not preload whole feature trees.
 
 - Runtime: Next.js App Router, React, strict TypeScript, Tailwind.
 - Pages: `/` news, `/ilm` weather, `/reitingud` ratings, `/riigikogu`
-  parliament, and `/erakonnaraha` political financing.
+  parliament, `/erakonnaraha` political financing, and authenticated `/ajakava`
+  personal schedule.
 - Canonical API/type map: `docs/ai-data-contracts.md`.
 - Current political product scope: `docs/personal-terminal-roadmap.md`.
 - News collector operations: `docs/news-collector.md`.
@@ -27,7 +28,7 @@ follow their direct imports. Do not preload whole feature trees.
 - Start at `app/layout.tsx` and the affected page in `app/`.
 - Follow the page's direct component imports only.
 - Shared clock/theme/footer helpers live in `features/shell/client/`.
-- Preserve all three primary destinations and all three politics destinations.
+- Preserve all four primary destinations and all three politics destinations.
 - Politics sub-navigation lives in `features/politics/client/politics-nav.tsx`.
 
 ### News UI or behavior
@@ -101,6 +102,18 @@ follow their direct imports. Do not preload whole feature trees.
 - Tests: `tests/political-finance-*.test.ts` and
   `tests/party-registry.test.ts`.
 
+### Private schedule or authentication
+
+- Entry: `components/schedule-portal.tsx`; contract: `lib/schedule-types.ts`;
+  pure validation, Tallinn-time recurrence, and metrics:
+  `features/schedule/model/`; encrypted source: `features/schedule/server/`.
+- Page: `app/ajakava/page.tsx`; sign-in: `app/sisene/page.tsx`; Auth.js setup:
+  `auth.ts`; authorization policy and server guard: `features/auth/server/`.
+- The workbook and normalized plaintext stay outside Git. The committed
+  `data/schedule.enc.json` is AES-GCM ciphertext and may be decrypted only after
+  `requireScheduleUser()` succeeds.
+- Tests: `tests/schedule-*.test.ts`; operations: `docs/schedule.md`.
+
 ## Non-negotiable invariants
 
 - News: validate upstream hosts/redirects, bound response sizes, tolerate a
@@ -111,6 +124,10 @@ follow their direct imports. Do not preload whole feature trees.
   threshold, 101 seats, modified D'Hondt exponent `0.9`, and deterministic ties.
 - Political identities used by Riigikogu and ERJK come from
   `lib/party-registry.ts`; source aliases stay in their adapters.
+- Schedule: authenticate and authorize before decryption; fail closed on
+  missing configuration; never place plaintext schedule data, OAuth material,
+  allowlisted account IDs, session tokens, or encryption keys in Git, client
+  bundles, browser storage, URLs, logs, or fixtures.
 - API work must preserve timeouts, size limits, cache/stale behavior, safe error
   details, and `no-store` on authenticated or failure responses.
 - Do not expose `DATABASE_URL`, `NEWS_COLLECTOR_TOKEN`,
@@ -124,7 +141,7 @@ follow their direct imports. Do not preload whole feature trees.
 - One test file: `npm run test:file -- tests/<name>.test.ts`.
 - Feature suites: `npm run test:news`, `npm run test:weather`,
   `npm run test:ratings`, `npm run test:riigikogu`, or
-  `npm run test:political-finance`.
+  `npm run test:political-finance`, or `npm run test:schedule`.
 - Context guard: `npm run check:context`.
 - Before handoff: run the affected suite, `npm test`, `npm run typecheck`, and
   `npm run build`; report any command not run.

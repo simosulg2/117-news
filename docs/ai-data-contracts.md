@@ -157,6 +157,23 @@ page size are allowlisted and bounded.
 
 Validate with `npm run test:political-finance`.
 
+## Private schedule (`/ajakava`)
+
+- Contract: `lib/schedule-types.ts`.
+- Strict validation and pure time/metric logic: `features/schedule/model/`.
+- Authenticated encrypted source: `features/schedule/server/`.
+- Authentication policy and server authorization boundary: `features/auth/server/`.
+- Consumer: `components/schedule-portal.tsx`.
+
+The schedule has no public API. Require the authorized session before loading
+or decrypting data. Keep the workbook, plaintext JSON, OAuth credentials,
+allowlisted account ID, session material, and schedule key outside client code,
+logs, URLs, fixtures, and Git history. Private responses remain dynamic and
+non-cacheable; missing configuration fails closed without affecting public
+features.
+
+Validate with `npm run test:schedule`.
+
 ## Cross-cutting change rule
 
 When a public shape changes, update its canonical type, parser/producer,
