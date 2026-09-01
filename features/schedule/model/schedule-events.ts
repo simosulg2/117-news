@@ -63,6 +63,20 @@ export function groupScheduleEventsByDay(
   return grouped;
 }
 
+/** Whether a timed event has finished within its own displayed schedule day. */
+export function isScheduleEventPast(event: ScheduleEvent, minuteOfDay: number): boolean {
+  if (
+    event.startMinute === null
+    || event.endMinute === null
+    || !Number.isInteger(minuteOfDay)
+    || minuteOfDay < 0
+    || minuteOfDay > 1_439
+  ) return false;
+  // A window whose end is not after its start intentionally crosses midnight.
+  if (event.endMinute <= event.startMinute) return false;
+  return event.endMinute <= minuteOfDay;
+}
+
 export function formatScheduleMinute(minute: number): string {
   if (!Number.isInteger(minute) || minute < 0 || minute > 1_439) {
     throw new RangeError("Schedule minute must be an integer from 0 to 1439");

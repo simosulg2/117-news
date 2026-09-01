@@ -2,10 +2,11 @@ import {
   findCurrentAndNextScheduleEvent,
   getTallinnSchedulePosition,
   groupScheduleEventsByDay,
+  isScheduleEventPast,
   type ScheduleOccurrence,
 } from "@/features/schedule/model/schedule-events";
 import { buildScheduleTimelineEvents } from "@/features/schedule/model/schedule-derived-events";
-import type { ScheduleData } from "@/lib/schedule-types";
+import type { ScheduleData, ScheduleEvent } from "@/lib/schedule-types";
 
 import { ScheduleEventCard } from "./schedule-event-card";
 import {
@@ -60,6 +61,26 @@ function FocusCard({
   );
 }
 
+function TodayEventCard({
+  event,
+  past,
+  currentId,
+  nextId,
+}: {
+  event: ScheduleEvent;
+  past: boolean;
+  currentId?: string;
+  nextId?: string;
+}) {
+  return (
+    <ScheduleEventCard
+      event={event}
+      past={past}
+      state={event.id === currentId ? "current" : event.id === nextId ? "next" : undefined}
+    />
+  );
+}
+
 export function TodayView({ data, now }: TodayViewProps) {
   const timelineEvents = buildScheduleTimelineEvents(data);
   const nowTimestamp = now?.getTime() ?? null;
@@ -72,6 +93,13 @@ export function TodayView({ data, now }: TodayViewProps) {
       && focus.next
       && getTallinnSchedulePosition(focus.next.startTimestamp).localDate === position.localDate,
   );
+  const pastEvents = position
+    ? events.filter((event) => isScheduleEventPast(event, position.minuteOfDay))
+    : [];
+  const pastIds = new Set(pastEvents.map((event) => event.id));
+  const remainingEvents = events.filter((event) => !pastIds.has(event.id));
+  const currentId = focus.current?.event.id;
+  const nextId = nextIsToday ? focus.next?.event.id : undefined;
 
   return (
     <div>
@@ -106,17 +134,49 @@ export function TodayView({ data, now }: TodayViewProps) {
             Tallinna aja määramine…
           </p>
         ) : events.length ? (
-          <div className="mt-3 grid gap-2 md:grid-cols-2 xl:grid-cols-3">
-            {events.map((event) => (
-              <ScheduleEventCard
-                key={event.id}
-                event={event}
-                state={focus.current?.event.id === event.id
-                  ? "current"
-                  : nextIsToday && focus.next?.event.id === event.id ? "next" : undefined}
-              />
-            ))}
-          </div>
+          <>
+            <div className="mt-3 hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-3">
+              {events.map((event) => (
+                <TodayEventCard
+                  key={event.id}
+                  event={event}
+                  past={pastIds.has(event.id)}
+                  currentId={currentId}
+                  nextId={nextId}
+                />
+              ))}
+            </div>
+            <div className="mt-3 grid gap-2 md:hidden">
+              {pastEvents.length > 0 && (
+                <details className="group border border-[#bdc9d1] bg-[#eef1f3] dark:border-[#29485f] dark:bg-[#0a151d]">
+                  <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-3 text-xs font-black text-[#65737c] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal dark:text-[#82939e]">
+                    <span>Möödunud · {pastEvents.length}</span>
+                    <span aria-hidden="true" className="text-lg transition-transform group-open:rotate-45">+</span>
+                  </summary>
+                  <div className="grid gap-2 border-t border-[#c8d0d5] p-2 dark:border-[#263946]">
+                    {pastEvents.map((event) => (
+                      <TodayEventCard
+                        key={event.id}
+                        event={event}
+                        past
+                        currentId={currentId}
+                        nextId={nextId}
+                      />
+                    ))}
+                  </div>
+                </details>
+              )}
+              {remainingEvents.map((event) => (
+                <TodayEventCard
+                  key={event.id}
+                  event={event}
+                  past={false}
+                  currentId={currentId}
+                  nextId={nextId}
+                />
+              ))}
+            </div>
+          </>
         ) : (
           <p className="mt-3 border border-dashed border-[#9fb2c0] p-5 text-sm text-[#617786] dark:border-[#35536a] dark:text-[#9bb0bf]">
             Tänaseks pole ajastatud tegevusi.

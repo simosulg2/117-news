@@ -10,23 +10,29 @@ type ScheduleEventCardProps = {
   event: ScheduleEvent;
   state?: "current" | "next";
   compact?: boolean;
+  past?: boolean;
 };
 
 export function ScheduleEventCard({
   event,
   state,
   compact = false,
+  past = false,
 }: ScheduleEventCardProps) {
   const Heading = compact ? "h4" : "h3";
 
   return (
     <article
-      className={`border border-l-4 border-[#bdc9d1] bg-white ${CATEGORY_ACCENTS[event.category]} ${
+      aria-label={past ? `Möödunud: ${event.title}` : undefined}
+      className={`border border-l-4 ${past
+        ? "border-[#c3cbd1] bg-[#edf0f2] grayscale dark:border-[#263946] dark:bg-[#0a151d]"
+        : `border-[#bdc9d1] bg-white ${CATEGORY_ACCENTS[event.category]} dark:border-y-[#29485f] dark:border-r-[#29485f] dark:bg-[#0b1b29]`
+      } ${
         compact ? "p-2.5" : "p-3"
-      } dark:border-y-[#29485f] dark:border-r-[#29485f] dark:bg-[#0b1b29]`}
+      }`}
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="tabular-nums text-[11px] font-black text-[#245fae] dark:text-signal">
+        <p className={`tabular-nums text-[11px] font-black ${past ? "text-[#75838c] dark:text-[#748895]" : "text-[#245fae] dark:text-signal"}`}>
           {formatScheduleWindow(event)}
         </p>
         <div className="flex flex-wrap justify-end gap-1">
@@ -40,7 +46,7 @@ export function ScheduleEventCard({
           </span>
         </div>
       </div>
-      <Heading className={`${compact ? "mt-1 text-xs" : "mt-1.5 text-sm"} font-black leading-snug text-[#172634] dark:text-[#edf4f8]`}>
+      <Heading className={`${compact ? "mt-1 text-xs" : "mt-1.5 text-sm"} font-black leading-snug ${past ? "text-[#65737c] dark:text-[#82939e]" : "text-[#172634] dark:text-[#edf4f8]"}`}>
         {event.title}
       </Heading>
       {event.detail && (

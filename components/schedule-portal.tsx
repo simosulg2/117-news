@@ -4,10 +4,10 @@ import { useState } from "react";
 
 import { BalanceView } from "@/features/schedule/client/balance-view";
 import { RoutinesView } from "@/features/schedule/client/routines-view";
+import { ScheduleCompactHeader } from "@/features/schedule/client/schedule-compact-header";
 import { ScheduleEditor } from "@/features/schedule/client/schedule-editor";
 import type { ScheduleEditorSection } from "@/features/schedule/client/schedule-editor-helpers";
 import {
-  ScheduleInvitePanel,
   type CreateScheduleInviteResult,
   type ScheduleInviteItem,
 } from "@/features/schedule/client/schedule-invite-panel";
@@ -124,33 +124,16 @@ export function SchedulePortal({
           />
         ) : (
           <>
-            <header className="mb-5 border border-[#aebcc6] bg-white p-4 shadow-[4px_4px_0_#c8d4dc] dark:border-[#29485f] dark:bg-[#0b1b29] dark:shadow-[4px_4px_0_#102538] sm:p-5">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#245fae] dark:text-signal">117.ee · Privaatne töölaud</p>
-                  <h1 className="mt-2 text-2xl font-black tracking-tight text-[#101a24] dark:text-[#edf4f8] sm:text-3xl">{schedule.title}</h1>
-                  <p className="mt-2 max-w-3xl text-sm leading-6 text-[#526878] dark:text-[#9bb0bf]">{schedule.subtitle}</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditing(true)}
-                  className="min-h-10 shrink-0 border border-[#245fae] bg-[#245fae] px-4 text-[11px] font-black text-white outline-none hover:bg-[#174b8d] focus-visible:ring-2 focus-visible:ring-signal dark:border-signal dark:bg-signal dark:text-[#07131f]"
-                >
-                  {activeTab === "routines"
-                    ? "Muuda rutiine"
-                    : activeTab === "balance" ? "Muuda tasakaalu" : "Muuda plaani"}
-                </button>
-              </div>
-              {canInvite && (
-                <div className="mt-4 border-t border-[#d5dee4] pt-4 dark:border-[#263d50]">
-                  <ScheduleInvitePanel
-                    initialInvites={initialInvites}
-                    onCreateInvite={onCreateInvite}
-                    onRevokeInvite={onRevokeInvite}
-                  />
-                </div>
-              )}
-            </header>
+            <ScheduleCompactHeader
+              title={schedule.title}
+              subtitle={schedule.subtitle}
+              activeTab={activeTab}
+              canInvite={canInvite}
+              initialInvites={initialInvites}
+              onCreateInvite={onCreateInvite}
+              onRevokeInvite={onRevokeInvite}
+              onEdit={() => setEditing(true)}
+            />
 
             <ScheduleTabs activeTab={activeTab} onChange={setActiveTab} />
             <ScheduleTabPanel tab={activeTab}>

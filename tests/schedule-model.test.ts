@@ -7,6 +7,7 @@ import {
   formatScheduleWindow,
   getTallinnSchedulePosition,
   groupScheduleEventsByDay,
+  isScheduleEventPast,
   sortScheduleEvents,
 } from "../features/schedule/model/schedule-events.ts";
 import {
@@ -281,6 +282,14 @@ test("sorts and groups events deterministically without mutating input", () => {
     "earlier-a", "earlier-b", "later", "flex",
   ]);
   assert.deepEqual(grouped[7], []);
+});
+
+test("marks only completed same-day timed events as past", () => {
+  assert.equal(isScheduleEventPast(event("ended", 1, 480, 540), 540), true);
+  assert.equal(isScheduleEventPast(event("active", 1, 480, 540), 539), false);
+  assert.equal(isScheduleEventPast(event("flexible", 1, null, null), 1_000), false);
+  assert.equal(isScheduleEventPast(event("overnight", 1, 1_380, 420), 1_439), false);
+  assert.equal(isScheduleEventPast(event("ended", 1, 480, 540), -1), false);
 });
 
 test("formats minute and event windows consistently", () => {
