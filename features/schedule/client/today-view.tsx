@@ -107,7 +107,8 @@ export function TodayView({ data, now }: TodayViewProps) {
             </h2>
           </div>
           <span className="text-[10px] font-black uppercase tracking-[0.06em] text-[#617786] dark:text-[#7890a2]">
-            Praegu ja hiljem · {remainingEvents.length}
+            <span className="md:hidden">Praegu ja hiljem · {remainingEvents.length}</span>
+            <span className="hidden md:inline">Kokku · {events.length}</span>
           </span>
         </div>
 
@@ -116,35 +117,48 @@ export function TodayView({ data, now }: TodayViewProps) {
             Tallinna aja määramine…
           </p>
         ) : events.length ? (
-          <div className="mt-2 grid gap-2">
-            {pastEvents.length > 0 && (
-              <details className="group border border-[#bdc9d1] bg-[#eef1f3] dark:border-[#29485f] dark:bg-[#0a151d]">
-                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 text-[10px] font-black uppercase tracking-[0.06em] text-[#65737c] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal dark:text-[#82939e]">
-                  <span>Möödunud · {pastEvents.length}</span>
-                  <span aria-hidden="true" className="text-base transition-transform group-open:rotate-45">+</span>
-                </summary>
-                <div className="grid grid-cols-2 gap-1.5 border-t border-[#c8d0d5] p-2 dark:border-[#263946] sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-                  {pastEvents.map((event) => (
-                    <ScheduleCompactEvent key={event.id} event={event} past />
+          <div className="mt-2">
+            <div className="hidden gap-1.5 md:grid md:grid-cols-4 lg:grid-cols-6">
+              {events.map((event) => (
+                <ScheduleCompactEvent
+                  key={event.id}
+                  event={event}
+                  past={pastIds.has(event.id)}
+                  state={event.id === currentId ? "current" : event.id === nextId ? "next" : undefined}
+                />
+              ))}
+            </div>
+
+            <div className="grid gap-2 md:hidden">
+              {pastEvents.length > 0 && (
+                <details className="group border border-[#bdc9d1] bg-[#eef1f3] dark:border-[#29485f] dark:bg-[#0a151d]">
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 text-[10px] font-black uppercase tracking-[0.06em] text-[#65737c] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal dark:text-[#82939e]">
+                    <span>Möödunud · {pastEvents.length}</span>
+                    <span aria-hidden="true" className="text-base transition-transform group-open:rotate-45">+</span>
+                  </summary>
+                  <div className="grid grid-cols-2 gap-1.5 border-t border-[#c8d0d5] p-2 dark:border-[#263946] sm:grid-cols-3">
+                    {pastEvents.map((event) => (
+                      <ScheduleCompactEvent key={event.id} event={event} past />
+                    ))}
+                  </div>
+                </details>
+              )}
+              {remainingEvents.length ? (
+                <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                  {remainingEvents.map((event) => (
+                    <ScheduleCompactEvent
+                      key={event.id}
+                      event={event}
+                      state={event.id === currentId ? "current" : event.id === nextId ? "next" : undefined}
+                    />
                   ))}
                 </div>
-              </details>
-            )}
-            {remainingEvents.length ? (
-              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-                {remainingEvents.map((event) => (
-                  <ScheduleCompactEvent
-                    key={event.id}
-                    event={event}
-                    state={event.id === currentId ? "current" : event.id === nextId ? "next" : undefined}
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="border border-dashed border-[#9fb2c0] px-3 py-2.5 text-xs text-[#617786] dark:border-[#35536a] dark:text-[#9bb0bf]">
-                Tänaseks rohkem tegevusi pole.
-              </p>
-            )}
+              ) : (
+                <p className="border border-dashed border-[#9fb2c0] px-3 py-2.5 text-xs text-[#617786] dark:border-[#35536a] dark:text-[#9bb0bf]">
+                  Tänaseks rohkem tegevusi pole.
+                </p>
+              )}
+            </div>
           </div>
         ) : (
           <p className="mt-2 border border-dashed border-[#9fb2c0] p-5 text-sm text-[#617786] dark:border-[#35536a] dark:text-[#9bb0bf]">
