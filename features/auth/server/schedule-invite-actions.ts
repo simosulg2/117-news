@@ -18,6 +18,10 @@ import {
 } from "@/features/auth/server/schedule-invite-store.server";
 
 import { setPendingScheduleInviteToken } from "./schedule-invite-cookie.server";
+import {
+  setPendingScheduleSessionPreference,
+  wantsRememberedScheduleSession,
+} from "./schedule-session-preference.server";
 
 export type InviteActionResult =
   | Readonly<{ ok: true; id: string; token: string; expiresAt: string }>
@@ -34,6 +38,9 @@ export async function beginInvitedGithubSignIn(formData: FormData): Promise<void
     redirect(`${SCHEDULE_SIGN_IN_PATH}?error=Configuration`);
   }
   if (!available) redirect(`${SCHEDULE_SIGN_IN_PATH}?error=InvalidInvite`);
+  await setPendingScheduleSessionPreference(
+    wantsRememberedScheduleSession(formData.get("remember")),
+  );
   await setPendingScheduleInviteToken(token);
   await signIn("github", { redirectTo: SCHEDULE_PATH });
 }

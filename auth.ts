@@ -8,7 +8,12 @@ import {
   getScheduleAuthState,
 } from "@/features/auth/server/schedule-auth-policy";
 import { takePendingScheduleInviteToken } from "@/features/auth/server/schedule-invite-cookie.server";
-import { applyScheduleAccessToToken } from "@/features/auth/server/schedule-session-token";
+import { takePendingScheduleSessionPreference } from "@/features/auth/server/schedule-session-preference.server";
+import {
+  applyScheduleAccessToToken,
+  beginScheduleSession,
+  refreshScheduleSession,
+} from "@/features/auth/server/schedule-session-token";
 import {
   authorizeScheduleSignIn,
   findScheduleUserByProviderAccountId,
@@ -30,8 +35,8 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
   },
   session: {
     strategy: "jwt",
-    maxAge: 8 * 60 * 60,
-    updateAge: 60 * 60,
+    maxAge: 30 * 24 * 60 * 60,
+    updateAge: 24 * 60 * 60,
   },
   trustHost: process.env.NODE_ENV !== "production"
     || process.env.AUTH_TRUST_HOST === "true",
@@ -53,6 +58,18 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       }
     },
     async jwt({ token, account }) {
+      if (account?.provider === "github") {
+        let remembered = false;
+        try {
+          remembered = await takePendingScheduleSessionPreference();
+        } catch {
+          // Missing preference fails safely to the short session.
+        }
+        beginScheduleSession(token, remembered);
+      } else if (!refreshScheduleSession(token)) {
+        return null;
+      }
+
       let access: ScheduleUserAccess | null = null;
       try {
         access = account?.provider === "github"

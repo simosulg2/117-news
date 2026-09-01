@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 type GithubSignInFormProps = Readonly<{
   configured: boolean;
-  onStandardSignIn: () => Promise<void>;
+  onStandardSignIn: (formData: FormData) => Promise<void>;
   onInvitedSignIn: (formData: FormData) => Promise<void>;
 }>;
 
@@ -40,6 +40,18 @@ export function GithubSignInForm({
         className="mt-5"
       >
         {invite && <input type="hidden" name="invite" value={invite} />}
+        <label className="mb-3 flex min-h-11 cursor-pointer items-center gap-3 border border-[#c5d0d7] bg-[#f6f8f9] px-3 text-xs font-semibold text-[#526878] dark:border-[#263d50] dark:bg-[#0d2030] dark:text-[#9bb0bf]">
+          <input
+            type="checkbox"
+            name="remember"
+            value="1"
+            className="size-4 shrink-0 accent-[#245fae]"
+          />
+          <span>
+            Jää sisselogituks
+            <span className="font-normal text-[#6f8493] dark:text-[#7890a2]"> (30 päeva tegevusetust)</span>
+          </span>
+        </label>
         <button
           type="submit"
           disabled={!configured || !ready}

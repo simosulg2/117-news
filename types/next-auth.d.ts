@@ -14,5 +14,7 @@ declare module "next-auth/jwt" {
   interface JWT {
     scheduleUserId?: string;
     scheduleIsAdmin?: boolean;
+    scheduleSessionMode?: "short" | "remembered";
+    scheduleSessionExpiresAt?: number;
   }
 }

@@ -8,6 +8,10 @@ import { SignInThemeToggle } from "@/app/sisene/sign-in-theme-toggle";
 import { beginInvitedGithubSignIn } from "@/features/auth/server/schedule-invite-actions";
 import { clearPendingScheduleInviteToken } from "@/features/auth/server/schedule-invite-cookie.server";
 import {
+  setPendingScheduleSessionPreference,
+  wantsRememberedScheduleSession,
+} from "@/features/auth/server/schedule-session-preference.server";
+import {
   getScheduleAuthState,
   SCHEDULE_PATH,
   SCHEDULE_SIGN_IN_PATH,
@@ -42,12 +46,15 @@ function errorMessage(error: string | string[] | undefined): string | null {
   return error ? "Sisselogimine ei õnnestunud. Proovi uuesti." : null;
 }
 
-async function beginGithubSignIn() {
+async function beginGithubSignIn(formData: FormData) {
   "use server";
 
   if (!getScheduleAuthState(process.env).configured) {
     redirect(`${SCHEDULE_SIGN_IN_PATH}?error=Configuration`);
   }
+  await setPendingScheduleSessionPreference(
+    wantsRememberedScheduleSession(formData.get("remember")),
+  );
   await clearPendingScheduleInviteToken();
   await signIn("github", { redirectTo: SCHEDULE_PATH });
 }
@@ -115,7 +122,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
               Ajakava on töölaua privaatne osa. Jätkamiseks logi sisse lubatud GitHubi kontoga või ava enne saadud kutselink.
             </p>
             <div className="mt-7 grid gap-px border border-[#c5d0d7] bg-[#c5d0d7] text-xs dark:border-[#263d50] dark:bg-[#263d50] sm:grid-cols-3">
-              {["Krüptitud seanss", "Kutsepõhised kontod", "8-tunnine seanss"].map((label) => (
+              {["Krüptitud seanss", "Kutsepõhised kontod", "Valitav püsi-login"].map((label) => (
                 <span key={label} className="bg-[#f6f8f9] px-3 py-2 font-semibold text-[#526878] dark:bg-[#0d2030] dark:text-[#8da1b0]">
                   {label}
                 </span>

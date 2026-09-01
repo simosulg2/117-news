@@ -39,6 +39,11 @@ The sign-in flow accepts only GitHub, fixes the post-login destination to
 GitHub provider ID is used only by the server-side account mapping. Only an
 opaque internal user ID is carried in the authenticated session; authentication
 and invitation tokens are never placed in browser storage or schedule data.
+The sign-in form defaults to an eight-hour session. Its optional
+`Jää sisselogituks` choice uses a rolling 30-day idle lifetime. Explicit
+sign-out, disabling the stored account, or rotating `AUTH_SECRET` still removes
+access without introducing a permanent bearer credential. The OAuth round trip
+carries this choice only in a short-lived HttpOnly cookie.
 
 ## Accounts and invitations
 
