@@ -33,7 +33,6 @@ export type SchoolPeriod = {
   period: string;
   timeWindow: string;
   subjectEt: string;
-  subjectEn: string;
   note: string;
 };
 

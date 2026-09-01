@@ -1,25 +1,25 @@
 import { deriveWeeklyMetricPercentages } from "@/features/schedule/model/schedule-metrics";
 import type { ScheduleData } from "@/lib/schedule-types";
 
-import { formatHours } from "./schedule-formatters";
+import { formatHours, formatPercentage } from "./schedule-formatters";
 
 export function BalanceView({ data }: { data: ScheduleData }) {
   const breakdown = deriveWeeklyMetricPercentages(data.metrics);
   return (
     <div>
       <div className="border-b border-[#aebcc6] pb-3 dark:border-[#29485f]">
-        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#245fae] dark:text-signal">Nädala jaotus</p>
+        <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#245fae] dark:text-signal">Ligikaudne nädalajaotus</p>
         <h2 className="mt-1 text-2xl font-black text-[#172634] dark:text-[#edf4f8]">Tasakaal</h2>
-        <p className="mt-1 text-xs text-[#617786] dark:text-[#8da1b0]">Planeeritud valdkondade osakaal ja tunnid.</p>
+        <p className="mt-1 text-xs text-[#617786] dark:text-[#8da1b0]">Suunav ülevaade, mitte kohustuslik eesmärk.</p>
       </div>
 
       <div className="mt-4 border border-[#aebcc6] bg-white dark:border-[#29485f] dark:bg-[#0b1b29]">
         <div className="flex items-end justify-between gap-3 border-b border-[#bdc9d1] bg-[#dfe8ee] px-4 py-3 dark:border-[#29485f] dark:bg-[#102538]">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#617786] dark:text-[#8da1b0]">Kokku kaardistatud</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.1em] text-[#617786] dark:text-[#8da1b0]">Nädalas kokku</p>
             <p className="mt-1 text-2xl font-black tabular-nums text-[#172634] dark:text-[#edf4f8]">{formatHours(breakdown.totalHours)}</p>
           </div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#617786] dark:text-[#7890a2]">100% valitud mõõdikutest</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#617786] dark:text-[#7890a2]">Ligikaudne ajakasutus</p>
         </div>
 
         {breakdown.metrics.length ? (
@@ -33,7 +33,7 @@ export function BalanceView({ data }: { data: ScheduleData }) {
                   </div>
                   <div className="shrink-0 text-right">
                     <p className="text-sm font-black tabular-nums text-[#174b8d] dark:text-signal">{formatHours(metric.hours)}</p>
-                    <p className="text-[10px] font-bold tabular-nums text-[#617786] dark:text-[#7890a2]">{metric.percentage}%</p>
+                    <p className="text-[10px] font-bold tabular-nums text-[#617786] dark:text-[#7890a2]">{formatPercentage(metric.percentage)}</p>
                   </div>
                 </div>
                 <div className="mt-3 h-2.5 border border-[#9fb2c0] bg-[#e5ecef] dark:border-[#35536a] dark:bg-[#102538]" aria-hidden="true">

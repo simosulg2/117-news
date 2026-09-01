@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Sisene ajakavasse · 117.ee",
-  description: "Privaatse 117.ee ajakava turvaline sisselogimine.",
+  description: "Turvaline sisselogimine 117.ee privaatsesse ajakavasse.",
   robots: {
     index: false,
     follow: false,
@@ -102,13 +102,13 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
               117.ee · Ajakava
             </p>
             <h1 className="mt-3 text-3xl font-black tracking-tight text-[#101a24] dark:text-[#edf4f8]">
-              Sinu päev, ainult sulle.
+              Sinu päev. Ainult sulle.
             </h1>
             <p className="mt-4 max-w-xl text-sm leading-6 text-[#526878] dark:text-[#9bb0bf]">
-              Ajakava on privaatne osa töölaust. Jätkamiseks kinnita oma isik lubatud GitHubi kontoga.
+              Ajakava on töölaua privaatne osa. Jätkamiseks logi sisse lubatud GitHubi kontoga.
             </p>
             <div className="mt-7 grid gap-px border border-[#c5d0d7] bg-[#c5d0d7] text-xs dark:border-[#263d50] dark:bg-[#263d50] sm:grid-cols-3">
-              {["Krüpteeritud seanss", "Üks lubatud konto", "8 h seanss"].map((label) => (
+              {["Krüptitud seanss", "Üks lubatud konto", "8-tunnine seanss"].map((label) => (
                 <span key={label} className="bg-[#f6f8f9] px-3 py-2 font-semibold text-[#526878] dark:bg-[#0d2030] dark:text-[#8da1b0]">
                   {label}
                 </span>
@@ -132,11 +132,11 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
                 className="flex min-h-11 w-full items-center justify-center gap-3 border border-[#102538] bg-[#102538] px-4 text-sm font-bold text-white outline-none hover:border-[#245fae] hover:bg-[#17344d] focus-visible:ring-2 focus-visible:ring-signal disabled:cursor-not-allowed disabled:opacity-45 dark:border-[#58768b]"
               >
                 <span aria-hidden="true" className="border border-[#58768b] px-1.5 py-0.5 text-[10px] tracking-wider">GH</span>
-                Sisene GitHubiga
+                Logi GitHubi kaudu sisse
               </button>
             </form>
             <p className="mt-4 text-[11px] leading-5 text-[#526878] dark:text-[#7890a2]">
-              Kasutame GitHubi ainult konto tuvastamiseks. Teenuse ligipääsutokenit kasutajaliidesele ei väljastata.
+              GitHubi kasutatakse ainult sinu konto tuvastamiseks. Me ei küsi juurdepääsu sinu repositooriumidele.
             </p>
           </div>
         </section>

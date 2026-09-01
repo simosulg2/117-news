@@ -161,7 +161,7 @@ function event(value: unknown, path: string): ScheduleEvent {
 
 function schoolPeriod(value: unknown, path: string): SchoolPeriod {
   const item = record(value, path, [
-    "id", "day", "period", "timeWindow", "subjectEt", "subjectEn", "note",
+    "id", "day", "period", "timeWindow", "subjectEt", "note",
   ]);
   return {
     id: id(item.id, `${path}.id`),
@@ -169,7 +169,6 @@ function schoolPeriod(value: unknown, path: string): SchoolPeriod {
     period: text(item.period, `${path}.period`, 32),
     timeWindow: text(item.timeWindow, `${path}.timeWindow`),
     subjectEt: text(item.subjectEt, `${path}.subjectEt`),
-    subjectEn: text(item.subjectEn, `${path}.subjectEn`),
     note: text(item.note, `${path}.note`, SCHEDULE_DATA_LIMITS.detailLength, true),
   };
 }

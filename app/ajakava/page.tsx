@@ -13,7 +13,7 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Ajakava · 117.ee",
-  description: "Privaatne päevade ja nädala ajakava.",
+  description: "Privaatne päeva- ja nädalaplaan.",
   robots: {
     index: false,
     follow: false,

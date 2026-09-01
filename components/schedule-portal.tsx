@@ -11,7 +11,6 @@ import {
   type ScheduleTab,
 } from "@/features/schedule/client/schedule-tabs";
 import { SchoolView } from "@/features/schedule/client/school-view";
-import { StudyView } from "@/features/schedule/client/study-view";
 import { TodayView } from "@/features/schedule/client/today-view";
 import { WeekView } from "@/features/schedule/client/week-view";
 import { useClock } from "@/features/shell/client/use-clock";
@@ -38,7 +37,6 @@ function ActiveView({
     case "week": return <WeekView data={data} now={now} />;
     case "school": return <SchoolView data={data} />;
     case "routines": return <RoutinesView data={data} />;
-    case "study": return <StudyView data={data} />;
     case "balance": return <BalanceView data={data} />;
   }
 }
@@ -68,12 +66,14 @@ export function SchedulePortal({ data, canSignOut, onSignOut }: SchedulePortalPr
               </div>
               <dl className="grid grid-cols-3 gap-px border border-[#c5d0d7] bg-[#c5d0d7] text-center dark:border-[#263d50] dark:bg-[#263d50]">
                 <div className="bg-[#f6f8f9] px-3 py-2 dark:bg-[#0d2030]">
-                  <dt className="text-[9px] font-black uppercase tracking-[0.08em] text-[#617786] dark:text-[#7890a2]">Päevi</dt>
-                  <dd className="mt-0.5 text-sm font-black text-[#172634] dark:text-[#edf4f8]">7</dd>
+                  <dt className="text-[9px] font-black uppercase tracking-[0.08em] text-[#617786] dark:text-[#7890a2]">Koolipäevi</dt>
+                  <dd className="mt-0.5 text-sm font-black text-[#172634] dark:text-[#edf4f8]">5</dd>
                 </div>
                 <div className="bg-[#f6f8f9] px-3 py-2 dark:bg-[#0d2030]">
-                  <dt className="text-[9px] font-black uppercase tracking-[0.08em] text-[#617786] dark:text-[#7890a2]">Tegevusi</dt>
-                  <dd className="mt-0.5 text-sm font-black tabular-nums text-[#172634] dark:text-[#edf4f8]">{data.events.length}</dd>
+                  <dt className="text-[9px] font-black uppercase tracking-[0.08em] text-[#617786] dark:text-[#7890a2]">Ainetunde</dt>
+                  <dd className="mt-0.5 text-sm font-black tabular-nums text-[#172634] dark:text-[#edf4f8]">
+                    {data.schoolPeriods.filter((period) => period.period !== "Lõunapaus").length}
+                  </dd>
                 </div>
                 <div className="bg-[#f6f8f9] px-3 py-2 dark:bg-[#0d2030]">
                   <dt className="text-[9px] font-black uppercase tracking-[0.08em] text-[#617786] dark:text-[#7890a2]">Ajavöönd</dt>

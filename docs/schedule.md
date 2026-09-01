@@ -17,6 +17,8 @@ Configure these runtime-only values:
 - `AUTH_GITHUB_ID`: GitHub OAuth client ID.
 - `AUTH_GITHUB_SECRET`: GitHub OAuth client secret.
 - `AUTH_TRUST_HOST=true`: trust the HTTPS host forwarded by Coolify.
+- `AUTH_URL=https://117.ee`: force Auth.js to use the public production origin
+  instead of Coolify's internal `localhost:3000` origin after OAuth returns.
 - `SCHEDULE_ALLOWED_GITHUB_ID`: immutable numeric ID of the one allowed GitHub
   account. The public GitHub user API returns it as `id`; do not use a mutable
   username or email address.
@@ -24,7 +26,8 @@ Configure these runtime-only values:
 
 The local `.env.local` created with the initial payload contains the current
 `AUTH_SECRET` and `SCHEDULE_DATA_KEY`. Copy those two values into Coolify, fill
-in the GitHub values, and do not set `SCHEDULE_DEV_BYPASS` in production.
+in the GitHub values, set the production `AUTH_URL`, and do not set
+`SCHEDULE_DEV_BYPASS` in production.
 
 The sign-in flow accepts only GitHub, fixes the post-login destination to
 `/ajakava`, and rechecks the current allowlist at the server data boundary.
@@ -41,9 +44,11 @@ npm run schedule:encrypt -- "C:\private\schedule.json"
 Remove-Item Env:SCHEDULE_DATA_KEY
 ```
 
-When normalizing the workbook, use exact windows from the school, routine, and
-study sheets—and exact times embedded in master cells—as the authority. The
-master sheet's broader row window is only a layout bucket when those differ.
+When normalizing the workbook, use exact windows from the school and routine
+sheets—and exact times embedded in master cells—as the authority. The master
+sheet's broader row window is only a layout bucket when those differ. Keep all
+user-facing schedule copy in Estonian and treat the dedicated study-plan view
+as intentionally disabled.
 
 The command replaces `data/schedule.enc.json` with authenticated AES-256-GCM
 ciphertext. Inspect and validate the private JSON before encrypting it. Never

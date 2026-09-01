@@ -2,14 +2,13 @@
 
 import { useRef, type KeyboardEvent } from "react";
 
-export type ScheduleTab = "today" | "week" | "school" | "routines" | "study" | "balance";
+export type ScheduleTab = "today" | "week" | "school" | "routines" | "balance";
 
 const TABS: ReadonlyArray<{ id: ScheduleTab; label: string }> = [
   { id: "today", label: "Täna" },
   { id: "week", label: "Nädal" },
   { id: "school", label: "Kool" },
   { id: "routines", label: "Rutiinid" },
-  { id: "study", label: "Õppimine" },
   { id: "balance", label: "Tasakaal" },
 ];
 

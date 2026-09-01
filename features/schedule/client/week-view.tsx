@@ -2,6 +2,7 @@ import {
   findCurrentAndNextScheduleEvent,
   getTallinnSchedulePosition,
   groupScheduleEventsByDay,
+  sortScheduleEvents,
 } from "@/features/schedule/model/schedule-events";
 import type { ScheduleData, ScheduleDay, ScheduleEvent } from "@/lib/schedule-types";
 
@@ -39,16 +40,47 @@ function DayEvents({
   if (!events.length) {
     return <p className="p-3 text-[11px] text-[#526878] dark:text-[#7890a2]">Vaba päev</p>;
   }
+
+  const schoolEvents = events.filter((event) => event.id.startsWith("school-"));
+  const classEvents = schoolEvents.filter((event) => event.category === "school");
+  const subjectCounts = new Map<string, number>();
+  for (const event of classEvents) {
+    subjectCounts.set(event.title, (subjectCounts.get(event.title) ?? 0) + 1);
+  }
+  const schoolSummary: ScheduleEvent | null = schoolEvents.length && classEvents.length
+    ? {
+        id: `school-summary-${classEvents[0].day}`,
+        day: classEvents[0].day,
+        startMinute: Math.min(...schoolEvents.map((event) => event.startMinute ?? 1_439)),
+        endMinute: Math.max(...schoolEvents.map((event) => event.endMinute ?? 0)),
+        title: "Kool",
+        detail: [...subjectCounts]
+          .map(([subject, count]) => count > 1 ? `${subject} ×${count}` : subject)
+          .join(" · "),
+        category: "school",
+      }
+    : null;
+  const displayEvents = sortScheduleEvents([
+    ...events.filter((event) => !event.id.startsWith("school-")),
+    ...(schoolSummary ? [schoolSummary] : []),
+  ]);
+  const schoolIds = new Set(schoolEvents.map((event) => event.id));
+
   return (
     <div className="grid gap-2 p-2">
-      {events.map((event) => (
-        <ScheduleEventCard
-          key={event.id}
-          event={event}
-          compact
-          state={event.id === currentId ? "current" : event.id === nextId ? "next" : undefined}
-        />
-      ))}
+      {displayEvents.map((event) => {
+        const summarizedSchool = event.id.startsWith("school-summary-");
+        const isCurrent = summarizedSchool ? schoolIds.has(currentId ?? "") : event.id === currentId;
+        const isNext = summarizedSchool ? schoolIds.has(nextId ?? "") : event.id === nextId;
+        return (
+          <ScheduleEventCard
+            key={event.id}
+            event={event}
+            compact
+            state={isCurrent ? "current" : isNext ? "next" : undefined}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -63,7 +95,7 @@ export function WeekView({ data, now }: WeekViewProps) {
       <div className="border-b border-[#aebcc6] pb-3 dark:border-[#29485f]">
         <p className="text-[10px] font-black uppercase tracking-[0.14em] text-[#245fae] dark:text-signal">Nädal korraga</p>
         <h2 className="mt-1 text-2xl font-black text-[#172634] dark:text-[#edf4f8]">Nädalaplaan</h2>
-        <p className="mt-1 text-xs text-[#617786] dark:text-[#8da1b0]">Ajad on Europe/Tallinn ajavööndis.</p>
+        <p className="mt-1 text-xs text-[#617786] dark:text-[#8da1b0]">Kõik kellaajad on Tallinna ajas.</p>
       </div>
 
       <div className="mt-4 grid gap-3 xl:hidden">

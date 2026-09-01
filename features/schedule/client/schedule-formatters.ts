@@ -23,7 +23,7 @@ export const CATEGORY_LABELS: Record<ScheduleCategory, string> = {
   meals: "Söök",
   free: "Vaba aeg",
   sleep: "Uni",
-  commute: "Sõit",
+  commute: "Teekond",
 };
 
 export const CATEGORY_ACCENTS: Record<ScheduleCategory, string> = {
@@ -79,6 +79,10 @@ export function formatOccurrence(timestamp: number): string {
 
 export function formatHours(hours: number): string {
   return `${decimalFormatter.format(hours)} h`;
+}
+
+export function formatPercentage(percentage: number): string {
+  return `${decimalFormatter.format(percentage)}%`;
 }
 
 export function formatUntil(timestamp: number, nowTimestamp: number): string {

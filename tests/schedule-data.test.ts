@@ -33,7 +33,6 @@ function sampleData(overrides: Record<string, unknown> = {}): Record<string, unk
       period: "P1",
       timeWindow: "08:00–08:45",
       subjectEt: "Aine A",
-      subjectEn: "Subject A",
       note: "",
     }],
     routines: [{

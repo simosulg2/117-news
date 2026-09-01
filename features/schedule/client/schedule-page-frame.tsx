@@ -45,7 +45,7 @@ export function SchedulePageFrame({
             onToggleTheme={onToggleTheme}
           />
           <div className="flex min-h-9 items-center justify-between gap-3 border-x border-[#263d50] px-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-[#7890a2]">
-            <span>Europe/Tallinn · privaatne vaade</span>
+            <span>Tallinna aeg · privaatne vaade</span>
             {canSignOut ? (
               <form action={onSignOut}>
                 <button
@@ -65,7 +65,7 @@ export function SchedulePageFrame({
       {children}
 
       <PageFooter label="Privaatne ajakava">
-        Europe/Tallinn · Seda vaadet ei indekseerita
+        Tallinna aeg · Seda vaadet ei indekseerita
       </PageFooter>
     </div>
   );
