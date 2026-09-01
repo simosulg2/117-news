@@ -115,9 +115,6 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#245fae] dark:text-signal">
               117.ee · Ajakava
             </p>
-            <h1 className="mt-3 text-3xl font-black tracking-tight text-[#101a24] dark:text-[#edf4f8]">
-              Sinu päev. Ainult sulle.
-            </h1>
             <p className="mt-4 max-w-xl text-sm leading-6 text-[#526878] dark:text-[#9bb0bf]">
               Ajakava on töölaua privaatne osa. Jätkamiseks logi sisse lubatud GitHubi kontoga või ava enne saadud kutselink.
             </p>
