@@ -8,6 +8,10 @@ import {
   groupScheduleEventsByDay,
   sortScheduleEvents,
 } from "@/features/schedule/model/schedule-events";
+import {
+  buildScheduleTimelineEvents,
+  isDerivedSchoolPeriodEvent,
+} from "@/features/schedule/model/schedule-derived-events";
 import type { ScheduleData, ScheduleDay, ScheduleEvent } from "@/lib/schedule-types";
 
 import { ScheduleEventCard } from "./schedule-event-card";
@@ -33,7 +37,7 @@ function DayHeading({ day, active }: { day: ScheduleDay; active: boolean }) {
 }
 
 function displayEventSummary(events: readonly ScheduleEvent[]): string {
-  const hasSchool = events.some((event) => event.id.startsWith("school-"));
+  const hasSchool = events.some(isDerivedSchoolPeriodEvent);
   if (hasSchool) return "Koolipäev";
   const count = events.length;
   return count ? `${count} ${count === 1 ? "plokk" : "plokki"}` : "Vaba päev";
@@ -110,7 +114,7 @@ function DayEvents({
     return <p className="p-3 text-[11px] text-[#526878] dark:text-[#7890a2]">Vaba päev</p>;
   }
 
-  const schoolEvents = events.filter((event) => event.id.startsWith("school-"));
+  const schoolEvents = events.filter(isDerivedSchoolPeriodEvent);
   const classEvents = schoolEvents.filter((event) => event.category === "school");
   const subjectCounts = new Map<string, number>();
   for (const event of classEvents) {
@@ -129,8 +133,11 @@ function DayEvents({
         category: "school",
       }
     : null;
+  const summarizedSchoolIds = new Set(
+    schoolSummary ? schoolEvents.map((event) => event.id) : [],
+  );
   const displayEvents = sortScheduleEvents([
-    ...events.filter((event) => !event.id.startsWith("school-")),
+    ...events.filter((event) => !summarizedSchoolIds.has(event.id)),
     ...(schoolSummary ? [schoolSummary] : []),
   ]);
   const schoolIds = new Set(schoolEvents.map((event) => event.id));
@@ -155,9 +162,10 @@ function DayEvents({
 }
 
 export function WeekView({ data, now }: WeekViewProps) {
-  const grouped = groupScheduleEventsByDay(data.events);
+  const timelineEvents = buildScheduleTimelineEvents(data);
+  const grouped = groupScheduleEventsByDay(timelineEvents);
   const position = now ? getTallinnSchedulePosition(now) : null;
-  const focus = now ? findCurrentAndNextScheduleEvent(data.events, now) : { current: null, next: null };
+  const focus = now ? findCurrentAndNextScheduleEvent(timelineEvents, now) : { current: null, next: null };
   const [openDay, setOpenDay] = useState<ScheduleDay | null>(1);
   const userSelectedDay = useRef(false);
 

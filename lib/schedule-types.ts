@@ -66,6 +66,8 @@ export type WeeklyMetric = {
 
 export type ScheduleData = {
   version: string;
+  editorVersion?: 1;
+  hiddenEventIds?: string[];
   title: string;
   subtitle: string;
   timeZone: "Europe/Tallinn";

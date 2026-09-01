@@ -5,34 +5,26 @@ import {
   SchedulePersistenceUnavailableError,
 } from "@/features/auth/server/schedule-database.server";
 import { normalizeScheduleUserId } from "@/features/auth/server/schedule-user-store.server";
-import { parseScheduleData } from "@/features/schedule/model/schedule-validation";
+import { parseScheduleDataForSave } from "@/features/schedule/model/schedule-validation";
+import { canonicalizeScheduleData } from "@/features/schedule/model/schedule-derived-events";
 import type { ScheduleData } from "@/lib/schedule-types";
-import type { PoolClient } from "pg";
-import {
-  decryptScheduleForUser,
-  decryptSchedulePayload,
-  encryptScheduleForUser,
-} from "./schedule-crypto";
+import { encryptScheduleForUser } from "./schedule-crypto";
 import {
   ScheduleDataUnavailableError,
   ScheduleRevisionConflictError,
 } from "./schedule-errors";
 import { saveUserScheduleWithClient } from "./schedule-revision.server";
+import {
+  loadOrCreateUserScheduleWithClient,
+  type UserScheduleDocument,
+} from "./schedule-template.server";
 
 export {
   ScheduleDataUnavailableError,
   ScheduleRevisionConflictError,
 };
 
-export type UserScheduleDocument = Readonly<{
-  data: ScheduleData;
-  revision: number;
-}>;
-
-type StoredScheduleRow = {
-  encrypted_payload: unknown;
-  revision: string | number;
-};
+export type { UserScheduleDocument };
 
 function scheduleMasterKey(): string {
   const value = process.env.SCHEDULE_DATA_KEY?.trim() ?? "";
@@ -40,47 +32,6 @@ function scheduleMasterKey(): string {
     throw new ScheduleDataUnavailableError();
   }
   return value;
-}
-
-function revision(value: string | number): number {
-  const parsed = typeof value === "number" ? value : Number(value);
-  if (!Number.isSafeInteger(parsed) || parsed < 1) {
-    throw new ScheduleDataUnavailableError();
-  }
-  return parsed;
-}
-
-function encryptedTemplate(masterKey: string): ScheduleData {
-  return parseScheduleData(decryptSchedulePayload(encryptedScheduleTemplate, masterKey));
-}
-
-function decryptStoredSchedule(
-  row: StoredScheduleRow,
-  masterKey: string,
-  userId: string,
-): UserScheduleDocument {
-  return {
-    data: parseScheduleData(
-      decryptScheduleForUser(row.encrypted_payload, masterKey, userId),
-    ),
-    revision: revision(row.revision),
-  };
-}
-
-async function findStoredSchedule(
-  client: Pick<PoolClient, "query">,
-  userId: string,
-): Promise<StoredScheduleRow | null> {
-  const result = await client.query<StoredScheduleRow>(
-    `SELECT d.encrypted_payload, d.revision
-       FROM schedule_documents d
-       JOIN schedule_users u ON u.id = d.user_id
-      WHERE d.user_id = $1
-        AND u.disabled_at IS NULL
-      LIMIT 1`,
-    [userId],
-  );
-  return result.rows[0] ?? null;
 }
 
 /** Loads an owner-scoped document, cloning the encrypted template on first access. */
@@ -94,22 +45,12 @@ export async function loadOrCreateUserSchedule(
     const masterKey = scheduleMasterKey();
     const pool = requireSchedulePool();
     await ensureScheduleSchema(pool);
-    let row = await findStoredSchedule(pool, userId);
-    if (!row) {
-      const initialData = encryptedTemplate(masterKey);
-      const payload = encryptScheduleForUser(initialData, masterKey, userId);
-      await pool.query(
-        `INSERT INTO schedule_documents (user_id, revision, encrypted_payload)
-         SELECT id, 1, $2::jsonb
-           FROM schedule_users
-          WHERE id = $1 AND disabled_at IS NULL
-         ON CONFLICT (user_id) DO NOTHING`,
-        [userId, JSON.stringify(payload)],
-      );
-      row = await findStoredSchedule(pool, userId);
-    }
-    if (!row) throw new ScheduleDataUnavailableError();
-    return decryptStoredSchedule(row, masterKey, userId);
+    return await loadOrCreateUserScheduleWithClient(
+      pool,
+      userId,
+      masterKey,
+      encryptedScheduleTemplate,
+    );
   } catch (error) {
     if (error instanceof ScheduleDataUnavailableError) throw error;
     throw new ScheduleDataUnavailableError();
@@ -126,7 +67,7 @@ export async function saveUserSchedule(
     throw new ScheduleDataUnavailableError();
   }
 
-  const data = parseScheduleData(input);
+  const data = canonicalizeScheduleData(parseScheduleDataForSave(input));
   try {
     const masterKey = scheduleMasterKey();
     const payload = encryptScheduleForUser(data, masterKey, userId);

@@ -1,6 +1,10 @@
 import encryptedSchedule from "@/data/schedule.enc.json";
 import { isScheduleDevelopmentBypassEnabled } from "@/features/auth/server/schedule-auth-policy";
-import { parseScheduleData } from "@/features/schedule/model/schedule-validation";
+import {
+  parseScheduleData,
+  parseScheduleDataForSave,
+} from "@/features/schedule/model/schedule-validation";
+import { canonicalizeScheduleData } from "@/features/schedule/model/schedule-derived-events";
 
 import { decryptSchedulePayload } from "./schedule-crypto";
 import {
@@ -35,7 +39,9 @@ function loadDevelopmentTemplate(): UserScheduleDocument {
   if (!key) throw new ScheduleDataUnavailableError();
   try {
     shared.__developmentSchedule117 = {
-      data: parseScheduleData(decryptSchedulePayload(encryptedSchedule, key)),
+      data: canonicalizeScheduleData(
+        parseScheduleData(decryptSchedulePayload(encryptedSchedule, key)),
+      ),
       revision: 1,
     };
     return shared.__developmentSchedule117;
@@ -65,7 +71,7 @@ export async function saveScheduleData(
       throw new ScheduleRevisionConflictError(current.revision);
     }
     const next: UserScheduleDocument = {
-      data: parseScheduleData(input),
+      data: canonicalizeScheduleData(parseScheduleDataForSave(input)),
       revision: current.revision + 1,
     };
     (globalThis as DevelopmentScheduleGlobal).__developmentSchedule117 = next;

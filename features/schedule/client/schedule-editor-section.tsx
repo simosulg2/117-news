@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useState, type ReactNode } from "react";
 
 import { AddButton, ItemActions } from "./schedule-editor-fields";
 
@@ -29,21 +29,44 @@ export function EditorSectionHeader({
   );
 }
 
-export function EditorItem({
-  number, title, children, onMoveUp, onMoveDown, onDelete,
+export function CompactEditorItem({
+  number,
+  title,
+  summary,
+  children,
+  more,
+  forceExpanded = false,
+  forceMoreExpanded = false,
+  onMoveUp,
+  onMoveDown,
+  onDelete,
 }: {
   number: number;
   title: string;
+  summary?: string;
   children: ReactNode;
+  more?: ReactNode;
+  forceExpanded?: boolean;
+  forceMoreExpanded?: boolean;
   onMoveUp?: () => void;
   onMoveDown?: () => void;
   onDelete: () => void;
 }) {
   const contentId = useId();
-  const [expanded, setExpanded] = useState(number <= 2);
+  const [expanded, setExpanded] = useState(() => title.trim().toLocaleLowerCase("et").includes("uus "));
+  const [moreExpanded, setMoreExpanded] = useState(false);
+  useEffect(() => {
+    if (forceExpanded) setExpanded(true);
+  }, [forceExpanded]);
+  useEffect(() => {
+    if (forceMoreExpanded) setMoreExpanded(true);
+  }, [forceMoreExpanded]);
   return (
-    <article className="border border-[#aebcc6] bg-white shadow-[3px_3px_0_#d5dee4] dark:border-[#29485f] dark:bg-[#0b1b29] dark:shadow-[3px_3px_0_#102538]">
-      <header className="flex flex-col gap-2 border-b border-[#d5dee4] bg-[#eef3f6] px-3 py-2.5 dark:border-[#263d50] dark:bg-[#102538] sm:flex-row sm:items-center sm:justify-between">
+    <article className={`border bg-white shadow-[2px_2px_0_#d5dee4] dark:bg-[#0b1b29] dark:shadow-[2px_2px_0_#102538] ${forceExpanded
+      ? "border-[#9f3030] ring-2 ring-[#9f3030]/20 dark:border-[#f2a3a3]"
+      : "border-[#aebcc6] dark:border-[#29485f]"
+    }`}>
+      <header className="flex items-center justify-between gap-3 border-b border-[#d5dee4] bg-[#eef3f6] px-3 py-2 dark:border-[#263d50] dark:bg-[#102538]">
         <button
           type="button"
           className="flex min-h-9 min-w-0 flex-1 items-center gap-2 text-left text-xs font-black text-[#172634] outline-none focus-visible:ring-2 focus-visible:ring-signal dark:text-[#edf4f8]"
@@ -52,13 +75,37 @@ export function EditorItem({
           onClick={() => setExpanded((value) => !value)}
         >
           <span className="text-[#245fae] dark:text-signal">{String(number).padStart(2, "0")}</span>
-          <span className="min-w-0 flex-1 break-words">{title || "Pealkirjata kirje"}</span>
-          <span className="shrink-0 text-[10px] uppercase tracking-[0.06em] text-[#617786] dark:text-[#9bb0bf]">{expanded ? "Sulge" : "Ava"}</span>
-          <span aria-hidden="true" className="w-3 text-center text-sm">{expanded ? "−" : "+"}</span>
+          <span className="min-w-0 flex-1">
+            <span className="block break-words">{title || "Pealkirjata kirje"}</span>
+            {summary && <span className="mt-0.5 block text-[9px] font-bold text-[#617786] dark:text-[#9bb0bf]">{summary}</span>}
+          </span>
+          <span aria-hidden="true" className="shrink-0 text-base">{expanded ? "−" : "+"}</span>
         </button>
-        <ItemActions label={title || `${number}. kirje`} onMoveUp={onMoveUp} onMoveDown={onMoveDown} onDelete={onDelete} />
+        {expanded && (
+          <ItemActions
+            label={title || `${number}. kirje`}
+            onMoveUp={onMoveUp}
+            onMoveDown={onMoveDown}
+            onDelete={onDelete}
+          />
+        )}
       </header>
-      <div id={contentId} hidden={!expanded} className="grid gap-4 p-3 sm:p-4">{children}</div>
+      <div id={contentId} className={expanded ? "grid gap-3 p-3 sm:p-4" : "hidden"}>{children}</div>
+      {more && expanded && (
+        <details
+          open={moreExpanded}
+          onToggle={(event) => setMoreExpanded(event.currentTarget.open)}
+          className="group border-t border-[#d5dee4] dark:border-[#263d50]"
+        >
+          <summary className="flex min-h-10 cursor-pointer list-none items-center justify-between px-3 text-[10px] font-black uppercase tracking-[0.07em] text-[#526878] outline-none hover:bg-[#eef3f6] focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal dark:text-[#9bb0bf] dark:hover:bg-[#102538] sm:px-4">
+            Rohkem valikuid
+            <span aria-hidden="true" className="text-base group-open:rotate-45">+</span>
+          </summary>
+          <div className="grid gap-3 border-t border-[#d5dee4] bg-[#f8fafb] p-3 dark:border-[#263d50] dark:bg-[#091925] sm:p-4">
+            {more}
+          </div>
+        </details>
+      )}
     </article>
   );
 }

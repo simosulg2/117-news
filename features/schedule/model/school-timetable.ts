@@ -37,6 +37,10 @@ function comparePeriods(left: SchoolPeriod, right: SchoolPeriod): number {
 
 export function buildSchoolTimetable(periods: readonly SchoolPeriod[]): SchoolTimetable {
   const lessons = periods.filter((period) => !isLunch(period)).sort(comparePeriods);
+  const populatedWeekendDays = ([6, 7] as const).filter((day) => (
+    periods.some((period) => period.day === day)
+  ));
+  const displayedDays: readonly ScheduleDay[] = [...SCHOOL_WEEKDAYS, ...populatedWeekendDays];
   const columnByPeriod = new Map<string, SchoolTimetableColumn>();
   for (const lesson of lessons) {
     if (!columnByPeriod.has(lesson.period)) {
@@ -51,7 +55,7 @@ export function buildSchoolTimetable(periods: readonly SchoolPeriod[]): SchoolTi
     || left.timeWindow.localeCompare(right.timeWindow, "et")
     || left.period.localeCompare(right.period, "et")
   ));
-  const rows = SCHOOL_WEEKDAYS.map((day) => ({
+  const rows = displayedDays.map((day) => ({
     day,
     cells: columns.map((column) => lessons.filter((lesson) => (
       lesson.day === day && lesson.period === column.period

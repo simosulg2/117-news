@@ -2,7 +2,12 @@
 
 import { useEffect, useId, useState } from "react";
 
-import { SCHEDULE_CATEGORIES, type RoutineItem, type ScheduleCategory, type ScheduleDay } from "@/lib/schedule-types";
+import {
+  SCHEDULE_CATEGORIES,
+  type RoutineItem,
+  type ScheduleCategory,
+  type ScheduleDay,
+} from "@/lib/schedule-types";
 
 import { CATEGORY_LABELS, SCHEDULE_DAYS } from "./schedule-formatters";
 
@@ -53,25 +58,41 @@ export function TextAreaField({
   );
 }
 
-export function DaySelect({ label = "Päev", value, onChange }: { label?: string; value: ScheduleDay; onChange: (value: ScheduleDay) => void }) {
+export function DaySelect({
+  label = "Päev", value, onChange, weekdaysOnly = false,
+}: {
+  label?: string;
+  value: ScheduleDay;
+  onChange: (value: ScheduleDay) => void;
+  weekdaysOnly?: boolean;
+}) {
   const id = useId();
+  const days = weekdaysOnly ? SCHEDULE_DAYS.filter((day) => day.value <= 5) : SCHEDULE_DAYS;
   return (
     <div>
       <Label htmlFor={id}>{label}</Label>
       <select id={id} className={FIELD_CLASS} value={value} onChange={(event) => onChange(Number(event.target.value) as ScheduleDay)}>
-        {SCHEDULE_DAYS.map((day) => <option key={day.value} value={day.value}>{day.label}</option>)}
+        {days.map((day) => <option key={day.value} value={day.value}>{day.label}</option>)}
       </select>
     </div>
   );
 }
 
-export function OptionalDaySelect({ value, onChange }: { value: ScheduleDay | undefined; onChange: (value: ScheduleDay | undefined) => void }) {
+export function OptionalDaySelect({
+  value,
+  onChange,
+  emptyLabel = "Iga päev / määramata",
+}: {
+  value: ScheduleDay | undefined;
+  onChange: (value: ScheduleDay | undefined) => void;
+  emptyLabel?: string;
+}) {
   const id = useId();
   return (
     <div>
       <Label htmlFor={id}>Päev</Label>
       <select id={id} className={FIELD_CLASS} value={value ?? ""} onChange={(event) => onChange(event.target.value ? Number(event.target.value) as ScheduleDay : undefined)}>
-        <option value="">Iga päev / määramata</option>
+        <option value="">{emptyLabel}</option>
         {SCHEDULE_DAYS.map((day) => <option key={day.value} value={day.value}>{day.label}</option>)}
       </select>
     </div>
@@ -90,12 +111,23 @@ export function CategorySelect({ value, onChange }: { value: ScheduleCategory; o
   );
 }
 
-export function RoutineSectionSelect({ value, onChange }: { value: RoutineItem["section"]; onChange: (value: RoutineItem["section"]) => void }) {
+export function RoutineSectionSelect({
+  value,
+  onChange,
+}: {
+  value: RoutineItem["section"];
+  onChange: (value: RoutineItem["section"]) => void;
+}) {
   const id = useId();
   return (
     <div>
       <Label htmlFor={id}>Rutiini osa</Label>
-      <select id={id} className={FIELD_CLASS} value={value} onChange={(event) => onChange(event.target.value as RoutineItem["section"])}>
+      <select
+        id={id}
+        className={FIELD_CLASS}
+        value={value}
+        onChange={(event) => onChange(event.target.value as RoutineItem["section"])}
+      >
         <option value="morning">Hommik</option>
         <option value="evening">Õhtu</option>
         <option value="fitness">Liikumine</option>

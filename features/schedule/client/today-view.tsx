@@ -4,6 +4,7 @@ import {
   groupScheduleEventsByDay,
   type ScheduleOccurrence,
 } from "@/features/schedule/model/schedule-events";
+import { buildScheduleTimelineEvents } from "@/features/schedule/model/schedule-derived-events";
 import type { ScheduleData } from "@/lib/schedule-types";
 
 import { ScheduleEventCard } from "./schedule-event-card";
@@ -60,10 +61,11 @@ function FocusCard({
 }
 
 export function TodayView({ data, now }: TodayViewProps) {
+  const timelineEvents = buildScheduleTimelineEvents(data);
   const nowTimestamp = now?.getTime() ?? null;
   const position = now ? getTallinnSchedulePosition(now) : null;
-  const focus = now ? findCurrentAndNextScheduleEvent(data.events, now) : { current: null, next: null };
-  const grouped = groupScheduleEventsByDay(data.events);
+  const focus = now ? findCurrentAndNextScheduleEvent(timelineEvents, now) : { current: null, next: null };
+  const grouped = groupScheduleEventsByDay(timelineEvents);
   const events = position ? grouped[position.day] : [];
   const nextIsToday = Boolean(
     position

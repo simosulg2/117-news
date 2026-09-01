@@ -14,8 +14,7 @@ function dayLabel(day: ScheduleDay): string {
 
 function schoolDayAt(now: Date | null): ScheduleDay {
   if (!now) return 1;
-  const day = getTallinnSchedulePosition(now).day;
-  return day <= 5 ? day : 1;
+  return getTallinnSchedulePosition(now).day;
 }
 
 function SubjectCell({ periods }: { periods: readonly SchoolPeriod[] }) {
@@ -43,7 +42,10 @@ function SubjectCell({ periods }: { periods: readonly SchoolPeriod[] }) {
 
 export function SchoolView({ data, now }: { data: ScheduleData; now: Date | null }) {
   const timetable = buildSchoolTimetable(data.schoolPeriods);
-  const [selectedDay, setSelectedDay] = useState<ScheduleDay>(() => schoolDayAt(now));
+  const [selectedDay, setSelectedDay] = useState<ScheduleDay>(() => {
+    const currentDay = schoolDayAt(now);
+    return timetable.rows.some((row) => row.day === currentDay) ? currentDay : 1;
+  });
   const selectedRow = timetable.rows.find((row) => row.day === selectedDay) ?? timetable.rows[0];
   const selectedLessonCount = selectedRow?.cells.reduce((total, cell) => total + cell.length, 0) ?? 0;
   const lunchLabel = timetable.lunchWindows.join(" / ");
@@ -59,7 +61,12 @@ export function SchoolView({ data, now }: { data: ScheduleData; now: Date | null
       {timetable.columns.length ? (
         <>
           <div className="mt-4 md:hidden">
-            <div className="grid grid-cols-5 border border-[#aebcc6] bg-[#aebcc6] dark:border-[#29485f] dark:bg-[#29485f]" role="group" aria-label="Vali koolipäev">
+            <div
+              className="grid border border-[#aebcc6] bg-[#aebcc6] dark:border-[#29485f] dark:bg-[#29485f]"
+              style={{ gridTemplateColumns: `repeat(${timetable.rows.length}, minmax(0, 1fr))` }}
+              role="group"
+              aria-label="Vali koolipäev"
+            >
               {timetable.rows.map((row) => {
                 const selected = row.day === selectedDay;
                 const definition = SCHEDULE_DAYS.find((day) => day.value === row.day)!;
@@ -112,11 +119,11 @@ export function SchoolView({ data, now }: { data: ScheduleData; now: Date | null
 
           <div className="mt-4 hidden overflow-x-auto border border-[#aebcc6] shadow-[4px_4px_0_#c8d4dc] md:block dark:border-[#29485f] dark:shadow-[4px_4px_0_#102538]">
             <div className="flex min-w-[60rem] items-center justify-between gap-4 border-b border-[#aebcc6] bg-[#d9edf1] px-4 py-2 dark:border-[#29485f] dark:bg-[#102538]">
-              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#174b8d] dark:text-signal">Tööpäevade tunniplaan</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.12em] text-[#174b8d] dark:text-signal">Kooli tunniplaan</p>
               {lunchLabel && <p className="text-[10px] font-bold text-[#617786] dark:text-[#9bb0bf]">Lõunapaus <span className="ml-1 tabular-nums text-[#172634] dark:text-[#edf4f8]">{lunchLabel}</span></p>}
             </div>
             <table className="w-full min-w-[60rem] table-fixed border-collapse text-left text-xs">
-              <caption className="sr-only">Kooli tunniplaan esmaspäevast reedeni</caption>
+              <caption className="sr-only">Kooli tunniplaan nädalapäevade kaupa</caption>
               <thead className="bg-[#102538] text-[#c7d5df]">
                 <tr>
                   <th scope="col" className="w-28 border-r border-[#29485f] px-3 py-3 text-[10px] font-black uppercase tracking-[0.1em]">Päev</th>

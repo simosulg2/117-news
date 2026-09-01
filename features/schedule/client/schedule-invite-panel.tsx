@@ -55,13 +55,19 @@ export function ScheduleInvitePanel({
       }
       const url = new URL("/sisene", window.location.origin);
       url.hash = new URLSearchParams({ invite: result.token }).toString();
-      setInviteLink(url.toString());
+      const nextInviteLink = url.toString();
+      setInviteLink(nextInviteLink);
       setExpiresAt(result.expiresAt);
       setInvites((current) => [
         { id: result.id, expiresAt: result.expiresAt, status: "available" },
         ...current,
       ]);
-      setMessage("Kutse on valmis. Linki näidatakse ainult siin.");
+      try {
+        await navigator.clipboard.writeText(nextInviteLink);
+        setMessage("Kutse on valmis ja link kopeeritud.");
+      } catch {
+        setMessage("Kutse on valmis. Kopeeri allolev link käsitsi.");
+      }
     } catch {
       setMessage("Kutse loomine ei õnnestunud. Proovi uuesti.");
     } finally {
@@ -151,13 +157,15 @@ export function ScheduleInvitePanel({
           onClick={createInvite}
           className="mt-3 min-h-11 border border-[#245fae] bg-[#245fae] px-4 text-xs font-black text-white outline-none hover:bg-[#174b8d] focus-visible:ring-2 focus-visible:ring-signal disabled:cursor-not-allowed disabled:opacity-50 dark:border-signal dark:bg-signal dark:text-[#07131f]"
         >
-          {creating ? "Loon kutset…" : "Loo kutse link"}
+          {creating ? "Loon kutset…" : "Loo ja kopeeri kutse"}
         </button>
       )}
 
       {availableInvites.length > 0 && (
-        <div className="mt-4 border-t border-[#bdc9d1] pt-3 dark:border-[#35536a]">
-          <h3 className="text-[10px] font-black uppercase tracking-[0.08em] text-[#526878] dark:text-[#9bb0bf]">Aktiivsed kutsed</h3>
+        <details className="mt-4 border-t border-[#bdc9d1] pt-3 dark:border-[#35536a]">
+          <summary className="min-h-9 cursor-pointer text-[10px] font-black uppercase tracking-[0.08em] text-[#526878] outline-none focus-visible:ring-2 focus-visible:ring-signal dark:text-[#9bb0bf]">
+            Aktiivsed kutsed · {availableInvites.length}
+          </summary>
           <div className="mt-2 grid gap-2">
             {availableInvites.map((invite) => (
               <div key={invite.id} className="flex flex-col gap-2 border border-[#bdc9d1] bg-white px-3 py-2 dark:border-[#35536a] dark:bg-[#07131f] sm:flex-row sm:items-center sm:justify-between">
@@ -175,7 +183,7 @@ export function ScheduleInvitePanel({
               </div>
             ))}
           </div>
-        </div>
+        </details>
       )}
       {message && <p className="mt-2 text-[11px] font-bold text-[#526878] dark:text-[#b8c9d4]" aria-live="polite">{message}</p>}
     </section>

@@ -4,20 +4,19 @@ import type {
   ScheduleDay,
   ScheduleEvent,
   SchoolPeriod,
-  StudyPlan,
   WeeklyMetric,
 } from "@/lib/schedule-types";
 
 export type ScheduleEditorSection =
   | "general"
   | "events"
-  | "school"
   | "routines"
   | "balance";
 
 export function copyScheduleData(data: ScheduleData): ScheduleData {
   return {
     ...data,
+    ...(data.hiddenEventIds ? { hiddenEventIds: [...data.hiddenEventIds] } : {}),
     events: data.events.map((item) => ({ ...item })),
     schoolPeriods: data.schoolPeriods.map((item) => ({ ...item })),
     routines: data.routines.map((item) => ({ ...item })),
@@ -38,10 +37,13 @@ function uniqueId(prefix: string, existingIds: readonly string[]): string {
   return `${prefix}-${Date.now().toString(36)}-${existing.size.toString(36)}`;
 }
 
-export function newScheduleEvent(existing: readonly ScheduleEvent[]): ScheduleEvent {
+export function newScheduleEvent(
+  existing: readonly ScheduleEvent[],
+  day: ScheduleDay = 1,
+): ScheduleEvent {
   return {
     id: uniqueId("event", existing.map((item) => item.id)),
-    day: 1,
+    day,
     startMinute: null,
     endMinute: null,
     title: "Uus sündmus",
@@ -55,11 +57,27 @@ export function newSchoolPeriod(
   existing: readonly SchoolPeriod[],
   day: ScheduleDay,
 ): SchoolPeriod {
+  const slots = [
+    ["1. tund", "08:30–09:45"],
+    ["2. tund", "09:55–11:10"],
+    ["3. tund", "11:50–13:05"],
+    ["4. tund", "13:15–14:30"],
+    ["5. tund", "14:40–15:55"],
+  ] as const;
+  const used = new Set(existing
+    .filter((item) => item.day === day)
+    .map((item) => item.period.toLocaleLowerCase("et")));
+  const nextNumber = Math.max(0, ...existing
+    .filter((item) => item.day === day)
+    .map((item) => /^(\d+)\./u.exec(item.period.trim()))
+    .map((match) => match ? Number(match[1]) : 0)) + 1;
+  const [period, timeWindow] = slots.find(([label]) => !used.has(label.toLocaleLowerCase("et")))
+    ?? [`${nextNumber}. tund`, "16:05–17:20"];
   return {
     id: uniqueId("school", existing.map((item) => item.id)),
     day,
-    period: "1. tund",
-    timeWindow: "08:30–09:45",
+    period,
+    timeWindow,
     subjectEt: "Uus tund",
     note: "",
   };
@@ -69,27 +87,19 @@ export function newRoutine(
   existing: readonly RoutineItem[],
   section: RoutineItem["section"],
 ): RoutineItem {
+  const defaults = {
+    morning: { timeWindow: "07:00–07:15", title: "Uus hommikurutiin" },
+    evening: { timeWindow: "21:30–21:45", title: "Uus õhturutiin" },
+    fitness: { timeWindow: "17:00–18:00", title: "Uus liikumine" },
+  } as const;
   return {
     id: uniqueId("routine", existing.map((item) => item.id)),
     section,
     ...(section === "fitness" ? { day: 1 as ScheduleDay } : {}),
-    timeWindow: "",
-    title: "Uus samm",
+    timeWindow: defaults[section].timeWindow,
+    title: defaults[section].title,
     details: "",
     category: section === "fitness" ? "exercise" : "routine",
-  };
-}
-
-export function newStudyPlan(existing: readonly StudyPlan[]): StudyPlan {
-  return {
-    id: uniqueId("study", existing.map((item) => item.id)),
-    day: 1,
-    window: "",
-    maxHours: 1,
-    actualHours: null,
-    focus: "",
-    difficulty: "",
-    status: "",
   };
 }
 
@@ -151,7 +161,7 @@ export function timeInputToMinutes(value: string): number | null {
 
 export function sectionForValidationPath(path: string): ScheduleEditorSection {
   if (path.startsWith("$.events")) return "events";
-  if (path.startsWith("$.schoolPeriods")) return "school";
+  if (path.startsWith("$.schoolPeriods")) return "events";
   if (path.startsWith("$.routines")) return "routines";
   if (path.startsWith("$.studyPlans") || path.startsWith("$.metrics")) return "balance";
   return "general";

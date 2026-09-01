@@ -5,6 +5,7 @@ import { useState } from "react";
 import { BalanceView } from "@/features/schedule/client/balance-view";
 import { RoutinesView } from "@/features/schedule/client/routines-view";
 import { ScheduleEditor } from "@/features/schedule/client/schedule-editor";
+import type { ScheduleEditorSection } from "@/features/schedule/client/schedule-editor-helpers";
 import {
   ScheduleInvitePanel,
   type CreateScheduleInviteResult,
@@ -63,6 +64,12 @@ function ActiveView({
   }
 }
 
+function editorSectionForTab(tab: ScheduleTab): ScheduleEditorSection {
+  if (tab === "routines") return "routines";
+  if (tab === "balance") return "balance";
+  return "events";
+}
+
 export function SchedulePortal({
   data,
   revision: initialRevision,
@@ -86,7 +93,8 @@ export function SchedulePortal({
     const result = await onSave(nextData, revision);
     if (!result.ok) {
       if (result.error === "conflict") {
-        throw new Error("Ajakava muudeti vahepeal teises aknas. Laadi leht uuesti ja proovi siis uuesti.");
+        if (result.revision !== undefined) setRevision(result.revision);
+        throw new Error("Ajakava muudeti vahepeal teises aknas. Sinu sisestus on alles; vajuta uuesti „Salvesta”, kui soovid oma versiooni teadlikult peale kirjutada.");
       }
       if (result.error === "invalid") {
         throw new Error("Mõni ajakava väli ei ole kehtiv. Kontrolli sisestatud väärtusi.");
@@ -110,49 +118,38 @@ export function SchedulePortal({
         {schedule ? editing ? (
           <ScheduleEditor
             data={schedule}
+            initialSection={editorSectionForTab(activeTab)}
             onSave={saveSchedule}
             onClose={() => setEditing(false)}
           />
         ) : (
           <>
-            <header className="mb-5 grid gap-4 border border-[#aebcc6] bg-white p-4 shadow-[4px_4px_0_#c8d4dc] dark:border-[#29485f] dark:bg-[#0b1b29] dark:shadow-[4px_4px_0_#102538] md:grid-cols-[minmax(0,1fr)_auto] md:items-end sm:p-5">
-              <div>
-                <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#245fae] dark:text-signal">117.ee · Privaatne töölaud</p>
-                <h1 className="mt-2 text-2xl font-black tracking-tight text-[#101a24] dark:text-[#edf4f8] sm:text-3xl">{schedule.title}</h1>
-                <p className="mt-2 max-w-3xl text-sm leading-6 text-[#526878] dark:text-[#9bb0bf]">{schedule.subtitle}</p>
-              </div>
-              <dl className="grid grid-cols-3 gap-px border border-[#c5d0d7] bg-[#c5d0d7] text-center dark:border-[#263d50] dark:bg-[#263d50]">
-                <div className="bg-[#f6f8f9] px-3 py-2 dark:bg-[#0d2030]">
-                  <dt className="text-[9px] font-black uppercase tracking-[0.08em] text-[#617786] dark:text-[#7890a2]">Koolipäevi</dt>
-                  <dd className="mt-0.5 text-sm font-black text-[#172634] dark:text-[#edf4f8]">5</dd>
+            <header className="mb-5 border border-[#aebcc6] bg-white p-4 shadow-[4px_4px_0_#c8d4dc] dark:border-[#29485f] dark:bg-[#0b1b29] dark:shadow-[4px_4px_0_#102538] sm:p-5">
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#245fae] dark:text-signal">117.ee · Privaatne töölaud</p>
+                  <h1 className="mt-2 text-2xl font-black tracking-tight text-[#101a24] dark:text-[#edf4f8] sm:text-3xl">{schedule.title}</h1>
+                  <p className="mt-2 max-w-3xl text-sm leading-6 text-[#526878] dark:text-[#9bb0bf]">{schedule.subtitle}</p>
                 </div>
-                <div className="bg-[#f6f8f9] px-3 py-2 dark:bg-[#0d2030]">
-                  <dt className="text-[9px] font-black uppercase tracking-[0.08em] text-[#617786] dark:text-[#7890a2]">Ainetunde</dt>
-                  <dd className="mt-0.5 text-sm font-black tabular-nums text-[#172634] dark:text-[#edf4f8]">
-                    {schedule.schoolPeriods.filter((period) => period.period !== "Lõunapaus").length}
-                  </dd>
-                </div>
-                <div className="bg-[#f6f8f9] px-3 py-2 dark:bg-[#0d2030]">
-                  <dt className="text-[9px] font-black uppercase tracking-[0.08em] text-[#617786] dark:text-[#7890a2]">Ajavöönd</dt>
-                  <dd className="mt-0.5 text-sm font-black text-[#172634] dark:text-[#edf4f8]">Eesti</dd>
-                </div>
-              </dl>
-              <div className="grid gap-2 border-t border-[#d5dee4] pt-4 dark:border-[#263d50] sm:grid-cols-[auto_minmax(0,1fr)] md:col-span-2">
                 <button
                   type="button"
                   onClick={() => setEditing(true)}
-                  className="min-h-10 border border-[#245fae] bg-[#245fae] px-4 text-[11px] font-black text-white outline-none hover:bg-[#174b8d] focus-visible:ring-2 focus-visible:ring-signal dark:border-signal dark:bg-signal dark:text-[#07131f]"
+                  className="min-h-10 shrink-0 border border-[#245fae] bg-[#245fae] px-4 text-[11px] font-black text-white outline-none hover:bg-[#174b8d] focus-visible:ring-2 focus-visible:ring-signal dark:border-signal dark:bg-signal dark:text-[#07131f]"
                 >
-                  Muuda ajakava
+                  {activeTab === "routines"
+                    ? "Muuda rutiine"
+                    : activeTab === "balance" ? "Muuda tasakaalu" : "Muuda plaani"}
                 </button>
-                {canInvite && (
+              </div>
+              {canInvite && (
+                <div className="mt-4 border-t border-[#d5dee4] pt-4 dark:border-[#263d50]">
                   <ScheduleInvitePanel
                     initialInvites={initialInvites}
                     onCreateInvite={onCreateInvite}
                     onRevokeInvite={onRevokeInvite}
                   />
-                )}
-              </div>
+                </div>
+              )}
             </header>
 
             <ScheduleTabs activeTab={activeTab} onChange={setActiveTab} />

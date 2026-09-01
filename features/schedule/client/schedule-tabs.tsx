@@ -38,7 +38,7 @@ export function ScheduleTabs({ activeTab, onChange }: ScheduleTabsProps) {
     <div
       role="tablist"
       aria-label="Ajakava vaated"
-      className="no-scrollbar flex overflow-x-auto border border-[#aebcc6] bg-[#dbe5eb] dark:border-[#29485f] dark:bg-[#102538]"
+      className="grid grid-cols-5 border border-[#aebcc6] bg-[#dbe5eb] dark:border-[#29485f] dark:bg-[#102538]"
     >
       {TABS.map((tab, index) => {
         const active = tab.id === activeTab;
@@ -56,7 +56,7 @@ export function ScheduleTabs({ activeTab, onChange }: ScheduleTabsProps) {
             aria-controls={active ? `schedule-panel-${tab.id}` : undefined}
             onClick={() => onChange(tab.id)}
             onKeyDown={(event) => handleKeyDown(event, index)}
-            className={`min-h-11 shrink-0 border-r border-[#aebcc6] px-4 text-xs font-bold outline-none last:border-r-0 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal sm:flex-1 dark:border-[#29485f] ${
+            className={`min-h-11 min-w-0 border-r border-[#aebcc6] px-1 text-[10px] font-bold outline-none last:border-r-0 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal sm:px-4 sm:text-xs dark:border-[#29485f] ${
               active
                 ? "bg-[#102538] text-white dark:bg-signal dark:text-[#07131f]"
                 : "bg-white text-[#526878] hover:bg-[#edf3f7] hover:text-[#174b8d] dark:bg-[#0b1b29] dark:text-[#9bb0bf] dark:hover:bg-[#102538] dark:hover:text-white"

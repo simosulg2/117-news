@@ -14,12 +14,232 @@ import {
   deriveWeeklyMetricPercentages,
 } from "../features/schedule/model/schedule-metrics.ts";
 import { buildSchoolTimetable } from "../features/schedule/model/school-timetable.ts";
+import {
+  buildScheduleTimelineEvents,
+  canonicalizeScheduleData,
+  deriveRoutineScheduleEvents,
+  deriveSchoolScheduleEvents,
+  mergePersonalScheduleEvents,
+  parseScheduleTimeWindow,
+  parseRoutineTimeWindow,
+} from "../features/schedule/model/schedule-derived-events.ts";
 import type {
+  ScheduleData,
   ScheduleEvent,
   SchoolPeriod,
   StudyPlan,
   WeeklyMetric,
 } from "../lib/schedule-types.ts";
+
+test("parses Estonian timetable windows with colon or dot separators", () => {
+  assert.deepEqual(parseScheduleTimeWindow("8.30–9.45"), {
+    startMinute: 510,
+    endMinute: 585,
+  });
+  assert.deepEqual(parseScheduleTimeWindow("11:50 - 13:05"), {
+    startMinute: 710,
+    endMinute: 785,
+  });
+  assert.equal(parseScheduleTimeWindow("09:45–08:30"), null);
+  assert.deepEqual(parseRoutineTimeWindow("23:30–07:00"), {
+    startMinute: 1_410,
+    endMinute: 420,
+  });
+  assert.equal(parseScheduleTimeWindow("not a time"), null);
+});
+
+test("uses timetable cells as the single source for school timeline events", () => {
+  const data: ScheduleData = {
+    version: "test",
+    title: "Plaan",
+    subtitle: "",
+    timeZone: "Europe/Tallinn",
+    events: [
+      event("school-old-copy", 1, 510, 585, { title: "Vana koopia", category: "school" }),
+      event("music-practice", 1, 1_000, 1_060, { title: "Kitarr", category: "music" }),
+    ],
+    schoolPeriods: [{
+      id: "monday-one",
+      day: 1,
+      period: "1. tund",
+      timeWindow: "8.30–9.45",
+      subjectEt: "Matemaatika",
+      note: "218",
+    }],
+    routines: [],
+    studyPlans: [],
+    metrics: [],
+  };
+
+  const canonical = canonicalizeScheduleData(data);
+  assert.deepEqual(canonical.events.map((item) => item.id), ["school-old-copy", "music-practice"]);
+  assert.deepEqual(canonical.hiddenEventIds, ["school-old-copy"]);
+  assert.deepEqual(deriveSchoolScheduleEvents(canonical.schoolPeriods), [{
+    id: "timetable:monday-one",
+    day: 1,
+    startMinute: 510,
+    endMinute: 585,
+    title: "Matemaatika",
+    detail: "1. tund · 218",
+    category: "school",
+  }]);
+  assert.deepEqual(buildScheduleTimelineEvents(canonical).map((item) => item.id), [
+    "music-practice",
+    "timetable:monday-one",
+  ]);
+});
+
+test("uses routines as the single source for repeated timeline events", () => {
+  const routines = [{
+    id: "wake-up",
+    section: "morning" as const,
+    timeWindow: "07:00–07:15",
+    title: "Hommikune algus",
+    details: "",
+    category: "routine" as const,
+  }, {
+    id: "training",
+    section: "fitness" as const,
+    day: 3 as const,
+    timeWindow: "17:00–18:00",
+    title: "Liikumine",
+    details: "Rahulikult",
+    category: "exercise" as const,
+  }];
+  const derived = deriveRoutineScheduleEvents(routines);
+
+  assert.equal(derived.length, 6);
+  assert.deepEqual(derived.slice(0, 2).map((item) => [item.day, item.startMinute]), [
+    [1, 420],
+    [2, 420],
+  ]);
+  assert.deepEqual(derived.at(-1), {
+    id: "routine:training:3",
+    day: 3,
+    startMinute: 1_020,
+    endMinute: 1_080,
+    title: "Liikumine",
+    detail: "Rahulikult",
+    category: "exercise",
+  });
+  assert.deepEqual(deriveRoutineScheduleEvents([{ ...routines[1], timeWindow: "Paindlik" }]), []);
+
+  const data: ScheduleData = {
+    version: "test",
+    title: "Plaan",
+    subtitle: "",
+    timeZone: "Europe/Tallinn",
+    events: [
+      event("old-routine-copy", 1, 420, 435, { title: "Hommikune algus" }),
+      event("same-title-other-time", 1, 500, 515, { title: "Hommikune algus" }),
+      event("same-occurrence-other-category", 1, 420, 435, {
+        title: "Hommikune algus",
+        category: "free",
+      }),
+      event("standalone", 1, 600, 630, { title: "Eraldi tegevus" }),
+    ],
+    schoolPeriods: [],
+    routines,
+    studyPlans: [],
+    metrics: [],
+  };
+  assert.deepEqual(canonicalizeScheduleData(data).events.map((item) => item.id), [
+    "old-routine-copy",
+    "same-title-other-time",
+    "same-occurrence-other-category",
+    "standalone",
+  ]);
+  assert.ok(!buildScheduleTimelineEvents(data).some((item) => item.id === "old-routine-copy"));
+});
+
+test("recognizes one legacy event covered by consecutive routine steps", () => {
+  const routines = [{
+    id: "prepare",
+    section: "evening" as const,
+    timeWindow: "22:30–22:45",
+    title: "Homsed asjad valmis",
+    details: "",
+    category: "routine" as const,
+  }, {
+    id: "hygiene",
+    section: "evening" as const,
+    timeWindow: "22:45–23:00",
+    title: "Õhtune hügieen",
+    details: "",
+    category: "routine" as const,
+  }];
+  const data: ScheduleData = {
+    version: "test",
+    title: "Plaan",
+    subtitle: "",
+    timeZone: "Europe/Tallinn",
+    events: [event("legacy-evening", 1, 1_350, 1_380, {
+      title: "Homsed asjad ja õhtune hügieen",
+    })],
+    schoolPeriods: [],
+    routines,
+    studyPlans: [],
+    metrics: [],
+  };
+  assert.deepEqual(canonicalizeScheduleData(data).events, data.events);
+  assert.ok(!buildScheduleTimelineEvents(data).some((item) => item.id === "legacy-evening"));
+});
+
+test("records routine duplicate identities once instead of re-inferring after edits", () => {
+  const data: ScheduleData = {
+    version: "test",
+    title: "Plaan",
+    subtitle: "",
+    timeZone: "Europe/Tallinn",
+    events: [event("legacy-morning", 1, 420, 435, { title: "Hommikune algus" })],
+    schoolPeriods: [],
+    routines: [{
+      id: "morning",
+      section: "morning",
+      timeWindow: "07:00–07:15",
+      title: "Hommikune algus",
+      details: "",
+      category: "routine",
+    }],
+    studyPlans: [],
+    metrics: [],
+  };
+  const canonical = canonicalizeScheduleData(data);
+  assert.deepEqual(canonical.hiddenEventIds, ["legacy-morning"]);
+
+  const afterRoutineEdit: ScheduleData = {
+    ...canonical,
+    routines: [{ ...canonical.routines[0], title: "Uus hommik", timeWindow: "Paindlik" }],
+  };
+  assert.ok(!buildScheduleTimelineEvents(afterRoutineEdit).some((item) => item.id === "legacy-morning"));
+
+  const legitimate = event("new-personal", 1, 420, 435, { title: "Uus hommik" });
+  const withNewEvent = { ...afterRoutineEdit, events: [...afterRoutineEdit.events, legitimate] };
+  assert.ok(buildScheduleTimelineEvents(withNewEvent).some((item) => item.id === "new-personal"));
+});
+
+test("keeps hidden legacy rows when personal activities are edited", () => {
+  const data: ScheduleData = {
+    version: "test",
+    title: "Plaan",
+    subtitle: "",
+    timeZone: "Europe/Tallinn",
+    events: [
+      event("school-old-copy", 1, 510, 585, { category: "school" }),
+      event("personal", 1, 600, 630, { title: "Eraldi tegevus" }),
+    ],
+    schoolPeriods: [],
+    routines: [],
+    studyPlans: [],
+    metrics: [],
+  };
+  const updated = [{ ...data.events[1], day: 2 as const }];
+
+  assert.deepEqual(mergePersonalScheduleEvents(data, updated), [
+    data.events[0],
+    updated[0],
+  ]);
+});
 
 function event(
   id: string,
@@ -232,4 +452,18 @@ test("builds a weekday timetable with ordered lesson columns and a separate lunc
   assert.deepEqual(periods.map((period) => period.id), [
     "monday-three", "lunch", "monday-one", "tuesday-one",
   ]);
+});
+
+test("adds only populated weekend rows to the school timetable", () => {
+  const timetable = buildSchoolTimetable([{
+    id: "saturday-one",
+    day: 6,
+    period: "1. tund",
+    timeWindow: "09:00–10:00",
+    subjectEt: "Konsultatsioon",
+    note: "",
+  }]);
+
+  assert.deepEqual(timetable.rows.map((row) => row.day), [1, 2, 3, 4, 5, 6]);
+  assert.deepEqual(timetable.rows.at(-1)?.cells[0].map((period) => period.id), ["saturday-one"]);
 });

@@ -127,10 +127,15 @@ ERJK, CC BY-SA 3.0.
 
 `/ajakava` kasutab GitHub OAuthi, ühekordseid kutseid ja kaheksaks tunniks
 piiratud serveriseanssi. Seadistatud omanik saab saata sõbrale kutselingi;
-mõlemal on seejärel eraldi täielikult muudetav ajakava. Ajakavad ei ole Git'i
-ajaloos loetava tekstina: server dekrüpteerib iga kasutaja versioonitud AES-GCM
-andmepaki alles pärast autoriseerimist. Puuduv seadistus sulgeb ligipääsu, kuid
-ei mõjuta avalikke vaateid.
+mõlemal on seejärel eraldi täielikult muudetav ajakava. Uus konto saab esimesel
+avamisel kohe ühise klassi-, rutiini- ja nädalaplaani isikliku koopia, mitte
+tühja lehe. Hilisemad muudatused jäävad iga kasutaja enda ajakavasse. Ajakavad
+ei ole Git'i ajaloos loetava tekstina: server dekrüpteerib iga kasutaja
+versioonitud AES-GCM andmepaki alles pärast autoriseerimist. Puuduv seadistus
+sulgeb ligipääsu, kuid ei mõjuta avalikke vaateid.
+
+Tunniplaani ja rutiine muudetakse kumbagi ainult ühes kohas; „Täna” ja „Nädal”
+koostavad vastavad korduvad kirjed automaatselt.
 
 Käivitus-, võtmevahetus- ja OAuthi juhised on dokumendis
 [`docs/schedule.md`](docs/schedule.md).

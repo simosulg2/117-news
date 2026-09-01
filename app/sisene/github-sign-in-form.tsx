@@ -53,7 +53,7 @@ export function GithubSignInForm({
       </form>
       <p className="mt-4 text-[11px] leading-5 text-[#526878] dark:text-[#7890a2]">
         {invite
-          ? "Kutse on ühekordne. Pärast GitHubiga kinnitamist saad oma isikliku ajakava."
+          ? "Kutse on ühekordne. Pärast kinnitamist saad kohe ühise klassi- ja rutiiniplaani isikliku koopia — midagi ei pea nullist sisestama."
           : "GitHubi kasutatakse ainult sinu konto tuvastamiseks. Me ei küsi juurdepääsu sinu repositooriumidele."}
       </p>
     </>

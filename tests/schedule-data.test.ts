@@ -107,6 +107,77 @@ test("rejects partial, zero-length, and untimed non-flexible windows", () => {
   }
 });
 
+test("rejects malformed or backwards timetable windows", () => {
+  for (const timeWindow of ["", "08:30", "09:45–08:30", "25:00–26:00"]) {
+    const result = validateScheduleData(sampleData({
+      schoolPeriods: [{
+        id: "period-a",
+        day: 1,
+        period: "1. tund",
+        timeWindow,
+        subjectEt: "Aine A",
+        note: "",
+      }],
+    }));
+    assert.equal(result.ok, false);
+    assert.equal(result.ok || result.issues[0].path, "$.schoolPeriods[0].timeWindow");
+  }
+  const legacy = parseScheduleData(sampleData({
+    schoolPeriods: [{
+      id: "period-a",
+      day: 1,
+      period: "1. tund",
+      timeWindow: "Hommikul",
+      subjectEt: "Aine A",
+      note: "",
+    }],
+  }));
+  assert.equal(legacy.schoolPeriods[0].timeWindow, "Hommikul");
+});
+
+test("validates stable hidden event metadata", () => {
+  const valid = validateScheduleData(sampleData({
+    editorVersion: 1,
+    hiddenEventIds: ["event-a"],
+  }));
+  assert.equal(valid.ok, true);
+
+  for (const hiddenEventIds of [["missing"], ["event-a", "event-a"]]) {
+    assert.equal(validateScheduleData(sampleData({
+      editorVersion: 1,
+      hiddenEventIds,
+    })).ok, false);
+  }
+  assert.equal(validateScheduleData(sampleData({ editorVersion: 2 })).ok, false);
+});
+
+test("accepts free-text routines but rejects malformed clock ranges on save", () => {
+  assert.equal(validateScheduleData(sampleData({
+    routines: [{
+      id: "routine-a",
+      section: "evening",
+      timeWindow: "Paindlik",
+      title: "Rahulik õhtu",
+      details: "",
+      category: "routine",
+    }],
+  })).ok, true);
+  for (const timeWindow of ["07:00–07:00", "25:00–26:00", "07:00–"]) {
+    const result = validateScheduleData(sampleData({
+      routines: [{
+        id: "routine-a",
+        section: "morning",
+        timeWindow,
+        title: "Hommik",
+        details: "",
+        category: "routine",
+      }],
+    }));
+    assert.equal(result.ok, false);
+    assert.equal(result.ok || result.issues[0].path, "$.routines[0].timeWindow");
+  }
+});
+
 test("bounds arrays, text, ids, hours, minutes, and finite numbers", () => {
   assert.equal(validateScheduleData(sampleData({
     events: Array.from(

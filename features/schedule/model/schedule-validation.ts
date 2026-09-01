@@ -10,7 +10,10 @@ import {
   type StudyPlan,
   type WeeklyMetric,
 } from "../../../lib/schedule-types.ts";
-
+import {
+  parseRoutineTimeWindow,
+  parseScheduleTimeWindow,
+} from "./schedule-derived-events.ts";
 export const SCHEDULE_DATA_LIMITS = {
   events: 512,
   schoolPeriods: 160,
@@ -26,7 +29,6 @@ export type ScheduleValidationIssue = { path: string; message: string };
 export type ScheduleValidationResult =
   | { ok: true; data: ScheduleData }
   | { ok: false; issues: ScheduleValidationIssue[] };
-
 const DAY_SET = new Set<number>(SCHEDULE_DAYS);
 const CATEGORY_SET = new Set<string>(SCHEDULE_CATEGORIES);
 const ROUTINE_SECTIONS = new Set(["morning", "evening", "fitness"]);
@@ -42,7 +44,6 @@ export class ScheduleValidationError extends Error {
     this.issues = [issue];
   }
 }
-
 function fail(path: string, message: string): never {
   throw new ScheduleValidationError({ path, message });
 }
@@ -89,7 +90,6 @@ function id(value: unknown, path: string): string {
   if (!ID_PATTERN.test(normalized)) return fail(path, "contains unsupported characters");
   return normalized;
 }
-
 function finiteNumber(value: unknown, path: string, minimum: number, maximum: number): number {
   if (typeof value !== "number" || !Number.isFinite(value)) return fail(path, "must be finite");
   if (value < minimum || value > maximum) return fail(path, `must be between ${minimum} and ${maximum}`);
@@ -101,7 +101,6 @@ function integer(value: unknown, path: string, minimum: number, maximum: number)
   if (!Number.isInteger(parsed)) return fail(path, "must be an integer");
   return parsed;
 }
-
 function day(value: unknown, path: string): ScheduleDay {
   if (typeof value !== "number" || !DAY_SET.has(value)) return fail(path, "must be a day from 1 to 7");
   return value as ScheduleDay;
@@ -111,7 +110,6 @@ function category(value: unknown, path: string): ScheduleCategory {
   if (typeof value !== "string" || !CATEGORY_SET.has(value)) return fail(path, "is not a schedule category");
   return value as ScheduleCategory;
 }
-
 function list<T>(
   value: unknown,
   path: string,
@@ -163,11 +161,12 @@ function schoolPeriod(value: unknown, path: string): SchoolPeriod {
   const item = record(value, path, [
     "id", "day", "period", "timeWindow", "subjectEt", "note",
   ]);
+  const timeWindow = text(item.timeWindow, `${path}.timeWindow`);
   return {
     id: id(item.id, `${path}.id`),
     day: day(item.day, `${path}.day`),
     period: text(item.period, `${path}.period`, 32),
-    timeWindow: text(item.timeWindow, `${path}.timeWindow`),
+    timeWindow,
     subjectEt: text(item.subjectEt, `${path}.subjectEt`),
     note: text(item.note, `${path}.note`, SCHEDULE_DATA_LIMITS.detailLength, true),
   };
@@ -226,15 +225,22 @@ function uniqueIds(items: readonly { id: string }[], path: string): void {
     seen.add(item.id);
   }
 }
-
 export function parseScheduleData(input: unknown): ScheduleData {
   const value = record(input, "$", [
-    "version", "title", "subtitle", "timeZone", "events", "schoolPeriods", "routines",
-    "studyPlans", "metrics",
+    "version", "editorVersion", "hiddenEventIds", "title", "subtitle", "timeZone", "events",
+    "schoolPeriods", "routines", "studyPlans", "metrics",
   ]);
   if (value.timeZone !== "Europe/Tallinn") fail("$.timeZone", "must be Europe/Tallinn");
+  if (value.editorVersion !== undefined && value.editorVersion !== 1) {
+    fail("$.editorVersion", "must be the supported editor version");
+  }
+  const hiddenEventIds = value.hiddenEventIds === undefined
+    ? undefined
+    : list(value.hiddenEventIds, "$.hiddenEventIds", SCHEDULE_DATA_LIMITS.events, id);
   const data: ScheduleData = {
     version: text(value.version, "$.version", 32),
+    ...(value.editorVersion === undefined ? {} : { editorVersion: 1 }),
+    ...(hiddenEventIds === undefined ? {} : { hiddenEventIds }),
     title: text(value.title, "$.title"),
     subtitle: text(value.subtitle, "$.subtitle", 240, true),
     timeZone: "Europe/Tallinn",
@@ -251,12 +257,42 @@ export function parseScheduleData(input: unknown): ScheduleData {
   uniqueIds(data.routines, "$.routines");
   uniqueIds(data.studyPlans, "$.studyPlans");
   uniqueIds(data.metrics, "$.metrics");
+  if (data.hiddenEventIds) {
+    const eventIds = new Set(data.events.map((item) => item.id));
+    const seen = new Set<string>();
+    for (const [index, hiddenId] of data.hiddenEventIds.entries()) {
+      if (seen.has(hiddenId)) fail(`$.hiddenEventIds[${index}]`, "must be unique");
+      if (!eventIds.has(hiddenId)) fail(`$.hiddenEventIds[${index}]`, "must reference an event");
+      seen.add(hiddenId);
+    }
+  }
   return data;
 }
-
+/** Writes require timeline-safe clock windows; the editor opens the exact invalid row. */
+export function parseScheduleDataForSave(input: unknown): ScheduleData {
+  const data = parseScheduleData(input);
+  for (const [index, period] of data.schoolPeriods.entries()) {
+    if (!parseScheduleTimeWindow(period.timeWindow)) {
+      fail(
+        `$.schoolPeriods[${index}].timeWindow`,
+        "must be a valid increasing time window, for example 08:30–09:45",
+      );
+    }
+  }
+  for (const [index, routine] of data.routines.entries()) {
+    const looksLikeRange = /^\s*\d{1,2}[.:]\d{2}\s*[\-–—]/u.test(routine.timeWindow);
+    if (looksLikeRange && !parseRoutineTimeWindow(routine.timeWindow)) {
+      fail(
+        `$.routines[${index}].timeWindow`,
+        "must be a valid non-zero time window, for example 07:00–07:15",
+      );
+    }
+  }
+  return data;
+}
 export function validateScheduleData(input: unknown): ScheduleValidationResult {
   try {
-    return { ok: true, data: parseScheduleData(input) };
+    return { ok: true, data: parseScheduleDataForSave(input) };
   } catch (error) {
     if (error instanceof ScheduleValidationError) return { ok: false, issues: error.issues };
     throw error;

@@ -52,10 +52,20 @@ expires after seven days, can be revoked before use, and never appears in the
 database in bearer form—only its SHA-256 hash is stored.
 
 On an invited account's first `/ajakava` request, the server decrypts and
-validates the committed template, re-encrypts an independent copy with that
-user's derived key, and persists it. Every read and compare-and-swap update is
-scoped to the authenticated internal user ID. A stale revision is rejected so
-two tabs cannot silently overwrite one another.
+validates the full committed class, routine, and weekly template. It then
+re-encrypts an independent copy with that user's derived key and persists it;
+new users do not begin with a blank document. Later edits remain private to
+that account and do not modify the shared template or another user's copy.
+Every read and compare-and-swap update is scoped to the authenticated internal
+user ID. A stale revision is rejected so two tabs cannot silently overwrite
+one another.
+
+The timetable and routine lists are the single sources for their recurring
+items. `Täna` and `Nädal` derive those entries automatically, so a lesson or
+routine is edited only once. Legacy duplicate event rows are ignored in the
+editor and timeline but retained in the encrypted source document. Their IDs
+are recorded once in encrypted editor metadata, so later routine changes cannot
+make stale rows reappear and the compatibility migration remains non-destructive.
 
 The application creates `schedule_users`, `schedule_invites`, and
 `schedule_documents` with `CREATE TABLE IF NOT EXISTS`; no additional Coolify
