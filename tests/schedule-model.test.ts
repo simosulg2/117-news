@@ -13,7 +13,13 @@ import {
   deriveStudyTotals,
   deriveWeeklyMetricPercentages,
 } from "../features/schedule/model/schedule-metrics.ts";
-import type { ScheduleEvent, StudyPlan, WeeklyMetric } from "../lib/schedule-types.ts";
+import { buildSchoolTimetable } from "../features/schedule/model/school-timetable.ts";
+import type {
+  ScheduleEvent,
+  SchoolPeriod,
+  StudyPlan,
+  WeeklyMetric,
+} from "../lib/schedule-types.ts";
 
 function event(
   id: string,
@@ -202,4 +208,28 @@ test("derives metric percentages from the displayed metric total", () => {
   assert.deepEqual(deriveWeeklyMetricPercentages([
     { id: "zero", label: "Zero", hours: 0, detail: "" },
   ]).metrics[0].percentage, 0);
+});
+
+test("builds a weekday timetable with ordered lesson columns and a separate lunch break", () => {
+  const periods: SchoolPeriod[] = [
+    { id: "monday-three", day: 1, period: "3. tund", timeWindow: "11.50–13.05", subjectEt: "Aine C", note: "" },
+    { id: "lunch", day: 1, period: "Lõunapaus", timeWindow: "11.10–11.50", subjectEt: "Lõuna", note: "" },
+    { id: "monday-one", day: 1, period: "1. tund", timeWindow: "8.30–9.45", subjectEt: "Aine A", note: "" },
+    { id: "tuesday-one", day: 2, period: "1. tund", timeWindow: "8.30–9.45", subjectEt: "Aine B", note: "" },
+  ];
+
+  const timetable = buildSchoolTimetable(periods);
+
+  assert.deepEqual(timetable.columns.map((column) => column.period), ["1. tund", "3. tund"]);
+  assert.deepEqual(timetable.lunchWindows, ["11.10–11.50"]);
+  assert.equal(timetable.rows.length, 5);
+  assert.deepEqual(timetable.rows[0].cells.map((cell) => cell.map((period) => period.id)), [
+    ["monday-one"], ["monday-three"],
+  ]);
+  assert.deepEqual(timetable.rows[1].cells.map((cell) => cell.map((period) => period.id)), [
+    ["tuesday-one"], [],
+  ]);
+  assert.deepEqual(periods.map((period) => period.id), [
+    "monday-three", "lunch", "monday-one", "tuesday-one",
+  ]);
 });

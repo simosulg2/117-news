@@ -35,7 +35,7 @@ function ActiveView({
   switch (tab) {
     case "today": return <TodayView data={data} now={now} />;
     case "week": return <WeekView data={data} now={now} />;
-    case "school": return <SchoolView data={data} />;
+    case "school": return <SchoolView data={data} now={now} />;
     case "routines": return <RoutinesView data={data} />;
     case "balance": return <BalanceView data={data} />;
   }
