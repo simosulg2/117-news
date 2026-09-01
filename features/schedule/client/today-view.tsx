@@ -79,11 +79,7 @@ export function TodayView({ data, now }: TodayViewProps) {
     ? events.filter((event) => isScheduleEventPast(event, position.minuteOfDay))
     : [];
   const pastIds = new Set(pastEvents.map((event) => event.id));
-  const laterEvents = events.filter((event) => (
-    !pastIds.has(event.id)
-    && event.id !== currentId
-    && event.id !== nextId
-  ));
+  const remainingEvents = events.filter((event) => !pastIds.has(event.id));
 
   return (
     <div>
@@ -107,11 +103,11 @@ export function TodayView({ data, now }: TodayViewProps) {
           <div>
             <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#617786] dark:text-[#7890a2]">Päeva joon</p>
             <h2 id="today-timeline-heading" className="mt-0.5 text-sm font-black text-[#172634] dark:text-[#edf4f8]">
-              Ülejäänud päev
+              Tänane ajakava
             </h2>
           </div>
           <span className="text-[10px] font-black uppercase tracking-[0.06em] text-[#617786] dark:text-[#7890a2]">
-            Hiljem · {laterEvents.length}
+            Praegu ja hiljem · {remainingEvents.length}
           </span>
         </div>
 
@@ -134,10 +130,14 @@ export function TodayView({ data, now }: TodayViewProps) {
                 </div>
               </details>
             )}
-            {laterEvents.length ? (
+            {remainingEvents.length ? (
               <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
-                {laterEvents.map((event) => (
-                  <ScheduleCompactEvent key={event.id} event={event} />
+                {remainingEvents.map((event) => (
+                  <ScheduleCompactEvent
+                    key={event.id}
+                    event={event}
+                    state={event.id === currentId ? "current" : event.id === nextId ? "next" : undefined}
+                  />
                 ))}
               </div>
             ) : (

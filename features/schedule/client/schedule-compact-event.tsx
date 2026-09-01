@@ -29,7 +29,7 @@ export function ScheduleCompactEvent({
           {formatScheduleWindow(event)}
         </p>
         {state && (
-          <span className="truncate border border-[#245fae] bg-[#e4eefb] px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.06em] text-[#174b8d] dark:border-signal dark:bg-[#102b43] dark:text-[#8eb8ff]">
+          <span className="shrink-0 border border-[#245fae] bg-[#e4eefb] px-1 py-0.5 text-[7px] font-black uppercase tracking-[0.04em] text-[#174b8d] dark:border-signal dark:bg-[#102b43] dark:text-[#8eb8ff] sm:px-1.5 sm:text-[8px] sm:tracking-[0.06em]">
             {state === "current" ? "Praegu" : "Järgmine"}
           </span>
         )}
