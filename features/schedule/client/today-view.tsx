@@ -1,7 +1,3 @@
-"use client";
-
-import { useState } from "react";
-
 import {
   findCurrentAndNextScheduleEvent,
   getTallinnSchedulePosition,
@@ -10,9 +6,9 @@ import {
   type ScheduleOccurrence,
 } from "@/features/schedule/model/schedule-events";
 import { buildScheduleTimelineEvents } from "@/features/schedule/model/schedule-derived-events";
-import type { ScheduleData, ScheduleEvent } from "@/lib/schedule-types";
+import type { ScheduleData } from "@/lib/schedule-types";
 
-import { ScheduleEventCard } from "./schedule-event-card";
+import { ScheduleCompactEvent } from "./schedule-compact-event";
 import {
   formatOccurrence,
   formatScheduleDate,
@@ -65,28 +61,7 @@ function FocusCard({
   );
 }
 
-function TodayEventCard({
-  event,
-  past,
-  currentId,
-  nextId,
-}: {
-  event: ScheduleEvent;
-  past: boolean;
-  currentId?: string;
-  nextId?: string;
-}) {
-  return (
-    <ScheduleEventCard
-      event={event}
-      past={past}
-      state={event.id === currentId ? "current" : event.id === nextId ? "next" : undefined}
-    />
-  );
-}
-
 export function TodayView({ data, now }: TodayViewProps) {
-  const [timelineOpen, setTimelineOpen] = useState(false);
   const timelineEvents = buildScheduleTimelineEvents(data);
   const nowTimestamp = now?.getTime() ?? null;
   const position = now ? getTallinnSchedulePosition(now) : null;
@@ -98,13 +73,17 @@ export function TodayView({ data, now }: TodayViewProps) {
       && focus.next
       && getTallinnSchedulePosition(focus.next.startTimestamp).localDate === position.localDate,
   );
+  const currentId = focus.current?.event.id;
+  const nextId = nextIsToday ? focus.next?.event.id : undefined;
   const pastEvents = position
     ? events.filter((event) => isScheduleEventPast(event, position.minuteOfDay))
     : [];
   const pastIds = new Set(pastEvents.map((event) => event.id));
-  const remainingEvents = events.filter((event) => !pastIds.has(event.id));
-  const currentId = focus.current?.event.id;
-  const nextId = nextIsToday ? focus.next?.event.id : undefined;
+  const laterEvents = events.filter((event) => (
+    !pastIds.has(event.id)
+    && event.id !== currentId
+    && event.id !== nextId
+  ));
 
   return (
     <div>
@@ -123,94 +102,55 @@ export function TodayView({ data, now }: TodayViewProps) {
         <FocusCard label="Järgmine" occurrence={focus.next} nowTimestamp={nowTimestamp} />
       </div>
 
-      <section
-        aria-labelledby="today-timeline-heading"
-        className="mt-5 overflow-hidden border border-[#aebcc6] bg-[#f8fafb] dark:border-[#29485f] dark:bg-[#091925]"
-      >
-        <div className={`flex min-h-14 items-center justify-between gap-3 px-3 ${timelineOpen ? "bg-[#e8eef2] dark:bg-[#102538]" : ""}`}>
+      <section aria-labelledby="today-timeline-heading" className="mt-5">
+        <div className="flex items-end justify-between gap-3 border-b border-[#aebcc6] pb-2 dark:border-[#29485f]">
           <div>
             <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#617786] dark:text-[#7890a2]">Päeva joon</p>
             <h2 id="today-timeline-heading" className="mt-0.5 text-sm font-black text-[#172634] dark:text-[#edf4f8]">
-              Kõik tänased tegevused
+              Ülejäänud päev
             </h2>
           </div>
-          <button
-            type="button"
-            aria-expanded={timelineOpen}
-            aria-controls="today-timeline-panel"
-            aria-label={timelineOpen ? "Peida päeva joon" : `Ava päeva joon, ${events.length} kirjet`}
-            onClick={() => setTimelineOpen((open) => !open)}
-            className="flex min-h-10 shrink-0 items-center gap-2 border border-[#9fb2c0] bg-white px-3 text-[10px] font-black uppercase tracking-[0.06em] text-[#174b8d] outline-none hover:bg-[#eef3f6] focus-visible:ring-2 focus-visible:ring-signal dark:border-[#35536a] dark:bg-[#0b1b29] dark:text-signal dark:hover:bg-[#102538]"
-          >
-            <span>{timelineOpen ? "Peida" : `Ava · ${events.length}`}</span>
-            <svg
-              aria-hidden="true"
-              viewBox="0 0 20 20"
-              className={`size-4 transition-transform motion-reduce:transition-none ${timelineOpen ? "rotate-180" : ""}`}
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="m5 7.5 5 5 5-5" />
-            </svg>
-          </button>
+          <span className="text-[10px] font-black uppercase tracking-[0.06em] text-[#617786] dark:text-[#7890a2]">
+            Hiljem · {laterEvents.length}
+          </span>
         </div>
 
-        <div id="today-timeline-panel" hidden={!timelineOpen} className="border-t border-[#bdc9d1] p-2 dark:border-[#29485f] sm:p-3">
-          {now === null ? (
-            <p aria-live="polite" className="border border-[#bdc9d1] bg-white p-4 text-sm text-[#617786] dark:border-[#29485f] dark:bg-[#0b1b29] dark:text-[#9bb0bf]">
-              Tallinna aja määramine…
-            </p>
-          ) : events.length ? (
-            <>
-              <div className="hidden gap-2 md:grid md:grid-cols-2 xl:grid-cols-3">
-                {events.map((event) => (
-                  <TodayEventCard
-                    key={event.id}
-                    event={event}
-                    past={pastIds.has(event.id)}
-                    currentId={currentId}
-                    nextId={nextId}
-                  />
+        {now === null ? (
+          <p aria-live="polite" className="mt-2 border border-[#bdc9d1] bg-white p-4 text-sm text-[#617786] dark:border-[#29485f] dark:bg-[#0b1b29] dark:text-[#9bb0bf]">
+            Tallinna aja määramine…
+          </p>
+        ) : events.length ? (
+          <div className="mt-2 grid gap-2">
+            {pastEvents.length > 0 && (
+              <details className="group border border-[#bdc9d1] bg-[#eef1f3] dark:border-[#29485f] dark:bg-[#0a151d]">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3 px-3 text-[10px] font-black uppercase tracking-[0.06em] text-[#65737c] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal dark:text-[#82939e]">
+                  <span>Möödunud · {pastEvents.length}</span>
+                  <span aria-hidden="true" className="text-base transition-transform group-open:rotate-45">+</span>
+                </summary>
+                <div className="grid grid-cols-2 gap-1.5 border-t border-[#c8d0d5] p-2 dark:border-[#263946] sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                  {pastEvents.map((event) => (
+                    <ScheduleCompactEvent key={event.id} event={event} past />
+                  ))}
+                </div>
+              </details>
+            )}
+            {laterEvents.length ? (
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6">
+                {laterEvents.map((event) => (
+                  <ScheduleCompactEvent key={event.id} event={event} />
                 ))}
               </div>
-              <div className="grid gap-2 md:hidden">
-                {pastEvents.length > 0 && (
-                  <details className="group border border-[#bdc9d1] bg-[#eef1f3] dark:border-[#29485f] dark:bg-[#0a151d]">
-                    <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-3 text-xs font-black text-[#65737c] outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal dark:text-[#82939e]">
-                      <span>Möödunud · {pastEvents.length}</span>
-                      <span aria-hidden="true" className="text-lg transition-transform group-open:rotate-45">+</span>
-                    </summary>
-                    <div className="grid gap-2 border-t border-[#c8d0d5] p-2 dark:border-[#263946]">
-                      {pastEvents.map((event) => (
-                        <TodayEventCard
-                          key={event.id}
-                          event={event}
-                          past
-                          currentId={currentId}
-                          nextId={nextId}
-                        />
-                      ))}
-                    </div>
-                  </details>
-                )}
-                {remainingEvents.map((event) => (
-                  <TodayEventCard
-                    key={event.id}
-                    event={event}
-                    past={false}
-                    currentId={currentId}
-                    nextId={nextId}
-                  />
-                ))}
-              </div>
-            </>
-          ) : (
-            <p className="border border-dashed border-[#9fb2c0] p-5 text-sm text-[#617786] dark:border-[#35536a] dark:text-[#9bb0bf]">
-              Tänaseks pole ajastatud tegevusi.
-            </p>
-          )}
-        </div>
+            ) : (
+              <p className="border border-dashed border-[#9fb2c0] px-3 py-2.5 text-xs text-[#617786] dark:border-[#35536a] dark:text-[#9bb0bf]">
+                Tänaseks rohkem tegevusi pole.
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="mt-2 border border-dashed border-[#9fb2c0] p-5 text-sm text-[#617786] dark:border-[#35536a] dark:text-[#9bb0bf]">
+            Tänaseks pole ajastatud tegevusi.
+          </p>
+        )}
       </section>
     </div>
   );

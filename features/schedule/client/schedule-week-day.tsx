@@ -1,5 +1,4 @@
 import {
-  formatScheduleWindow,
   isScheduleEventPast,
   sortScheduleEvents,
   type TallinnSchedulePosition,
@@ -7,55 +6,15 @@ import {
 import { isDerivedSchoolPeriodEvent } from "@/features/schedule/model/schedule-derived-events";
 import type { ScheduleDay, ScheduleEvent } from "@/lib/schedule-types";
 
+import { ScheduleCompactEvent } from "./schedule-compact-event";
 import { ScheduleEventCard } from "./schedule-event-card";
-import { CATEGORY_ACCENTS, SCHEDULE_DAYS } from "./schedule-formatters";
+import { SCHEDULE_DAYS } from "./schedule-formatters";
 
 export function displayEventSummary(events: readonly ScheduleEvent[]): string {
   const hasSchool = events.some(isDerivedSchoolPeriodEvent);
   if (hasSchool) return "Koolipäev";
   const count = events.length;
   return count ? `${count} ${count === 1 ? "plokk" : "plokki"}` : "Vaba päev";
-}
-
-function DesktopWeekEvent({
-  event,
-  current,
-  next,
-  past,
-}: {
-  event: ScheduleEvent;
-  current: boolean;
-  next: boolean;
-  past: boolean;
-}) {
-  return (
-    <article
-      aria-label={past ? `Möödunud: ${event.title}` : undefined}
-      className={`min-w-0 border border-l-4 px-2.5 py-2 ${past
-        ? "border-[#c3cbd1] bg-[#edf0f2] grayscale dark:border-[#263946] dark:bg-[#0a151d]"
-        : `border-[#bdc9d1] bg-white ${CATEGORY_ACCENTS[event.category]} dark:border-y-[#29485f] dark:border-r-[#29485f] dark:bg-[#0b1b29]`
-      }`}
-    >
-      <div className="flex min-w-0 items-center justify-between gap-2">
-        <p className={`shrink-0 tabular-nums text-[10px] font-black ${past ? "text-[#75838c] dark:text-[#748895]" : "text-[#245fae] dark:text-signal"}`}>
-          {formatScheduleWindow(event)}
-        </p>
-        {(current || next) && (
-          <span className="truncate border border-[#245fae] bg-[#e4eefb] px-1.5 py-0.5 text-[8px] font-black uppercase tracking-[0.06em] text-[#174b8d] dark:border-signal dark:bg-[#102b43] dark:text-[#8eb8ff]">
-            {current ? "Praegu" : "Järgmine"}
-          </span>
-        )}
-      </div>
-      <h4 className={`mt-0.5 truncate text-[11px] font-black leading-4 ${past ? "text-[#65737c] dark:text-[#82939e]" : "text-[#172634] dark:text-[#edf4f8]"}`} title={event.title}>
-        {event.title}
-      </h4>
-      {event.detail && event.category === "school" && (
-        <p className="truncate text-[9px] leading-4 text-[#617786] dark:text-[#8da1b0]" title={event.detail}>
-          {event.detail}
-        </p>
-      )}
-    </article>
-  );
 }
 
 export function DayEvents({
@@ -122,12 +81,12 @@ export function DayEvents({
 
   const cards = (items: typeof displayItems) => items.map(({ event, current, next, past }) => desktopCompact
     ? (
-        <DesktopWeekEvent
+        <ScheduleCompactEvent
           key={event.id}
           event={event}
-          current={current}
-          next={next}
+          state={current ? "current" : next ? "next" : undefined}
           past={past}
+          showDetail={event.id.startsWith("school-summary-")}
         />
       )
     : (
