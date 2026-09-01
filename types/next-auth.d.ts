@@ -4,12 +4,15 @@ declare module "next-auth" {
   interface Session {
     user: DefaultSession["user"] & {
       scheduleAccess?: boolean;
+      scheduleUserId?: string;
+      scheduleIsAdmin?: boolean;
     };
   }
 }
 
 declare module "next-auth/jwt" {
   interface JWT {
-    scheduleProviderAccountId?: string;
+    scheduleUserId?: string;
+    scheduleIsAdmin?: boolean;
   }
 }

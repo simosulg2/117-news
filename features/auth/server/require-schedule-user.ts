@@ -6,18 +6,23 @@ import {
   getScheduleAuthState,
   SCHEDULE_SIGN_IN_PATH,
 } from "@/features/auth/server/schedule-auth-policy";
+import { getScheduleUserAccessById } from "@/features/auth/server/schedule-user-store.server";
 
 export type ScheduleUser = Readonly<{
+  id: string | null;
   name: string | null;
   email: string | null;
   image: string | null;
+  isAdmin: boolean;
   developmentBypass: boolean;
 }>;
 
 const DEVELOPMENT_USER: ScheduleUser = {
+  id: null,
   name: "Arendusrežiim",
   email: null,
   image: null,
+  isAdmin: true,
   developmentBypass: true,
 };
 
@@ -46,10 +51,20 @@ export async function requireScheduleUser(): Promise<ScheduleUser> {
     redirect(signInDestination("AccessDenied"));
   }
 
+  let access;
+  try {
+    access = await getScheduleUserAccessById(user.scheduleUserId);
+  } catch {
+    redirect(signInDestination("Configuration"));
+  }
+  if (!access) redirect(signInDestination("AccessDenied"));
+
   return {
+    id: access.id,
     name: user.name ?? null,
     email: user.email ?? null,
     image: user.image ?? null,
+    isAdmin: access.isAdmin,
     developmentBypass: false,
   };
 }

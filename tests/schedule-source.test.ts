@@ -5,6 +5,10 @@ import test from "node:test";
 
 import {
   decryptSchedulePayload,
+  decryptScheduleForUser,
+  deriveScheduleUserKey,
+  encryptScheduleForUser,
+  encryptSchedulePayload,
   parseEncryptedSchedulePayload,
   type EncryptedSchedulePayload,
 } from "../features/schedule/server/schedule-crypto.ts";
@@ -32,6 +36,58 @@ test("decryptSchedulePayload authenticates and decodes a private payload", () =>
   const payload = encryptFixture(expected, key);
 
   assert.deepEqual(decryptSchedulePayload(payload, key.toString("base64url")), expected);
+});
+
+test("encryptSchedulePayload produces a fresh authenticated envelope", () => {
+  const key = randomBytes(32).toString("base64url");
+  const value = { version: "test", events: [{ id: "private-event" }] };
+
+  const first = encryptSchedulePayload(value, key);
+  const second = encryptSchedulePayload(value, key);
+
+  assert.deepEqual(decryptSchedulePayload(first, key), value);
+  assert.deepEqual(decryptSchedulePayload(second, key), value);
+  assert.notEqual(first.iv, second.iv);
+  assert.notEqual(first.ciphertext, second.ciphertext);
+});
+
+test("per-user keys and authenticated context isolate schedule ciphertext", () => {
+  const masterKey = randomBytes(32).toString("base64url");
+  const ownerId = "4a6ab1fd-5f1a-4ad8-ae57-77b20fcbd63f";
+  const otherId = "a1246d8e-e557-4607-af50-33b890de37f9";
+  const ownerKey = deriveScheduleUserKey(masterKey, ownerId);
+  const otherKey = deriveScheduleUserKey(masterKey, otherId);
+  const payload = encryptScheduleForUser(
+    { title: "Owner private schedule" },
+    masterKey,
+    ownerId,
+  );
+
+  assert.equal(Buffer.from(ownerKey, "base64url").length, 32);
+  assert.notEqual(ownerKey, otherKey);
+  assert.deepEqual(
+    decryptScheduleForUser(payload, masterKey, ownerId),
+    { title: "Owner private schedule" },
+  );
+  assert.throws(() => decryptScheduleForUser(payload, masterKey, otherId));
+});
+
+test("per-user key derivation normalizes UUIDs and rejects non-user identities", () => {
+  const masterKey = randomBytes(32).toString("base64url");
+  const userId = "4a6ab1fd-5f1a-4ad8-ae57-77b20fcbd63f";
+
+  assert.equal(
+    deriveScheduleUserKey(masterKey, userId),
+    deriveScheduleUserKey(masterKey, userId),
+  );
+  assert.equal(
+    deriveScheduleUserKey(masterKey, userId),
+    deriveScheduleUserKey(masterKey, `  ${userId.toUpperCase()}  `),
+  );
+  assert.throws(() => deriveScheduleUserKey(masterKey, ""));
+  assert.throws(() => deriveScheduleUserKey(masterKey, "12345678"));
+  assert.throws(() => deriveScheduleUserKey(masterKey, "github-login-name"));
+  assert.throws(() => deriveScheduleUserKey(masterKey, "4a6ab1fd-5f1a-0ad8-ae57-77b20fcbd63f"));
 });
 
 test("decryptSchedulePayload rejects the wrong key and modified ciphertext", () => {

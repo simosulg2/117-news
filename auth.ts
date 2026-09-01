@@ -5,8 +5,16 @@ import GitHub from "next-auth/providers/github";
 
 import {
   fixedScheduleRedirect,
-  isAllowedScheduleGithubAccount,
+  getScheduleAuthState,
 } from "@/features/auth/server/schedule-auth-policy";
+import { takePendingScheduleInviteToken } from "@/features/auth/server/schedule-invite-cookie.server";
+import { applyScheduleAccessToToken } from "@/features/auth/server/schedule-session-token";
+import {
+  authorizeScheduleSignIn,
+  findScheduleUserByProviderAccountId,
+  getScheduleUserAccessById,
+  type ScheduleUserAccess,
+} from "@/features/auth/server/schedule-user-store.server";
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   secret: process.env.AUTH_SECRET,
@@ -29,34 +37,46 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     || process.env.AUTH_TRUST_HOST === "true",
   useSecureCookies: process.env.NODE_ENV === "production",
   callbacks: {
-    signIn({ account }) {
-      return account?.provider === "github"
-        && isAllowedScheduleGithubAccount(
+    async signIn({ account }) {
+      if (
+        account?.provider !== "github"
+        || !getScheduleAuthState(process.env).configured
+      ) return false;
+      try {
+        const invitation = await takePendingScheduleInviteToken();
+        return Boolean(await authorizeScheduleSignIn(
           account.providerAccountId,
-          process.env,
-        );
-    },
-    jwt({ token, account }) {
-      if (account) {
-        if (
-          account.provider === "github"
-          && isAllowedScheduleGithubAccount(account.providerAccountId, process.env)
-        ) {
-          token.scheduleProviderAccountId = account.providerAccountId;
-        } else {
-          delete token.scheduleProviderAccountId;
-        }
+          invitation,
+        ));
+      } catch {
+        return false;
       }
-      return token;
+    },
+    async jwt({ token, account }) {
+      let access: ScheduleUserAccess | null = null;
+      try {
+        access = account?.provider === "github"
+          ? await findScheduleUserByProviderAccountId(account.providerAccountId)
+          : await getScheduleUserAccessById(
+            typeof token.scheduleUserId === "string"
+              ? token.scheduleUserId
+              : undefined,
+          );
+      } catch {
+        access = null;
+      }
+      return applyScheduleAccessToToken(token, access);
     },
     session({ session, token }) {
       if (session.user) {
-        session.user.scheduleAccess = isAllowedScheduleGithubAccount(
-          typeof token.scheduleProviderAccountId === "string"
-            ? token.scheduleProviderAccountId
-            : undefined,
-          process.env,
-        );
+        const scheduleUserId = typeof token.scheduleUserId === "string"
+          ? token.scheduleUserId
+          : undefined;
+        session.user.scheduleAccess = Boolean(scheduleUserId);
+        session.user.scheduleUserId = scheduleUserId;
+        session.user.scheduleIsAdmin = scheduleUserId
+          ? token.scheduleIsAdmin === true
+          : false;
       }
       return session;
     },

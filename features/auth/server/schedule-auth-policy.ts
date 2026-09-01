@@ -6,10 +6,13 @@ const REQUIRED_CONFIGURATION_KEYS = [
   "AUTH_GITHUB_ID",
   "AUTH_GITHUB_SECRET",
   "SCHEDULE_ALLOWED_GITHUB_ID",
+  "DATABASE_URL",
+  "SCHEDULE_DATA_KEY",
 ] as const;
 
 type RequiredConfigurationKey = (typeof REQUIRED_CONFIGURATION_KEYS)[number]
-  | "AUTH_TRUST_HOST";
+  | "AUTH_TRUST_HOST"
+  | "AUTH_URL";
 
 export type ScheduleAuthEnvironment = Readonly<{
   NODE_ENV?: string;
@@ -17,7 +20,10 @@ export type ScheduleAuthEnvironment = Readonly<{
   AUTH_GITHUB_ID?: string;
   AUTH_GITHUB_SECRET?: string;
   AUTH_TRUST_HOST?: string;
+  AUTH_URL?: string;
   SCHEDULE_ALLOWED_GITHUB_ID?: string;
+  DATABASE_URL?: string;
+  SCHEDULE_DATA_KEY?: string;
   SCHEDULE_DEV_BYPASS?: string;
 }>;
 
@@ -38,6 +44,33 @@ function hasStrongAuthSecret(value: string | undefined): boolean {
   return byteLength >= 32 && byteLength <= 4_096;
 }
 
+function hasPostgresUrl(value: string | undefined): boolean {
+  try {
+    const protocol = new URL(value?.trim() ?? "").protocol;
+    return protocol === "postgres:" || protocol === "postgresql:";
+  } catch {
+    return false;
+  }
+}
+
+function hasScheduleDataKey(value: string | undefined): boolean {
+  return /^[A-Za-z0-9_-]{43}$/u.test(value?.trim() ?? "");
+}
+
+function hasProductionAuthUrl(value: string | undefined): boolean {
+  try {
+    const url = new URL(value?.trim() ?? "");
+    return url.origin === "https://117.ee"
+      && url.pathname === "/"
+      && !url.search
+      && !url.hash
+      && !url.username
+      && !url.password;
+  } catch {
+    return false;
+  }
+}
+
 export function normalizeGithubAccountId(value: string | undefined): string | null {
   const normalized = value?.trim() ?? "";
   return /^[1-9]\d{0,19}$/.test(normalized) ? normalized : null;
@@ -54,15 +87,24 @@ export function getScheduleAuthState(
   environment: ScheduleAuthEnvironment,
 ): ScheduleAuthState {
   const missingKeys: RequiredConfigurationKey[] = REQUIRED_CONFIGURATION_KEYS.filter(
-    (key) => key === "AUTH_SECRET"
-      ? !hasStrongAuthSecret(environment[key])
-      : !hasValue(environment[key]),
+    (key) => {
+      if (key === "AUTH_SECRET") return !hasStrongAuthSecret(environment[key]);
+      if (key === "DATABASE_URL") return !hasPostgresUrl(environment[key]);
+      if (key === "SCHEDULE_DATA_KEY") return !hasScheduleDataKey(environment[key]);
+      return !hasValue(environment[key]);
+    },
   );
   if (
     environment.NODE_ENV === "production"
     && environment.AUTH_TRUST_HOST !== "true"
   ) {
     missingKeys.push("AUTH_TRUST_HOST");
+  }
+  if (
+    environment.NODE_ENV === "production"
+    && !hasProductionAuthUrl(environment.AUTH_URL)
+  ) {
+    missingKeys.push("AUTH_URL");
   }
   const allowedGithubId = normalizeGithubAccountId(
     environment.SCHEDULE_ALLOWED_GITHUB_ID,
@@ -88,7 +130,11 @@ export function isAllowedScheduleGithubAccount(
 export function fixedScheduleRedirect(_requestedUrl: string, baseUrl: string): string {
   try {
     const base = new URL(baseUrl);
-    if (base.protocol !== "https:" && base.protocol !== "http:") return SCHEDULE_PATH;
+    const localHost = base.hostname === "localhost"
+      || base.hostname === "127.0.0.1";
+    const allowedOrigin = base.origin === "https://117.ee"
+      || (localHost && (base.protocol === "http:" || base.protocol === "https:"));
+    if (!allowedOrigin) return SCHEDULE_PATH;
     return new URL(SCHEDULE_PATH, base.origin).toString();
   } catch {
     return SCHEDULE_PATH;

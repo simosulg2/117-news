@@ -24,7 +24,7 @@ export default function middleware(request: NextRequest): NextResponse {
   if (!hasAuthJsSessionCookie(cookieNames)) return signInRedirect(request, false);
 
   // A cookie is only an optimistic signal. The page/data boundary must call
-  // requireScheduleUser(), which validates the Auth.js session and allowlist.
+  // requireScheduleUser(), which validates the Auth.js session and membership.
   return NextResponse.next();
 }
 

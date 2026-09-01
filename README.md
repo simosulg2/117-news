@@ -1,13 +1,14 @@
 # 117.ee
 
 117.ee koondab ühte kiiresse töölauda Eesti uudised, Võru ilma, poliitika ja
-ühe kasutaja autentimisega kaitstud isikliku ajakava.
+kutsepõhise autentimisega kaitstud isiklikud ajakavad.
 Uudiste üldvaates kuvatakse kuni 117 kõige värskemat lugu ning sama sündmust
 kajastavad eri allikad koondatakse ühe rea alla. `/ilm` sisaldab hetkeilma,
 mõõdetud ajalugu, mudelprognoosi ja radarit. Poliitika all on eraldi
 `Reitingud · Riigikogu · Raha` töölauad. `/ajakava` avab GitHubi autentimisega
-kaitstud nädala-, kooli-, rutiini-, õppe- ja tasakaaluvaated. Vaikimisi avaneb
-hele teema, kuid kasutaja salvestatud valikut austatakse.
+kaitstud nädala-, kooli-, rutiini- ja tasakaaluvaated. Iga kasutaja saab oma
+ajakava muuta ning salvestada. Vaikimisi avaneb hele teema, kuid kasutaja
+salvestatud valikut austatakse.
 
 ## Käivitamine
 
@@ -18,9 +19,10 @@ npm run dev
 
 Ava `http://localhost:3000`.
 
-Kõik avalikud vaated töötavad ilma keskkonnamuutujateta. PostgreSQL on
-valikuline ning võimaldab uudislugude ajaloo ja värskete Võru mõõtmiste püsivat
-kogumist. Privaatse ajakava seadistus on dokumendis
+Kõik avalikud vaated töötavad ilma keskkonnamuutujateta. PostgreSQL on avalike
+vaadete jaoks valikuline, kuid mitme kasutaja muudetavate ajakavade jaoks
+nõutud; sama olemasolevat andmebaasi saab jagada uudiste ja ilma kogujatega.
+Privaatse ajakava seadistus on dokumendis
 [`docs/schedule.md`](docs/schedule.md).
 
 ## Kuidas andmed liiguvad
@@ -123,11 +125,12 @@ ERJK, CC BY-SA 3.0.
 
 ## Privaatne ajakava
 
-`/ajakava` kasutab GitHub OAuthi, ühte lubatud GitHubi konto ID-d ja kaheksaks
-tunniks piiratud serveriseanssi. Isiklik ajakava ei ole kliendikoodis ega Git'i
-ajaloos loetava tekstina: server dekrüpteerib versioonitud AES-GCM andmepaki
-alles pärast autoriseerimist. Puuduv seadistus sulgeb ligipääsu, kuid ei mõjuta
-avalikke vaateid.
+`/ajakava` kasutab GitHub OAuthi, ühekordseid kutseid ja kaheksaks tunniks
+piiratud serveriseanssi. Seadistatud omanik saab saata sõbrale kutselingi;
+mõlemal on seejärel eraldi täielikult muudetav ajakava. Ajakavad ei ole Git'i
+ajaloos loetava tekstina: server dekrüpteerib iga kasutaja versioonitud AES-GCM
+andmepaki alles pärast autoriseerimist. Puuduv seadistus sulgeb ligipääsu, kuid
+ei mõjuta avalikke vaateid.
 
 Käivitus-, võtmevahetus- ja OAuthi juhised on dokumendis
 [`docs/schedule.md`](docs/schedule.md).

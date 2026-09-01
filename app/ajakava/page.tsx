@@ -4,10 +4,16 @@ import { SchedulePortal } from "@/components/schedule-portal";
 import { signOutOfSchedule } from "@/features/auth/server/auth-actions";
 import { requireScheduleUser } from "@/features/auth/server/require-schedule-user";
 import {
+  createScheduleInviteAction,
+  listScheduleInvitesForAdmin,
+  revokeScheduleInviteAction,
+} from "@/features/auth/server/schedule-invite-actions";
+import { saveScheduleAction } from "@/features/schedule/server/schedule-actions";
+import {
   loadScheduleData,
   ScheduleDataUnavailableError,
+  type UserScheduleDocument,
 } from "@/features/schedule/server/schedule-source.server";
-import type { ScheduleData } from "@/lib/schedule-types";
 
 export const dynamic = "force-dynamic";
 
@@ -24,18 +30,27 @@ export const metadata: Metadata = {
 export default async function SchedulePage() {
   const user = await requireScheduleUser();
 
-  let data: ScheduleData | null = null;
+  let document: UserScheduleDocument | null = null;
   try {
-    data = await loadScheduleData();
+    document = await loadScheduleData(user);
   } catch (error) {
     if (!(error instanceof ScheduleDataUnavailableError)) throw error;
   }
+  const invites = user.isAdmin && !user.developmentBypass
+    ? await listScheduleInvitesForAdmin()
+    : [];
 
   return (
     <SchedulePortal
-      data={data}
+      data={document?.data ?? null}
+      revision={document?.revision ?? null}
       canSignOut={!user.developmentBypass}
+      canInvite={user.isAdmin && !user.developmentBypass}
       onSignOut={signOutOfSchedule}
+      onSave={saveScheduleAction}
+      onCreateInvite={createScheduleInviteAction}
+      initialInvites={invites}
+      onRevokeInvite={revokeScheduleInviteAction}
     />
   );
 }

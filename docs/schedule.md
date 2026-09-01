@@ -1,8 +1,10 @@
 # Private schedule operations
 
-`/ajakava` is a private 117.ee section backed by an encrypted, versioned
-schedule payload. The workbook and normalized plaintext must stay outside Git.
-Only the AES-GCM ciphertext in `data/schedule.enc.json` is committed.
+`/ajakava` is a private, invite-only 117.ee section. Each account owns an
+independent, versioned schedule document in PostgreSQL. Documents are encrypted
+in the application with a key derived uniquely for their opaque internal user
+ID. The workbook and normalized plaintext must stay outside Git. The committed
+AES-GCM ciphertext in `data/schedule.enc.json` is only the new-account template.
 
 ## Authentication setup
 
@@ -19,10 +21,13 @@ Configure these runtime-only values:
 - `AUTH_TRUST_HOST=true`: trust the HTTPS host forwarded by Coolify.
 - `AUTH_URL=https://117.ee`: force Auth.js to use the public production origin
   instead of Coolify's internal `localhost:3000` origin after OAuth returns.
-- `SCHEDULE_ALLOWED_GITHUB_ID`: immutable numeric ID of the one allowed GitHub
-  account. The public GitHub user API returns it as `id`; do not use a mutable
-  username or email address.
-- `SCHEDULE_DATA_KEY`: base64url-encoded 32-byte key for the encrypted schedule.
+- `SCHEDULE_ALLOWED_GITHUB_ID`: immutable numeric ID of the bootstrap owner.
+  The public GitHub user API returns it as `id`; do not use a mutable username
+  or email address. After the first successful sign-in, membership is stored in
+  PostgreSQL and this value remains the safe bootstrap path for the owner.
+- `SCHEDULE_DATA_KEY`: base64url-encoded 32-byte master key for the encrypted
+  template and the per-user derived data keys.
+- `DATABASE_URL`: the same PostgreSQL connection already used by 117.ee.
 
 The local `.env.local` created with the initial payload contains the current
 `AUTH_SECRET` and `SCHEDULE_DATA_KEY`. Copy those two values into Coolify, fill
@@ -30,9 +35,31 @@ in the GitHub values, set the production `AUTH_URL`, and do not set
 `SCHEDULE_DEV_BYPASS` in production.
 
 The sign-in flow accepts only GitHub, fixes the post-login destination to
-`/ajakava`, and rechecks the current allowlist at the server data boundary.
-Authentication tokens are never stored in browser storage or returned in the
-schedule page model.
+`/ajakava`, and rechecks active membership at the server data boundary. The
+GitHub provider ID is used only by the server-side account mapping. Only an
+opaque internal user ID is carried in the authenticated session; authentication
+and invitation tokens are never placed in browser storage or schedule data.
+
+## Accounts and invitations
+
+The bootstrap owner can create and revoke single-use invitations in the account
+controls. Send the generated link through a private channel. Its bearer value
+stays in the browser-only URL fragment, is removed from the address bar after
+the page loads, and is posted directly to the server. A short-lived HttpOnly
+cookie then carries it through the OAuth round trip and the server consumes it
+transactionally. An invitation
+expires after seven days, can be revoked before use, and never appears in the
+database in bearer form—only its SHA-256 hash is stored.
+
+On an invited account's first `/ajakava` request, the server decrypts and
+validates the committed template, re-encrypts an independent copy with that
+user's derived key, and persists it. Every read and compare-and-swap update is
+scoped to the authenticated internal user ID. A stale revision is rejected so
+two tabs cannot silently overwrite one another.
+
+The application creates `schedule_users`, `schedule_invites`, and
+`schedule_documents` with `CREATE TABLE IF NOT EXISTS`; no additional Coolify
+service or per-user environment variable is needed.
 
 ## Re-encrypting schedule data
 
@@ -54,18 +81,23 @@ The command replaces `data/schedule.enc.json` with authenticated AES-256-GCM
 ciphertext. Inspect and validate the private JSON before encrypting it. Never
 commit the source workbook, normalized JSON, `.env.local`, or a key.
 
-Changing `SCHEDULE_DATA_KEY` requires re-encrypting the payload. Changing
-`AUTH_SECRET` invalidates existing sessions. Removing or changing
-`SCHEDULE_ALLOWED_GITHUB_ID` revokes schedule access on the next authorization
-check.
+Do not rotate `SCHEDULE_DATA_KEY` without a database re-encryption migration:
+it protects both the template and all persisted user documents. Changing
+`AUTH_SECRET` invalidates existing sessions. Changing
+`SCHEDULE_ALLOWED_GITHUB_ID` changes only which account can be bootstrapped as
+an owner; it does not silently revoke accounts already stored in PostgreSQL.
 
 ## Failure and cache behavior
 
-- Missing auth configuration fails closed at `/sisene`.
+- Missing auth, database, or encryption configuration fails closed at
+  `/sisene`.
 - Missing or incorrect schedule encryption configuration is shown only after
   successful authentication and never includes underlying error details.
 - Private schedule pages are dynamic, non-indexable, and use `no-store` cache
   semantics.
+- `SCHEDULE_DEV_BYPASS=1` works only in development. It uses a process-local
+  editable copy of the encrypted template and never creates a production user
+  or weakens production authorization.
 - The public news, weather, ratings, parliament, and financing sections remain
   available when schedule authentication is unconfigured.
 

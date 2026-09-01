@@ -3,7 +3,10 @@ import { redirect } from "next/navigation";
 import type { Session } from "next-auth";
 
 import { auth, signIn } from "@/auth";
+import { GithubSignInForm } from "@/app/sisene/github-sign-in-form";
 import { SignInThemeToggle } from "@/app/sisene/sign-in-theme-toggle";
+import { beginInvitedGithubSignIn } from "@/features/auth/server/schedule-invite-actions";
+import { clearPendingScheduleInviteToken } from "@/features/auth/server/schedule-invite-cookie.server";
 import {
   getScheduleAuthState,
   SCHEDULE_PATH,
@@ -33,6 +36,9 @@ function errorMessage(error: string | string[] | undefined): string | null {
   if (error === "Configuration") {
     return "Sisselogimine pole praegu seadistatud. Proovi hiljem uuesti.";
   }
+  if (error === "InvalidInvite") {
+    return "Kutse on vigane, aegunud või juba kasutatud.";
+  }
   return error ? "Sisselogimine ei õnnestunud. Proovi uuesti." : null;
 }
 
@@ -42,6 +48,7 @@ async function beginGithubSignIn() {
   if (!getScheduleAuthState(process.env).configured) {
     redirect(`${SCHEDULE_SIGN_IN_PATH}?error=Configuration`);
   }
+  await clearPendingScheduleInviteToken();
   await signIn("github", { redirectTo: SCHEDULE_PATH });
 }
 
@@ -105,10 +112,10 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
               Sinu päev. Ainult sulle.
             </h1>
             <p className="mt-4 max-w-xl text-sm leading-6 text-[#526878] dark:text-[#9bb0bf]">
-              Ajakava on töölaua privaatne osa. Jätkamiseks logi sisse lubatud GitHubi kontoga.
+              Ajakava on töölaua privaatne osa. Jätkamiseks logi sisse lubatud GitHubi kontoga või ava enne saadud kutselink.
             </p>
             <div className="mt-7 grid gap-px border border-[#c5d0d7] bg-[#c5d0d7] text-xs dark:border-[#263d50] dark:bg-[#263d50] sm:grid-cols-3">
-              {["Krüptitud seanss", "Üks lubatud konto", "8-tunnine seanss"].map((label) => (
+              {["Krüptitud seanss", "Kutsepõhised kontod", "8-tunnine seanss"].map((label) => (
                 <span key={label} className="bg-[#f6f8f9] px-3 py-2 font-semibold text-[#526878] dark:bg-[#0d2030] dark:text-[#8da1b0]">
                   {label}
                 </span>
@@ -125,19 +132,11 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
                 {message}
               </p>
             )}
-            <form action={beginGithubSignIn} className="mt-5">
-              <button
-                type="submit"
-                disabled={!state.configured}
-                className="flex min-h-11 w-full items-center justify-center gap-3 border border-[#102538] bg-[#102538] px-4 text-sm font-bold text-white outline-none hover:border-[#245fae] hover:bg-[#17344d] focus-visible:ring-2 focus-visible:ring-signal disabled:cursor-not-allowed disabled:opacity-45 dark:border-[#58768b]"
-              >
-                <span aria-hidden="true" className="border border-[#58768b] px-1.5 py-0.5 text-[10px] tracking-wider">GH</span>
-                Logi GitHubi kaudu sisse
-              </button>
-            </form>
-            <p className="mt-4 text-[11px] leading-5 text-[#526878] dark:text-[#7890a2]">
-              GitHubi kasutatakse ainult sinu konto tuvastamiseks. Me ei küsi juurdepääsu sinu repositooriumidele.
-            </p>
+            <GithubSignInForm
+              configured={state.configured}
+              onStandardSignIn={beginGithubSignIn}
+              onInvitedSignIn={beginInvitedGithubSignIn}
+            />
           </div>
         </section>
       </main>

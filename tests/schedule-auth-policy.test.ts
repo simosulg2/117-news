@@ -15,7 +15,10 @@ const COMPLETE_ENVIRONMENT = {
   AUTH_GITHUB_ID: "github-client-id",
   AUTH_GITHUB_SECRET: "github-client-secret",
   AUTH_TRUST_HOST: "true",
+  AUTH_URL: "https://117.ee",
   SCHEDULE_ALLOWED_GITHUB_ID: "12345678",
+  DATABASE_URL: "postgresql://schedule:secret@database/schedule",
+  SCHEDULE_DATA_KEY: "A".repeat(43),
 } as const;
 
 test("requires every server-side authentication setting", () => {
@@ -26,6 +29,8 @@ test("requires every server-side authentication setting", () => {
     "AUTH_GITHUB_ID",
     "AUTH_GITHUB_SECRET",
     "SCHEDULE_ALLOWED_GITHUB_ID",
+    "DATABASE_URL",
+    "SCHEDULE_DATA_KEY",
   ] as const) {
     const environment = { ...COMPLETE_ENVIRONMENT, [key]: "  " };
     assert.equal(getScheduleAuthState(environment).configured, false, key);
@@ -46,6 +51,26 @@ test("requires every server-side authentication setting", () => {
   assert.equal(getScheduleAuthState({
     ...COMPLETE_ENVIRONMENT,
     AUTH_TRUST_HOST: undefined,
+  }).configured, false);
+  assert.equal(getScheduleAuthState({
+    ...COMPLETE_ENVIRONMENT,
+    AUTH_URL: undefined,
+  }).configured, false);
+  assert.equal(getScheduleAuthState({
+    ...COMPLETE_ENVIRONMENT,
+    AUTH_URL: "http://117.ee",
+  }).configured, false);
+  assert.equal(getScheduleAuthState({
+    ...COMPLETE_ENVIRONMENT,
+    AUTH_URL: "https://attacker.example",
+  }).configured, false);
+  assert.equal(getScheduleAuthState({
+    ...COMPLETE_ENVIRONMENT,
+    DATABASE_URL: "https://database.example/schedule",
+  }).configured, false);
+  assert.equal(getScheduleAuthState({
+    ...COMPLETE_ENVIRONMENT,
+    SCHEDULE_DATA_KEY: "too-short",
   }).configured, false);
 
   assert.equal(
@@ -105,6 +130,12 @@ test("always replaces requested callback destinations with the private schedule"
   );
   assert.equal(fixedScheduleRedirect("https://attacker.example", "not-a-url"), "/ajakava");
   assert.equal(fixedScheduleRedirect("/", "javascript:alert(1)"), "/ajakava");
+  assert.equal(fixedScheduleRedirect("/", "http://117.ee"), "/ajakava");
+  assert.equal(fixedScheduleRedirect("/", "https://attacker.example"), "/ajakava");
+  assert.equal(
+    fixedScheduleRedirect("/", "http://localhost:3000"),
+    "http://localhost:3000/ajakava",
+  );
 });
 
 test("recognizes regular, secure, and chunked Auth.js session cookies", () => {
