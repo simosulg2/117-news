@@ -20,11 +20,7 @@ function schoolDayAt(now: Date | null): ScheduleDay {
 
 function SubjectCell({ periods }: { periods: readonly SchoolPeriod[] }) {
   if (!periods.length) {
-    return (
-      <span className="text-[10px] font-bold uppercase tracking-[0.08em] text-[#8ca0ad] dark:text-[#526b7d]">
-        Vaba
-      </span>
-    );
+    return <span aria-hidden="true" className="block min-h-20" />;
   }
 
   return (

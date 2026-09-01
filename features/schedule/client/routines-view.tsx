@@ -25,7 +25,7 @@ function SectionHeader({
   description: string;
 }) {
   return (
-    <header className="grid gap-3 border-b border-[#29485f] bg-[#102538] px-4 py-3 text-white sm:grid-cols-[2.75rem_minmax(0,1fr)] sm:items-center dark:border-[#35536a]">
+    <header className="grid grid-cols-[2.75rem_minmax(0,1fr)] items-center gap-3 border-b border-[#29485f] bg-[#102538] px-4 py-3 text-white dark:border-[#35536a]">
       <span className="flex size-9 items-center justify-center border border-[#527189] text-xs font-black tabular-nums text-signal" aria-hidden="true">{number}</span>
       <div>
         <p className="text-[9px] font-black uppercase tracking-[0.12em] text-[#a9bdca]">{eyebrow}</p>
@@ -44,16 +44,18 @@ function RoutineSteps({ items }: { items: readonly RoutineItem[] }) {
   return (
     <ol className="divide-y divide-[#d5dee4] bg-white dark:divide-[#263d50] dark:bg-[#0b1b29]">
       {items.map((item, index) => (
-        <li key={item.id} className={`grid grid-cols-[2.25rem_minmax(0,1fr)] gap-3 border-l-4 px-3 py-3.5 sm:grid-cols-[2.25rem_7rem_minmax(0,1fr)] sm:items-start ${CATEGORY_ACCENTS[item.category]}`}>
+        <li key={item.id} className={`grid grid-cols-[2.25rem_minmax(0,1fr)] items-start gap-3 border-l-4 px-3 py-3.5 sm:grid-cols-[2.25rem_7rem_minmax(0,1fr)] ${CATEGORY_ACCENTS[item.category]}`}>
           <span className="flex size-8 items-center justify-center border border-[#9fb2c0] bg-[#eef3f6] text-xs font-black tabular-nums text-[#174b8d] dark:border-[#35536a] dark:bg-[#102538] dark:text-signal" aria-label={`${index + 1}. samm`}>
             {index + 1}
           </span>
-          <p className="col-start-2 row-start-1 text-[11px] font-black tabular-nums text-[#245fae] dark:text-signal sm:col-start-2 sm:pt-1.5">
-            {item.timeWindow}
-          </p>
-          <div className="col-start-2 sm:col-start-3 sm:row-start-1">
-            <h4 className="text-sm font-black text-[#172634] dark:text-[#edf4f8]">{item.title}</h4>
-            {item.details && <p className="mt-1 text-[11px] leading-5 text-[#617786] dark:text-[#8da1b0]">{item.details}</p>}
+          <div className="min-w-0 sm:contents">
+            <p className="text-[11px] font-black tabular-nums text-[#245fae] dark:text-signal sm:col-start-2 sm:row-start-1 sm:pt-1.5">
+              {item.timeWindow}
+            </p>
+            <div className="mt-1 sm:col-start-3 sm:row-start-1 sm:mt-0">
+              <h4 className="text-sm font-black text-[#172634] dark:text-[#edf4f8]">{item.title}</h4>
+              {item.details && <p className="mt-1 text-[11px] leading-5 text-[#617786] dark:text-[#8da1b0]">{item.details}</p>}
+            </div>
           </div>
         </li>
       ))}
