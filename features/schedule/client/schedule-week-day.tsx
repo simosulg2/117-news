@@ -152,19 +152,20 @@ export function DesktopDay({
         type="button"
         aria-expanded={open}
         aria-controls={panelId}
+        aria-current={active ? "date" : undefined}
         onClick={onToggle}
-        className={`grid min-h-11 w-full grid-cols-[8rem_minmax(0,1fr)_auto] items-center gap-3 px-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal ${
+        className={`grid min-h-11 w-full grid-cols-[8rem_minmax(0,1fr)_auto] items-center gap-3 border-l-[3px] px-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal ${
           active
-            ? "bg-[#102538] text-white dark:bg-signal dark:text-[#07131f]"
+            ? "border-l-[#245fae] bg-[#eef4fb] text-[#172634] dark:border-l-signal dark:bg-[#102538] dark:text-[#edf4f8]"
             : past
-              ? "text-[#7b858b] dark:text-[#748895]"
+              ? "border-l-transparent text-[#7b858b] dark:text-[#748895]"
               : open
-                ? "bg-[#e8eef2] text-[#172634] dark:bg-[#102538] dark:text-[#edf4f8]"
-                : "text-[#526878] hover:bg-[#eef3f6] dark:text-[#a9b7c2] dark:hover:bg-[#0d2030]"
+                ? "border-l-transparent bg-[#e8eef2] text-[#172634] dark:bg-[#102538] dark:text-[#edf4f8]"
+                : "border-l-transparent text-[#526878] hover:bg-[#eef3f6] dark:text-[#a9b7c2] dark:hover:bg-[#0d2030]"
         }`}
       >
         <span className="text-[11px] font-black uppercase tracking-[0.06em]">{definition.label}</span>
-        <span className={`truncate text-[10px] font-bold ${active ? "text-[#c7d5df] dark:text-[#173247]" : "text-[#617786] dark:text-[#8da1b0]"}`}>
+        <span className={`truncate text-[10px] font-bold ${active ? "text-[#245fae] dark:text-signal" : "text-[#617786] dark:text-[#8da1b0]"}`}>
           {prefix} · {displayEventSummary(events)}
         </span>
         <svg

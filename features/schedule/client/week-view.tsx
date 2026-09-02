@@ -46,20 +46,21 @@ function MobileDayHeading({
       type="button"
       aria-expanded={open}
       aria-controls={controls}
+      aria-current={active ? "date" : undefined}
       onClick={onToggle}
-      className={`flex min-h-14 w-full items-center gap-3 px-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal ${
+      className={`flex min-h-14 w-full items-center gap-3 border-l-[3px] px-3 text-left outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-signal ${
         active
-          ? "bg-[#102538] text-white dark:bg-signal dark:text-[#07131f]"
+          ? "border-l-[#245fae] bg-[#eef4fb] text-[#172634] dark:border-l-signal dark:bg-[#102538] dark:text-[#edf4f8]"
           : past
-            ? "bg-[#e3e6e8] text-[#7b858b] dark:bg-[#0a151d] dark:text-[#748895]"
+            ? "border-l-transparent bg-[#e3e6e8] text-[#7b858b] dark:bg-[#0a151d] dark:text-[#748895]"
           : open
-            ? "bg-[#d9edf1] text-[#172634] dark:bg-[#102538] dark:text-[#edf4f8]"
-            : "bg-[#eef3f6] text-[#526878] hover:bg-[#dfe8ee] dark:bg-[#0d2030] dark:text-[#a9b7c2] dark:hover:bg-[#102538]"
+            ? "border-l-transparent bg-[#d9edf1] text-[#172634] dark:bg-[#102538] dark:text-[#edf4f8]"
+            : "border-l-transparent bg-[#eef3f6] text-[#526878] hover:bg-[#dfe8ee] dark:bg-[#0d2030] dark:text-[#a9b7c2] dark:hover:bg-[#102538]"
       }`}
     >
       <span className={`flex size-8 shrink-0 items-center justify-center border text-sm font-black ${
         active
-          ? "border-white/45 dark:border-[#07131f]/40"
+          ? "border-[#245fae] bg-white text-[#174b8d] dark:border-signal dark:bg-[#0b1b29] dark:text-signal"
           : past
             ? "border-[#c3cbd1] bg-[#edf0f2] text-[#7b858b] dark:border-[#263946] dark:bg-[#0d1b24] dark:text-[#748895]"
             : "border-[#aebcc6] bg-white text-[#174b8d] dark:border-[#35536a] dark:bg-[#0b1b29] dark:text-signal"
@@ -68,8 +69,8 @@ function MobileDayHeading({
       </span>
       <span className="min-w-0 flex-1">
         <span className="block text-sm font-black">{definition.label}</span>
-        <span className={`mt-0.5 block text-[10px] font-bold ${active ? "text-[#c7d5df] dark:text-[#173247]" : "text-[#6f8493] dark:text-[#7890a2]"}`}>
-          {summary}
+        <span className={`mt-0.5 block text-[10px] font-bold ${active ? "text-[#245fae] dark:text-signal" : "text-[#6f8493] dark:text-[#7890a2]"}`}>
+          {active ? `Täna · ${summary}` : summary}
         </span>
       </span>
       <svg
