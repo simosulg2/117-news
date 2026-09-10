@@ -7,8 +7,8 @@ follow their direct imports. Do not preload whole feature trees.
 
 - Runtime: Next.js App Router, React, strict TypeScript, Tailwind.
 - Pages: `/` news, `/ilm` weather, `/reitingud` ratings, `/riigikogu`
-  parliament, `/erakonnaraha` political financing, and authenticated `/ajakava`
-  personal schedule.
+  parliament, `/erakonnaraha` political financing, authenticated `/turg`
+  market scanner, and authenticated `/ajakava` personal schedule.
 - Canonical API/type map: `docs/ai-data-contracts.md`.
 - Current political product scope: `docs/personal-terminal-roadmap.md`.
 - News collector operations: `docs/news-collector.md`.
@@ -28,7 +28,7 @@ follow their direct imports. Do not preload whole feature trees.
 - Start at `app/layout.tsx` and the affected page in `app/`.
 - Follow the page's direct component imports only.
 - Shared clock/theme/footer helpers live in `features/shell/client/`.
-- Preserve all four primary destinations and all three politics destinations.
+- Preserve all five primary destinations and all three politics destinations.
 - Politics sub-navigation lives in `features/politics/client/politics-nav.tsx`.
 
 ### News UI or behavior
@@ -114,6 +114,19 @@ follow their direct imports. Do not preload whole feature trees.
   `requireScheduleUser()` succeeds.
 - Tests: `tests/schedule-*.test.ts`; operations: `docs/schedule.md`.
 
+### Private market scanner
+
+- Entry: `components/market-portal.tsx`; contract: `lib/market-types.ts`;
+  instrument registry and pure calculations: `features/market/model/`;
+  Yahoo adapter and snapshot orchestration: `features/market/server/`.
+- Page: `app/turg/page.tsx`; authentication is shared with `/ajakava` and every
+  page load or refresh must pass `requireScheduleUser("/turg")` first.
+- Preserve exact competition links, Xetra/U.S. symbol and ISIN pairings, ADR
+  unit ratios, the pre-17:30 Europe/Berlin reference rule, visible timestamps,
+  stale-data rejection, the 0.20 percentage-point safety margin, and both
+  €2.50 fees in round-trip estimates. Never submit trades automatically.
+- Tests: `tests/market-*.test.ts` and `tests/schedule-auth-policy.test.ts`.
+
 ## Non-negotiable invariants
 
 - News: validate upstream hosts/redirects, bound response sizes, tolerate a
@@ -128,6 +141,10 @@ follow their direct imports. Do not preload whole feature trees.
   missing configuration; never place plaintext schedule data, OAuth material,
   allowlisted account IDs, session tokens, or encryption keys in Git, client
   bundles, browser storage, URLs, logs, or fixtures.
+- Market: authenticate before upstream requests; validate Xetra exchange/EUR
+  and U.S./USD metadata, bound responses, retain timestamps, reject stale or
+  prior-day inputs as actionable signals, and keep auction and continuous
+  reference prices distinct.
 - API work must preserve timeouts, size limits, cache/stale behavior, safe error
   details, and `no-store` on authenticated or failure responses.
 - Do not expose `DATABASE_URL`, `NEWS_COLLECTOR_TOKEN`,
@@ -141,7 +158,8 @@ follow their direct imports. Do not preload whole feature trees.
 - One test file: `npm run test:file -- tests/<name>.test.ts`.
 - Feature suites: `npm run test:news`, `npm run test:weather`,
   `npm run test:ratings`, `npm run test:riigikogu`, or
-  `npm run test:political-finance`, or `npm run test:schedule`.
+  `npm run test:political-finance`, `npm run test:schedule`, or
+  `npm run test:market`.
 - Context guard: `npm run check:context`.
 - Before handoff: run the affected suite, `npm test`, `npm run typecheck`, and
   `npm run build`; report any command not run.

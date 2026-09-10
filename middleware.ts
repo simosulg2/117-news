@@ -4,13 +4,16 @@ import { NextResponse } from "next/server";
 import {
   getScheduleAuthState,
   hasAuthJsSessionCookie,
-  SCHEDULE_PATH,
+  isPrivatePath,
   SCHEDULE_SIGN_IN_PATH,
 } from "@/features/auth/server/schedule-auth-policy";
 
 function signInRedirect(request: NextRequest, configurationError: boolean): NextResponse {
   const destination = new URL(SCHEDULE_SIGN_IN_PATH, request.url);
-  destination.searchParams.set("callbackUrl", SCHEDULE_PATH);
+  destination.searchParams.set(
+    "callbackUrl",
+    isPrivatePath(request.nextUrl.pathname) ? request.nextUrl.pathname : "/ajakava",
+  );
   if (configurationError) destination.searchParams.set("error", "Configuration");
   return NextResponse.redirect(destination);
 }
@@ -29,5 +32,5 @@ export default function middleware(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ["/ajakava/:path*"],
+  matcher: ["/ajakava/:path*", "/turg/:path*"],
 };

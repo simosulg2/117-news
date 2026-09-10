@@ -6,7 +6,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "117.ee",
-  description: "Eesti uudised, Võru ilm, poliitika ja privaatne isiklik ajakava ühes kiires vaates.",
+  description: "Eesti uudised, Võru ilm, poliitika ning privaatne turuskanner ja ajakava ühes kiires vaates.",
 };
 
 export const viewport: Viewport = {

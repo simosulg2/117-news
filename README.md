@@ -1,7 +1,7 @@
 # 117.ee
 
-117.ee koondab ühte kiiresse töölauda Eesti uudised, Võru ilma, poliitika ja
-kutsepõhise autentimisega kaitstud isiklikud ajakavad.
+117.ee koondab ühte kiiresse töölauda Eesti uudised, Võru ilma, poliitika ning
+kutsepõhise autentimisega kaitstud isiklikud ajakavad ja turuskanneri.
 Uudiste üldvaates kuvatakse kuni 117 kõige värskemat lugu ning sama sündmust
 kajastavad eri allikad koondatakse ühe rea alla. `/ilm` sisaldab hetkeilma,
 mõõdetud ajalugu, mudelprognoosi ja radarit. Poliitika all on eraldi
@@ -9,6 +9,11 @@ mõõdetud ajalugu, mudelprognoosi ja radarit. Poliitika all on eraldi
 kaitstud nädala-, kooli-, rutiini- ja tasakaaluvaated. Iga kasutaja saab oma
 ajakava muuta ning salvestada. Vaikimisi avaneb hele teema, kuid kasutaja
 salvestatud valikut austatakse.
+
+`/turg` on sama sisselogimisega kaitstud kirjutuskaitstud vaade. See võrdleb
+olümpiaadi Xetra instrumentide viimast pidevkauplemise hinda USA jooksva hinna
+ja EUR/USD kursiga, arvestab ADR-i ühikuid, kahte tehingutasu ning andmevaru.
+Vaade ei logi olümpiaadi sisse ega saada ordereid.
 
 ## Käivitamine
 
@@ -140,6 +145,21 @@ koostavad vastavad korduvad kirjed automaatselt.
 Käivitus-, võtmevahetus- ja OAuthi juhised on dokumendis
 [`docs/schedule.md`](docs/schedule.md).
 
+## Privaatne turuskanner
+
+`/turg` kasutab olemasolevat ajakava GitHubi autentimist ega vaja eraldi
+API-võtit. Server laadib Yahoo avalikest JSON-otspunktidest 46 ISIN-i järgi
+kontrollitud Xetra/USA hinnapaari ja EUR/USD kursi. Xetra võrdlushinnaks valitakse
+viimane mitte-tühi ühe minuti tehing rangelt enne 17.30 Euroopa/Berliini aja
+järgi; Yahoo sulgemisoksjoni hind kuvatakse eraldi diagnostikana.
+
+Signaal muutub tugevaks ainult värskete sama päeva andmetega, kasutaja seatud
+piiri ning 0,20 protsendipunkti varu ületamisel ja juhul, kui hinnavahe katab
+kaks 2,50-eurost tehingutasu. Tehingumaht ja filter püsivad ainult kasutaja
+brauseris. Aktiivses 18.30–20.00 aknas uuendatakse avatud lehte kord minutis;
+alati saab kasutada käsitsi uuendamist ja iga rida avab võistluse täpse
+Investing.com instrumendi.
+
 ## Kontrollid
 
 ```bash
@@ -147,6 +167,7 @@ npm test
 npm run test:riigikogu
 npm run test:political-finance
 npm run test:schedule
+npm run test:market
 npm run check:context
 npm run typecheck
 npm run build

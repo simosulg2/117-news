@@ -7,6 +7,7 @@ import {
   hasAuthJsSessionCookie,
   isAllowedScheduleGithubAccount,
   isScheduleDevelopmentBypassEnabled,
+  normalizePrivatePath,
 } from "../features/auth/server/schedule-auth-policy.ts";
 
 const COMPLETE_ENVIRONMENT = {
@@ -119,13 +120,25 @@ test("production can never activate the development bypass", () => {
   assert.equal(bypassWithoutCredentials.developmentBypass, true);
 });
 
-test("always replaces requested callback destinations with the private schedule", () => {
+test("allows only exact private callback destinations", () => {
   assert.equal(
     fixedScheduleRedirect("https://attacker.example/phish", "https://117.ee"),
     "https://117.ee/ajakava",
   );
   assert.equal(
     fixedScheduleRedirect("/riigikogu", "https://117.ee/base?x=1"),
+    "https://117.ee/ajakava",
+  );
+  assert.equal(
+    fixedScheduleRedirect("/turg", "https://117.ee"),
+    "https://117.ee/turg",
+  );
+  assert.equal(
+    fixedScheduleRedirect("https://117.ee/turg", "https://117.ee"),
+    "https://117.ee/turg",
+  );
+  assert.equal(
+    fixedScheduleRedirect("/turg?redirect=https://attacker.example", "https://117.ee"),
     "https://117.ee/ajakava",
   );
   assert.equal(fixedScheduleRedirect("https://attacker.example", "not-a-url"), "/ajakava");
@@ -136,6 +149,9 @@ test("always replaces requested callback destinations with the private schedule"
     fixedScheduleRedirect("/", "http://localhost:3000"),
     "http://localhost:3000/ajakava",
   );
+  assert.equal(normalizePrivatePath("/turg"), "/turg");
+  assert.equal(normalizePrivatePath("/turg/extra"), "/ajakava");
+  assert.equal(normalizePrivatePath("https://attacker.example/turg"), "/ajakava");
 });
 
 test("recognizes regular, secure, and chunked Auth.js session cookies", () => {

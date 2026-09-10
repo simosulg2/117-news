@@ -15,6 +15,7 @@
     "test:riigikogu": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/party-registry.test.ts tests/riigikogu-model.test.ts tests/riigikogu-parsers.test.ts tests/riigikogu-source-policy.test.ts",
     "test:political-finance": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/party-registry.test.ts tests/political-finance-model.test.ts tests/political-finance-parser.test.ts tests/political-finance-route.test.ts",
     "test:schedule": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/schedule-*.test.ts",
+    "test:market": "node --experimental-strip-types --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --test tests/market-*.test.ts tests/schedule-auth-policy.test.ts",
     "check:context": "node scripts/check-context.mjs",
     "schedule:encrypt": "node scripts/encrypt-schedule-data.mjs",
     "typecheck": "tsc --noEmit"

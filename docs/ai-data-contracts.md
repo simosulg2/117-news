@@ -174,6 +174,25 @@ features.
 
 Validate with `npm run test:schedule`.
 
+## Private market scanner (`/turg`)
+
+- Contract: `lib/market-types.ts`.
+- Verified instrument registry and calculations: `features/market/model/`.
+- Bounded Yahoo adapter and short-lived snapshot: `features/market/server/`.
+- Consumer: `components/market-portal.tsx`.
+- Authentication boundary: `features/auth/server/require-schedule-user.ts`.
+
+The scanner has no public API. Both the page and its refresh action authorize
+the schedule user before fetching data. Xetra inputs must identify XETRA/EUR,
+U.S. inputs must use USD, and static pairs retain their exact ISIN and ADR unit
+ratio. The competition reference is the final non-null one-minute Xetra trade
+strictly before 17:30 in `Europe/Berlin`; the later auction value remains a
+separate diagnostic field. Prior-day or stale live inputs can be displayed but
+must never become actionable. Calculated differences are decision support, not
+guaranteed arbitrage, and no trade submission belongs in this feature.
+
+Validate with `npm run test:market`.
+
 ## Cross-cutting change rule
 
 When a public shape changes, update its canonical type, parser/producer,

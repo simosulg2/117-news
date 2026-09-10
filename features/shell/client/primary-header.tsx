@@ -1,4 +1,4 @@
-type PrimarySection = "news" | "weather" | "politics" | "schedule";
+type PrimarySection = "news" | "weather" | "politics" | "market" | "schedule";
 
 type PrimaryHeaderProps = {
   activeSection: PrimarySection;
@@ -19,6 +19,7 @@ const links: ReadonlyArray<{
   { section: "news", href: "/", label: "Uudised" },
   { section: "weather", href: "/ilm", label: "Ilm" },
   { section: "politics", href: "/reitingud", label: "Poliitika" },
+  { section: "market", href: "/turg", label: "Turg" },
   { section: "schedule", href: "/ajakava", label: "Ajakava" },
 ];
 

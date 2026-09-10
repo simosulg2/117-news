@@ -1,5 +1,16 @@
 export const SCHEDULE_PATH = "/ajakava";
+export const MARKET_PATH = "/turg";
 export const SCHEDULE_SIGN_IN_PATH = "/sisene";
+
+export type PrivatePath = typeof SCHEDULE_PATH | typeof MARKET_PATH;
+
+export function isPrivatePath(value: string): value is PrivatePath {
+  return value === SCHEDULE_PATH || value === MARKET_PATH;
+}
+
+export function normalizePrivatePath(value: string | undefined): PrivatePath {
+  return value === MARKET_PATH ? MARKET_PATH : SCHEDULE_PATH;
+}
 
 const REQUIRED_CONFIGURATION_KEYS = [
   "AUTH_SECRET",
@@ -127,7 +138,7 @@ export function isAllowedScheduleGithubAccount(
     && normalizeGithubAccountId(providerAccountId) === state.allowedGithubId;
 }
 
-export function fixedScheduleRedirect(_requestedUrl: string, baseUrl: string): string {
+export function fixedScheduleRedirect(requestedUrl: string, baseUrl: string): string {
   try {
     const base = new URL(baseUrl);
     const localHost = base.hostname === "localhost"
@@ -135,7 +146,14 @@ export function fixedScheduleRedirect(_requestedUrl: string, baseUrl: string): s
     const allowedOrigin = base.origin === "https://117.ee"
       || (localHost && (base.protocol === "http:" || base.protocol === "https:"));
     if (!allowedOrigin) return SCHEDULE_PATH;
-    return new URL(SCHEDULE_PATH, base.origin).toString();
+    const requested = new URL(requestedUrl, base.origin);
+    const destination = requested.origin === base.origin
+      && isPrivatePath(requested.pathname)
+      && !requested.search
+      && !requested.hash
+      ? requested.pathname
+      : SCHEDULE_PATH;
+    return new URL(destination, base.origin).toString();
   } catch {
     return SCHEDULE_PATH;
   }

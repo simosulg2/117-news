@@ -1,14 +1,14 @@
 # 117.ee political tools scope
 
-Status: Riigikogu Live, political financing, and the private personal schedule
-are implemented. The broader
+Status: Riigikogu Live, political financing, the private market scanner, and
+the private personal schedule are implemented. The broader
 Praegu, Majandus, local-watchlist, and weather-warning experiment was removed on
 request and is not part of the current product scope.
 
 ## Current information architecture
 
-Preserve the existing news and weather tools, the three political views, and
-the authenticated schedule:
+Preserve the existing news and weather tools, the three political views, the
+authenticated market scanner, and the authenticated schedule:
 
 | Area | Route | Purpose |
 | --- | --- | --- |
@@ -17,9 +17,10 @@ the authenticated schedule:
 | Ratings | `/reitingud` | Polling and 101-seat projection |
 | Parliament | `/riigikogu` | Official agenda, votes, bills, and factions |
 | Political money | `/erakonnaraha` | ERJK quarterly financing reports |
+| Private market | `/turg` | Authenticated Xetra/U.S. price comparison |
 | Private schedule | `/ajakava` | Authenticated personal weekly terminal |
 
-Primary navigation is `Uudised · Ilm · Poliitika · Ajakava`. The shared politics
+Primary navigation is `Uudised · Ilm · Poliitika · Turg · Ajakava`. The shared politics
 sub-navigation is `Reitingud · Riigikogu · Raha`.
 
 Do not reintroduce `/praegu`, `/majandus`, local watchlists, or the separate

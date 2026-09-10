@@ -4,6 +4,8 @@ import type { Session } from "next-auth";
 import { auth } from "@/auth";
 import {
   getScheduleAuthState,
+  type PrivatePath,
+  SCHEDULE_PATH,
   SCHEDULE_SIGN_IN_PATH,
 } from "@/features/auth/server/schedule-auth-policy";
 import { getScheduleUserAccessById } from "@/features/auth/server/schedule-user-store.server";
@@ -26,38 +28,43 @@ const DEVELOPMENT_USER: ScheduleUser = {
   developmentBypass: true,
 };
 
-function signInDestination(error?: "AccessDenied" | "Configuration"): string {
-  const parameters = new URLSearchParams({ callbackUrl: "/ajakava" });
+function signInDestination(
+  callbackPath: PrivatePath,
+  error?: "AccessDenied" | "Configuration",
+): string {
+  const parameters = new URLSearchParams({ callbackUrl: callbackPath });
   if (error) parameters.set("error", error);
   return `${SCHEDULE_SIGN_IN_PATH}?${parameters.toString()}`;
 }
 
-export async function requireScheduleUser(): Promise<ScheduleUser> {
+export async function requireScheduleUser(
+  callbackPath: PrivatePath = SCHEDULE_PATH,
+): Promise<ScheduleUser> {
   const state = getScheduleAuthState(process.env);
 
   if (state.developmentBypass) return DEVELOPMENT_USER;
-  if (!state.configured) redirect(signInDestination("Configuration"));
+  if (!state.configured) redirect(signInDestination(callbackPath, "Configuration"));
 
   let session: Session | null;
   try {
     session = await auth();
   } catch {
-    redirect(signInDestination("Configuration"));
+    redirect(signInDestination(callbackPath, "Configuration"));
   }
 
   const user = session?.user;
-  if (!user) redirect(signInDestination());
+  if (!user) redirect(signInDestination(callbackPath));
   if (!user.scheduleAccess) {
-    redirect(signInDestination("AccessDenied"));
+    redirect(signInDestination(callbackPath, "AccessDenied"));
   }
 
   let access;
   try {
     access = await getScheduleUserAccessById(user.scheduleUserId);
   } catch {
-    redirect(signInDestination("Configuration"));
+    redirect(signInDestination(callbackPath, "Configuration"));
   }
-  if (!access) redirect(signInDestination("AccessDenied"));
+  if (!access) redirect(signInDestination(callbackPath, "AccessDenied"));
 
   return {
     id: access.id,

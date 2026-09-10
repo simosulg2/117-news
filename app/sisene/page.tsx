@@ -13,15 +13,16 @@ import {
 } from "@/features/auth/server/schedule-session-preference.server";
 import {
   getScheduleAuthState,
-  SCHEDULE_PATH,
+  normalizePrivatePath,
+  type PrivatePath,
   SCHEDULE_SIGN_IN_PATH,
 } from "@/features/auth/server/schedule-auth-policy";
 
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Sisene ajakavasse · 117.ee",
-  description: "Turvaline sisselogimine 117.ee privaatsesse ajakavasse.",
+  title: "Sisene privaatsesse töölauda · 117.ee",
+  description: "Turvaline sisselogimine 117.ee privaatsesse töölauda.",
   robots: {
     index: false,
     follow: false,
@@ -35,7 +36,7 @@ type SignInPageProps = Readonly<{
 
 function errorMessage(error: string | string[] | undefined): string | null {
   if (error === "AccessDenied") {
-    return "Selle GitHubi kontoga puudub ligipääs ajakavale.";
+    return "Selle GitHubi kontoga puudub ligipääs privaatsele töölauale.";
   }
   if (error === "Configuration") {
     return "Sisselogimine pole praegu seadistatud. Proovi hiljem uuesti.";
@@ -46,7 +47,7 @@ function errorMessage(error: string | string[] | undefined): string | null {
   return error ? "Sisselogimine ei õnnestunud. Proovi uuesti." : null;
 }
 
-async function beginGithubSignIn(formData: FormData) {
+async function beginGithubSignIn(destination: PrivatePath, formData: FormData) {
   "use server";
 
   if (!getScheduleAuthState(process.env).configured) {
@@ -56,12 +57,17 @@ async function beginGithubSignIn(formData: FormData) {
     wantsRememberedScheduleSession(formData.get("remember")),
   );
   await clearPendingScheduleInviteToken();
-  await signIn("github", { redirectTo: SCHEDULE_PATH });
+  await signIn("github", { redirectTo: destination });
 }
 
 export default async function SignInPage({ searchParams }: SignInPageProps) {
+  const parameters = await searchParams;
+  const callbackValue = Array.isArray(parameters.callbackUrl)
+    ? parameters.callbackUrl[0]
+    : parameters.callbackUrl;
+  const destination = normalizePrivatePath(callbackValue);
   const state = getScheduleAuthState(process.env);
-  if (state.developmentBypass) redirect(SCHEDULE_PATH);
+  if (state.developmentBypass) redirect(destination);
 
   if (state.configured) {
     let session: Session | null = null;
@@ -71,11 +77,10 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
       // Render a closed sign-in state if Auth.js cannot read the session.
     }
     if (session?.user.scheduleAccess) {
-      redirect(SCHEDULE_PATH);
+      redirect(destination);
     }
   }
 
-  const parameters = await searchParams;
   const message = state.configured
     ? errorMessage(parameters.error)
     : errorMessage("Configuration");
@@ -113,10 +118,10 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
         <section className="grid w-full border border-[#aebcc6] bg-white shadow-[4px_4px_0_#c8d4dc] md:grid-cols-[minmax(0,1fr)_minmax(18rem,0.7fr)] dark:border-[#29485f] dark:bg-[#0b1b29] dark:shadow-[4px_4px_0_#102538]">
           <div className="border-b border-[#c5d0d7] p-6 sm:p-8 md:border-b-0 md:border-r dark:border-[#263d50]">
             <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#245fae] dark:text-signal">
-              117.ee · Ajakava
+              117.ee · Privaatne töölaud
             </p>
             <p className="mt-4 max-w-xl text-sm leading-6 text-[#526878] dark:text-[#9bb0bf]">
-              Ajakava on töölaua privaatne osa. Jätkamiseks logi sisse lubatud GitHubi kontoga või ava enne saadud kutselink.
+              Ajakava ja turuskanner on töölaua privaatsed osad. Jätkamiseks logi sisse lubatud GitHubi kontoga või ava enne saadud kutselink.
             </p>
             <div className="mt-7 grid gap-px border border-[#c5d0d7] bg-[#c5d0d7] text-xs dark:border-[#263d50] dark:bg-[#263d50] sm:grid-cols-3">
               {["Krüptitud seanss", "Kutsepõhised kontod", "Valitav püsi-login"].map((label) => (
@@ -138,7 +143,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
             )}
             <GithubSignInForm
               configured={state.configured}
-              onStandardSignIn={beginGithubSignIn}
+              onStandardSignIn={beginGithubSignIn.bind(null, destination)}
               onInvitedSignIn={beginInvitedGithubSignIn}
             />
           </div>
@@ -146,7 +151,7 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
       </main>
 
       <footer className="border-t border-[#b7c4cc] px-3 py-4 text-center text-[11px] text-[#617786] dark:border-[#20394d] dark:text-[#7890a2]">
-        <b className="text-[#245fae] dark:text-signal">117.ee</b> · Privaatne ajakava
+        <b className="text-[#245fae] dark:text-signal">117.ee</b> · Privaatne töölaud
       </footer>
     </div>
   );
