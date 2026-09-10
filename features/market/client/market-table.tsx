@@ -1,4 +1,9 @@
-import type { MarketRowView } from "../model/market-view-model";
+import {
+  filterAndSortMarketRows,
+  type MarketDirectionFilter,
+  type MarketRowView,
+  type MarketSortOrder,
+} from "../model/market-view-model";
 
 import {
   formatAge,
@@ -12,6 +17,9 @@ type MarketTableProps = {
   rows: readonly MarketRowView[];
   showAll: boolean;
   tradeAmount: number;
+  query: string;
+  directionFilter: MarketDirectionFilter;
+  sortOrder: MarketSortOrder;
 };
 
 function directionStyle(direction: "buy" | "sell", strong: boolean): string {
@@ -21,14 +29,31 @@ function directionStyle(direction: "buy" | "sell", strong: boolean): string {
     : "border-[#8756bb] bg-[#eee5f7] text-[#65398f] dark:bg-[#281d36] dark:text-[#c7a1ec]";
 }
 
-export function MarketTable({ rows, showAll, tradeAmount }: MarketTableProps) {
-  const visible = showAll ? rows : rows.filter((row) => row.highlighted);
+export function MarketTable({
+  rows,
+  showAll,
+  tradeAmount,
+  query,
+  directionFilter,
+  sortOrder,
+}: MarketTableProps) {
+  const visible = filterAndSortMarketRows(rows, {
+    showAll,
+    query,
+    directionFilter,
+    sortOrder,
+  });
+  const hasListFilter = Boolean(query.trim()) || directionFilter !== "all";
   if (visible.length === 0) {
     return (
       <div className="border border-[#aebcc6] bg-white px-5 py-10 text-center dark:border-[#29485f] dark:bg-[#0b1b29]">
-        <p className="text-base font-black text-[#172634] dark:text-[#edf4f8]">Praegu tugevat signaali ei ole</p>
+        <p className="text-base font-black text-[#172634] dark:text-[#edf4f8]">
+          {hasListFilter ? "Ükski instrument ei vasta filtrile" : "Praegu tugevat signaali ei ole"}
+        </p>
         <p className="mt-2 text-xs leading-5 text-[#617786] dark:text-[#8da1b0]">
-          Vähenda piirmäära või lülita sisse „Näita kõiki instrumente”, et näha tervet võrdlust.
+          {hasListFilter
+            ? "Muuda otsingut või lähtesta filtrid, et instrumente uuesti näha."
+            : "Vähenda piirmäära või lülita sisse „Näita kõiki instrumente”, et näha tervet võrdlust."}
         </p>
       </div>
     );

@@ -7,13 +7,12 @@ import { MarketPageFrame } from "@/features/market/client/market-page-frame";
 import { MarketSummary } from "@/features/market/client/market-summary";
 import { MarketTable } from "@/features/market/client/market-table";
 import { formatEur, formatTallinnTime } from "@/features/market/client/market-formatters";
+import { useMarketPreferences } from "@/features/market/client/use-market-preferences";
 import { getMarketWindowState } from "@/features/market/model/market-opportunities";
 import { buildMarketRows } from "@/features/market/model/market-view-model";
 import { useClock } from "@/features/shell/client/use-clock";
 import { usePageTheme } from "@/features/shell/client/use-page-theme";
 import type { MarketRefreshResult, MarketSnapshot } from "@/lib/market-types";
-
-const SETTINGS_KEY = "117-market-settings";
 
 type MarketPortalProps = {
   initialSnapshot: MarketSnapshot;
@@ -31,37 +30,24 @@ export function MarketPortal({
   const { theme, toggleTheme } = usePageTheme();
   const now = useClock(15_000);
   const [snapshot, setSnapshot] = useState(initialSnapshot);
-  const [minimumGap, setMinimumGap] = useState(1);
-  const [tradeAmount, setTradeAmount] = useState(500);
-  const [showAll, setShowAll] = useState(false);
-  const [settingsReady, setSettingsReady] = useState(false);
+  const {
+    minimumGap,
+    tradeAmount,
+    showAll,
+    query,
+    directionFilter,
+    sortOrder,
+    setMinimumGap,
+    setTradeAmount,
+    setShowAll,
+    setQuery,
+    setDirectionFilter,
+    setSortOrder,
+    resetFilters,
+  } = useMarketPreferences();
   const [error, setError] = useState<string | null>(null);
   const [refreshing, startRefresh] = useTransition();
   const windowState = now ? getMarketWindowState(now) : snapshot.window;
-
-  useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "null") as unknown;
-      if (saved && typeof saved === "object") {
-        const values = saved as Record<string, unknown>;
-        if (typeof values.minimumGap === "number") setMinimumGap(Math.min(25, Math.max(0, values.minimumGap)));
-        if (typeof values.tradeAmount === "number") setTradeAmount(Math.min(100_000, Math.max(100, values.tradeAmount)));
-        if (typeof values.showAll === "boolean") setShowAll(values.showAll);
-      }
-    } catch {
-      // Invalid local preferences safely fall back to the defaults.
-    }
-    setSettingsReady(true);
-  }, []);
-
-  useEffect(() => {
-    if (!settingsReady) return;
-    try {
-      localStorage.setItem(SETTINGS_KEY, JSON.stringify({ minimumGap, tradeAmount, showAll }));
-    } catch {
-      // The dashboard remains usable if browser storage is unavailable.
-    }
-  }, [minimumGap, settingsReady, showAll, tradeAmount]);
 
   const refresh = useCallback(() => {
     startRefresh(async () => {
@@ -116,10 +102,17 @@ export function MarketPortal({
             minimumGap={minimumGap}
             tradeAmount={tradeAmount}
             showAll={showAll}
+            query={query}
+            directionFilter={directionFilter}
+            sortOrder={sortOrder}
             refreshing={refreshing}
             onMinimumGapChange={(value) => setMinimumGap(Math.min(25, Math.max(0, Number.isFinite(value) ? value : 0)))}
             onTradeAmountChange={(value) => setTradeAmount(Math.min(100_000, Math.max(100, Number.isFinite(value) ? value : 100)))}
             onShowAllChange={setShowAll}
+            onQueryChange={setQuery}
+            onDirectionFilterChange={setDirectionFilter}
+            onSortOrderChange={setSortOrder}
+            onResetFilters={resetFilters}
             onRefresh={refresh}
           />
         </div>
@@ -133,7 +126,14 @@ export function MarketPortal({
             </div>
             <p className="text-[10px] text-[#617786] dark:text-[#7890a2]">* Neto = hinnavahe {formatEur(tradeAmount)} pealt − kaks × 2,50 € tehingutasu.</p>
           </div>
-          <MarketTable rows={rows} showAll={showAll} tradeAmount={tradeAmount} />
+          <MarketTable
+            rows={rows}
+            showAll={showAll}
+            tradeAmount={tradeAmount}
+            query={query}
+            directionFilter={directionFilter}
+            sortOrder={sortOrder}
+          />
         </section>
 
         <details className="mt-5 border border-[#aebcc6] bg-white dark:border-[#29485f] dark:bg-[#0b1b29]">

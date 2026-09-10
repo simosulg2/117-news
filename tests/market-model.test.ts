@@ -9,7 +9,10 @@ import {
   selectPreAuctionReference,
   type IntradayPrice,
 } from "../features/market/model/market-opportunities.ts";
-import { buildMarketRows } from "../features/market/model/market-view-model.ts";
+import {
+  buildMarketRows,
+  filterAndSortMarketRows,
+} from "../features/market/model/market-view-model.ts";
 import type { MarketSnapshot } from "../lib/market-types.ts";
 
 function price(value: number, iso: string): IntradayPrice {
@@ -108,6 +111,58 @@ test("view rows require fresh data and the open window to be actionable", () => 
   assert.equal(open.highlighted, true);
   assert.equal(open.actionable, true);
   assert.equal(buildMarketRows(snapshot, 500, 1, "closed")[0].actionable, false);
+});
+
+test("filters and sorts the full instrument list", () => {
+  const now = new Date("2026-09-10T15:31:00Z");
+  const opportunities = [110, 90, 105].map((usPrice, index) => buildMarketOpportunity(
+    MARKET_INSTRUMENTS[index],
+    { prices: [price(100, "2026-09-10T15:29:00Z")], auction: null },
+    price(usPrice, "2026-09-10T15:30:30Z"),
+    price(1, "2026-09-10T15:30:45Z"),
+    now,
+  ));
+  const snapshot: MarketSnapshot = {
+    fetchedAt: now.toISOString(),
+    window: "open",
+    eurUsd: { value: 1, at: "2026-09-10T15:30:45Z" },
+    eurUsdAgeSeconds: 15,
+    opportunities: [
+      opportunities[0],
+      opportunities[1],
+      { ...opportunities[2], usQuoteAgeSeconds: 900 },
+    ],
+    availableCount: 3,
+    instrumentCount: 3,
+    source: "yahoo",
+  };
+  const rows = buildMarketRows(snapshot, 500, 1);
+  const ids = (result: ReadonlyArray<(typeof rows)[number]>) => result.map((row) => row.opportunity.id);
+
+  assert.deepEqual(ids(filterAndSortMarketRows(rows, {
+    showAll: true,
+    query: "",
+    directionFilter: "buy",
+    sortOrder: "buy-gap",
+  })), ["abbott", "alphabet"]);
+  assert.deepEqual(ids(filterAndSortMarketRows(rows, {
+    showAll: true,
+    query: "ahla",
+    directionFilter: "all",
+    sortOrder: "absolute-gap",
+  })), ["alibaba"]);
+  assert.deepEqual(ids(filterAndSortMarketRows(rows, {
+    showAll: true,
+    query: "",
+    directionFilter: "reliable",
+    sortOrder: "name",
+  })), ["abbott", "alibaba"]);
+  assert.deepEqual(ids(filterAndSortMarketRows(rows, {
+    showAll: false,
+    query: "",
+    directionFilter: "all",
+    sortOrder: "sell-gap",
+  })), ["alibaba", "abbott"]);
 });
 
 test("instrument map is unique, bounded, and points at exact source pages", () => {
