@@ -51,6 +51,10 @@ export const METRICS: readonly MetricDefinition[] = [
   { id: "pressure", title: "Õhurõhk merepinnal", shortTitle: "Õhurõhk", unit: "hPa", field: "pressureHpa", color: "#18795d" },
 ];
 
+export const DEFAULT_VISIBLE_METRIC_IDS = METRICS
+  .filter((metric) => metric.id !== "precipitation" && metric.id !== "wind")
+  .map((metric) => metric.id);
+
 const dateInputFormatter = new Intl.DateTimeFormat("sv-SE", {
   year: "numeric",
   month: "2-digit",

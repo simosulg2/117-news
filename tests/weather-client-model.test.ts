@@ -3,6 +3,7 @@ import test from "node:test";
 
 import {
   DAY_MS,
+  DEFAULT_VISIBLE_METRIC_IDS,
   WEATHER_REFRESH_MS,
   deduplicatePoints,
   pointsForField,
@@ -36,6 +37,10 @@ function point(
     ...values,
   };
 }
+
+test("weather charts hide precipitation and wind by default", () => {
+  assert.deepEqual(DEFAULT_VISIBLE_METRIC_IDS, ["temperature", "humidity", "cloud", "pressure"]);
+});
 
 test("weather refresh policy handles first load, expiry, and clock rollback", () => {
   const snapshotAt = Date.parse("2026-08-13T12:00:00Z");

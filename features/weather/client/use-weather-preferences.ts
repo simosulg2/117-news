@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import { dateInputFormatter } from "@/features/weather/client/weather-formatters";
 import {
+  DEFAULT_VISIBLE_METRIC_IDS,
   METRICS,
   WEATHER_PREFERENCES_KEY,
   type WeatherRange,
@@ -17,7 +18,7 @@ export function useWeatherPreferences() {
   const [selectedEndDate, setSelectedEndDate] = useState("");
   const [periodStart, setPeriodStart] = useState("");
   const [periodEnd, setPeriodEnd] = useState("");
-  const [visibleMetricIds, setVisibleMetricIds] = useState(() => METRICS.map((metric) => metric.id));
+  const [visibleMetricIds, setVisibleMetricIds] = useState(() => DEFAULT_VISIBLE_METRIC_IDS);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
 
   useEffect(() => {
